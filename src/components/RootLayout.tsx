@@ -1,15 +1,11 @@
-import { Link, Outlet } from 'react-router-dom'
+import { Outlet } from 'react-router-dom'
+
+import Header from '@/components/ui/Header'
 
 export default function RootLayout() {
   return (
-    <div className="min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-      <header className="border-b border-slate-200 dark:border-slate-800">
-        <nav className="mx-auto flex max-w-5xl items-center gap-6 px-6 py-4">
-          <Link to="/" className="text-lg font-semibold">
-            mulmeong
-          </Link>
-        </nav>
-      </header>
+    <div className="bg-surface text-text-primary min-h-screen">
+      <Header />
       <main className="mx-auto max-w-5xl px-6 py-10">
         <Outlet />
       </main>
