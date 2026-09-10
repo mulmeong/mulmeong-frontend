@@ -1,6 +1,8 @@
 import { ApiError } from '@/api/ApiError'
 
-import type { LoginRequest, LoginResponse, SignupRequest } from './auth'
+import type { LoginRequest, SignupRequest } from '@/features/auth/schemas'
+
+import type { LoginResponse } from './auth'
 
 const MOCK_DELAY_MS = 400
 

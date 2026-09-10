@@ -1,32 +1,15 @@
 import { api } from '@/api/client'
 import { tokenStorage } from '@/api/token'
+import type { LoginRequest, SignupRequest } from '@/features/auth/schemas'
 import { env } from '@/lib/env'
 import type { User } from '@/types/user'
 
 import { mockCheckNickname, mockLogin, mockSignup } from './authMock'
 
 /** 엔드포인트·응답 형태는 백엔드와 맞춘 뒤 수정할 것. */
-export type LoginRequest = {
-  email: string
-  password: string
-}
-
 export type LoginResponse = {
   accessToken: string
   user: User
-}
-
-/** 닉네임·약관 동의는 AUTH-07에 없는 시안 필드. 명세 갱신 필요. */
-export type SignupRequest = {
-  email: string
-  password: string
-  name: string
-  /** YYYY-MM-DD */
-  birthDate: string
-  /** 숫자만 */
-  phone: string
-  nickname: string
-  marketingAgreed: boolean
 }
 
 export async function login(body: LoginRequest): Promise<LoginResponse> {
