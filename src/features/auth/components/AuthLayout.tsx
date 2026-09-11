@@ -22,7 +22,12 @@ export default function AuthLayout({
   return (
     <div className="bg-surface flex min-h-dvh flex-col lg:h-dvh lg:min-h-0 lg:flex-row lg:overflow-hidden">
       <div
-        className="relative h-[240px] shrink-0 overflow-hidden sm:h-[320px] lg:h-full lg:w-[var(--image-width)] lg:max-w-[55%] lg:min-w-[280px]"
+        className={
+          // 모바일에선 폼이 주인공이라 비주얼을 얇은 브랜드 띠로 줄이고,
+          // 태블릿부터 비중을 키운다.
+          'relative h-[136px] shrink-0 overflow-hidden sm:h-[240px] md:h-[300px] ' +
+          'lg:h-full lg:w-[var(--image-width)] lg:max-w-[48%] lg:min-w-[280px] xl:max-w-[52%]'
+        }
         style={{ '--image-width': `calc(100dvh * ${imageRatio})` } as CSSProperties}
       >
         <img src={`/images/${image}`} alt="" className="size-full object-cover" />
@@ -35,8 +40,9 @@ export default function AuthLayout({
           MULMEONG
         </Link>
 
-        <div className="absolute right-6 bottom-7 left-6 lg:right-8 lg:bottom-12 lg:left-8">
-          <h2 className="text-[26px] leading-[1.3] font-bold text-white sm:text-[32px] lg:text-[34px]">
+        {/* 모바일 띠에서는 헤드라인이 자리를 뺏으므로 숨기고, 폼에 집중시킨다. */}
+        <div className="absolute right-6 bottom-7 left-6 hidden sm:block lg:right-10 lg:bottom-12 lg:left-10">
+          <h2 className="text-[28px] leading-[1.25] font-bold tracking-[-0.02em] text-white lg:text-[34px]">
             {headline.map((line) => (
               <span key={line} className="block">
                 {line}
@@ -55,8 +61,8 @@ export default function AuthLayout({
         </div>
       </div>
 
-      <div className="flex flex-1 items-center justify-center px-6 py-12 sm:px-10 lg:min-h-0 lg:overflow-y-auto lg:px-16">
-        <div className="w-full max-w-[520px]">{children}</div>
+      <div className="flex flex-1 justify-center px-6 py-12 sm:px-10 sm:py-16 lg:min-h-0 lg:items-center lg:overflow-y-auto lg:px-16 lg:py-12">
+        <div className="w-full max-w-[440px]">{children}</div>
       </div>
     </div>
   )
