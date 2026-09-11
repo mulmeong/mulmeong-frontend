@@ -104,16 +104,24 @@ export default function Input({
   }
 
   return (
-    <div className={cn('flex flex-col gap-2', className)}>
+    <div className={cn('group flex flex-col gap-2', className)}>
       {label && (
-        <label htmlFor={inputId} className="text-text-secondary text-[12px]">
+        <label
+          htmlFor={inputId}
+          className="text-text-secondary group-focus-within:text-text-primary text-[12px] transition-colors"
+        >
           {label}
         </label>
       )}
       <div
         className={cn(
-          'flex items-center gap-2 border-b pb-2',
-          error ? 'border-danger' : 'border-border-default',
+          'flex items-center gap-2 border-b pb-2 transition-colors',
+          // 포커스는 자식 input에 가므로 focus-within으로 받는다.
+          // 두께는 항상 2px로 두고 색만 바꾼다 — border-b-2로 바뀌면 1px만큼 밀려 글자가 흔들린다.
+          'border-b-2',
+          error
+            ? 'border-danger'
+            : 'border-border-default focus-within:border-border-strong',
         )}
       >
         {field}
