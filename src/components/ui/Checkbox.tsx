@@ -12,8 +12,11 @@ export default function Checkbox({ label, className, ...props }: CheckboxProps) 
       <input
         type="checkbox"
         className={cn(
-          'peer border-border-strong bg-surface size-full appearance-none rounded-[4px] border',
+          'peer border-border-strong bg-surface size-full cursor-pointer appearance-none rounded-[4px] border',
           'checked:bg-inverse checked:border-inverse',
+          'transition-[background-color,border-color,transform] duration-100 ease-out',
+          'active:not-disabled:scale-90 motion-reduce:transition-none motion-reduce:active:not-disabled:scale-100',
+          'outline-none focus-visible:ring-border-strong focus-visible:ring-2 focus-visible:ring-offset-2',
           'disabled:cursor-not-allowed disabled:opacity-40',
           className,
         )}

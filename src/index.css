@@ -28,6 +28,18 @@
   color-scheme: light;
 }
 
+/* 모션 최소화 설정에서는 전환을 끄되 색 변화 같은 이해를 돕는 피드백은 남긴다 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 body {
   background-color: var(--color-surface);
   color: var(--color-text-primary);

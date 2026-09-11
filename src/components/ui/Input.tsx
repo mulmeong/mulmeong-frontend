@@ -19,6 +19,10 @@ type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> & {
   error?: string
   /** 라벨 아래 보조 설명. error가 있으면 error가 우선한다. */
   hint?: string
+  /** 라벨 옆에 '필수' 표시. 제출 전에 무엇이 필요한지 알 수 있게 한다. */
+  required?: boolean
+  /** 성공 피드백(예: 닉네임 사용 가능). error가 우선한다. */
+  success?: string
   className?: string
 }
 
@@ -33,13 +37,50 @@ function Trailing({ trailing }: { trailing: NonNullable<InputProps['trailing']> 
         type="button"
         onClick={trailing.onClick}
         disabled={trailing.disabled}
-        className="text-text-secondary hover:text-text-primary shrink-0 text-[12px] underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:opacity-40"
+        className={cn(
+          'text-text-secondary hover:text-text-primary focus-visible:ring-border-strong',
+          // 터치 타겟 확보 — 시각적 크기는 작아도 누르는 영역은 넉넉하게
+          'shrink-0 rounded-[4px] px-1.5 py-1 text-[13px] outline-none',
+          'underline-offset-2 hover:underline focus-visible:ring-2',
+          'disabled:cursor-not-allowed disabled:opacity-40',
+        )}
       >
         {trailing.label}
       </button>
     )
   }
-  return <span className="text-text-secondary shrink-0 text-[12px]">{trailing}</span>
+  return <span className="text-text-secondary shrink-0 text-[13px]">{trailing}</span>
+}
+
+/** 색만으로 오류를 알리지 않도록 아이콘을 함께 쓴다. */
+function AlertIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true" className="mt-px size-3.5 shrink-0">
+      <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <path
+        d="M8 4.75v3.75M8 11.1v.15"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true" className="mt-px size-3.5 shrink-0">
+      <path
+        d="M3.5 8.5 6.5 11.5 12.5 4.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
 }
 
 export default function Input({
@@ -48,24 +89,30 @@ export default function Input({
   trailing,
   error,
   hint,
+  required,
+  success,
   className,
   id,
   type = 'text',
+  disabled,
   ...props
 }: InputProps) {
   const generatedId = useId()
   const inputId = id ?? generatedId
-  const describedById = error || hint ? `${inputId}-desc` : undefined
+  const message = error ?? success ?? hint
+  const describedById = message ? `${inputId}-desc` : undefined
 
   const field = (
     <input
       id={inputId}
       type={type}
+      disabled={disabled}
       aria-invalid={error ? true : undefined}
       aria-describedby={describedById}
+      aria-required={required || undefined}
       className={cn(
         'placeholder:text-text-secondary text-text-primary min-w-0 flex-1 bg-transparent outline-none',
-        'disabled:cursor-not-allowed disabled:opacity-40',
+        'disabled:cursor-not-allowed',
         variant === 'search' ? 'text-[14px]' : 'text-[15px]',
       )}
       {...props}
@@ -77,7 +124,9 @@ export default function Input({
       <div
         className={cn(
           'bg-surface border-border-default flex items-center gap-2 rounded-md border px-4 py-3',
-          error && 'border-danger',
+          'transition-colors',
+          disabled && 'cursor-not-allowed opacity-40',
+          error ? 'border-danger' : 'hover:border-border-strong focus-within:border-border-strong',
           className,
         )}
       >
@@ -104,35 +153,48 @@ export default function Input({
   }
 
   return (
-    <div className={cn('group flex flex-col gap-2', className)}>
+    <div className={cn('group flex flex-col gap-1.5', className)}>
       {label && (
         <label
           htmlFor={inputId}
-          className="text-text-secondary group-focus-within:text-text-primary text-[12px] transition-colors"
+          className={cn(
+            'text-text-secondary group-focus-within:text-text-primary flex items-center gap-1.5',
+            'text-[13px] transition-colors',
+            disabled && 'opacity-40',
+          )}
         >
           {label}
+          {required && (
+            <span className="text-text-secondary text-[11px] font-normal">필수</span>
+          )}
         </label>
       )}
       <div
         className={cn(
-          'flex items-center gap-2 border-b pb-2 transition-colors',
+          'flex items-center gap-1 border-b-2 pb-2 transition-colors',
           // 포커스는 자식 input에 가므로 focus-within으로 받는다.
-          // 두께는 항상 2px로 두고 색만 바꾼다 — border-b-2로 바뀌면 1px만큼 밀려 글자가 흔들린다.
-          'border-b-2',
+          // 두께는 항상 2px로 두고 색만 바꾼다 — 굵기가 바뀌면 1px만큼 밀려 글자가 흔들린다.
+          disabled && 'opacity-40',
           error
             ? 'border-danger'
-            : 'border-border-default focus-within:border-border-strong',
+            : 'border-border-default hover:border-text-secondary focus-within:border-border-strong',
         )}
       >
         {field}
         {trailing && <Trailing trailing={trailing} />}
       </div>
-      {(error || hint) && (
+      {message && (
         <p
           id={describedById}
-          className={cn('text-[12px]', error ? 'text-danger' : 'text-text-secondary')}
+          role={error ? 'alert' : undefined}
+          className={cn(
+            'flex items-start gap-1.5 text-[12px] leading-[1.5]',
+            error ? 'text-danger' : 'text-text-secondary',
+          )}
         >
-          {error ?? hint}
+          {error && <AlertIcon />}
+          {!error && success && <CheckIcon />}
+          <span>{message}</span>
         </p>
       )}
     </div>
