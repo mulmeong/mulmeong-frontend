@@ -60,7 +60,7 @@ export default function MapSidebar({
 
   return (
     <div className="bg-surface flex h-full min-w-0 flex-col overflow-x-hidden overflow-y-auto px-4 pb-8 sm:px-[15px]">
-      {/* 길찾기는 ① 범위 밖이라 자리만 둔다. */}
+      {/* 길찾기(MAP-08)는 ① 범위다 — 모드 전환·경로 API가 아직 없어 비활성일 뿐이다. */}
       <div role="tablist" className="flex gap-5 pt-5">
         <Tab selected>장소 검색</Tab>
         <Tab disabled className="cursor-not-allowed">
