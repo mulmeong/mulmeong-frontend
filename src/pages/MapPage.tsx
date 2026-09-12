@@ -21,7 +21,7 @@ export default function MapPage() {
       <Header onAuthClick={() => navigate('/login')} />
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <aside className="border-border-default flex h-[45dvh] w-full min-w-0 shrink-0 flex-col border-b lg:h-auto lg:w-[360px] lg:border-r lg:border-b-0">
+        <aside className="border-border-default flex h-[45dvh] w-full min-w-0 shrink-0 flex-col border-b lg:h-auto lg:w-[380px] lg:border-r lg:border-b-0">
           <MapSidebar
             onsens={onsens}
             loading={loading}
