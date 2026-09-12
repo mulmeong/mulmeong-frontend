@@ -129,8 +129,8 @@ export default function MapSidebar({
         )}
 
         {!loading && !error && onsens.length === 0 && (
-          <p className="text-text-secondary mt-2.5 text-[13px] leading-[1.6]">
-            조건에 맞는 곳이 없습니다. 지역이나 검색어를 바꿔보세요.
+          <p className="text-text-secondary mx-auto mt-2.5 max-w-[194px] text-center text-[13px] leading-[1.6]">
+            검색 결과가 없어요. 다른 지역이나 검색어로 찾아보세요.
           </p>
         )}
 
