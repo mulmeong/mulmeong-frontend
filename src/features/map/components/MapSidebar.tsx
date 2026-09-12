@@ -52,7 +52,7 @@ export default function MapSidebar({
   }
 
   return (
-    <div className="bg-surface flex h-full min-w-0 flex-col overflow-x-hidden overflow-y-auto px-4 pb-8 sm:px-5">
+    <div className="bg-surface flex h-full min-w-0 flex-col overflow-x-hidden overflow-y-auto px-4 pb-8 sm:px-[15px]">
       {/* 길찾기는 ① 범위 밖이라 자리만 둔다. */}
       <div role="tablist" className="flex gap-5 pt-5">
         <Tab selected>장소 검색</Tab>
@@ -73,7 +73,7 @@ export default function MapSidebar({
 
       <section className="pt-6">
         <SectionHeading>지역으로 둘러보기</SectionHeading>
-        <div className="mt-2.5 grid grid-cols-4 gap-x-1 gap-y-1">
+        <div className="mt-2.5 grid grid-cols-4 gap-x-0 gap-y-2.5">
           {REGIONS.map((item) => (
             <button
               key={item}
@@ -96,10 +96,10 @@ export default function MapSidebar({
 
       <section className="pt-5">
         <SectionHeading>지금 이런 곳은 어때요</SectionHeading>
-        <ul className="mt-2.5 grid grid-cols-2 gap-x-2.5 gap-y-3">
+        <ul className="mt-2.5 grid grid-cols-2 gap-2.5">
           {SUGGESTIONS.map((label) => (
             <li key={label} className="min-w-0">
-              <div className="bg-surface-dim aspect-[16/11] w-full rounded-sm" />
+              <div className="bg-surface-dim aspect-[155/72] w-full rounded-sm" />
               <p className="text-text-primary mt-1.5 text-[12.5px] leading-[1.35]">{label}</p>
             </li>
           ))}
@@ -134,7 +134,7 @@ export default function MapSidebar({
         )}
 
         {!loading && !error && onsens.length > 0 && (
-          <ul className="mt-1 flex flex-col">
+          <ul className="mt-2 flex flex-col gap-2">
             {onsens.map((onsen) => (
               <li key={onsen.id} className="border-border-default border-b last:border-b-0">
                 <OnsenCard

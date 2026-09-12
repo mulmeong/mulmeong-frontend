@@ -35,7 +35,7 @@ export default function OnsenCard({
         onClick={onClick}
         aria-current={selected || undefined}
         className={cn(
-          'flex w-full items-baseline justify-between gap-3 py-[11px] text-left',
+          'flex h-[27px] w-full items-center justify-between gap-3 text-left',
           'outline-none focus-visible:underline focus-visible:underline-offset-2',
           className,
         )}
@@ -49,7 +49,7 @@ export default function OnsenCard({
           {name}
         </span>
         {distanceKm !== undefined && (
-          <span className="text-text-secondary shrink-0 text-[13px]">
+          <span className="text-text-secondary shrink-0 text-[12px]">
             {distanceKm.toFixed(1)}km
           </span>
         )}
