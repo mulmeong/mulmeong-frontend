@@ -17,6 +17,10 @@ dist-ssr
 .env.local
 .env.*.local
 
+# 개인 도구 설정 (팀 공유 대상 아님)
+.claude/
+skills-lock.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
