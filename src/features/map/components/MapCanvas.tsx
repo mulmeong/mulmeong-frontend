@@ -68,6 +68,23 @@ export default function MapCanvas({ onsens, selectedId, onSelect }: MapCanvasPro
     }
   }, [onsens, ready, onSelect])
 
+  // 상세패널이 열리고 닫히면 지도 컨테이너 폭이 바뀐다 — relayout 없이는 타일이 잘린다.
+  useEffect(() => {
+    const container = containerRef.current
+    const map = mapRef.current
+    if (!ready || !map || !container) return
+
+    const observer = new ResizeObserver(() => {
+      // relayout은 중심을 흔들 수 있어 직전 중심을 되돌린다.
+      const center = map.getCenter()
+      map.relayout()
+      map.setCenter(center)
+    })
+    observer.observe(container)
+
+    return () => observer.disconnect()
+  }, [ready])
+
   // 목록에서 고르면 지도를 그 위치로 옮긴다.
   useEffect(() => {
     const map = mapRef.current
