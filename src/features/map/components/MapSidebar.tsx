@@ -52,6 +52,12 @@ export default function MapSidebar({
     onSearch({ keyword: keyword.trim() || undefined, region: value })
   }
 
+  function handleReset() {
+    setKeyword('')
+    setRegion(undefined)
+    onSearch({})
+  }
+
   return (
     <div className="bg-surface flex h-full min-w-0 flex-col overflow-x-hidden overflow-y-auto px-4 pb-8 sm:px-[15px]">
       {/* 길찾기는 ① 범위 밖이라 자리만 둔다. */}
@@ -129,9 +135,20 @@ export default function MapSidebar({
         )}
 
         {!loading && !error && onsens.length === 0 && (
-          <p className="text-text-secondary mx-auto mt-2.5 max-w-[194px] text-center text-[13px] leading-[1.6]">
-            검색 결과가 없어요. 다른 지역이나 검색어로 찾아보세요.
-          </p>
+          <div className="mt-2.5 flex flex-col items-center">
+            <p className="text-text-secondary max-w-[194px] text-center text-[13px] leading-[1.6]">
+              검색 결과가 없어요. 다른 지역이나 검색어로 찾아보세요.
+            </p>
+            {(keyword.trim() || region) && (
+              <button
+                type="button"
+                onClick={handleReset}
+                className="text-text-primary mt-3 text-[12px] underline underline-offset-2 outline-none"
+              >
+                조건 초기화
+              </button>
+            )}
+          </div>
         )}
 
         {!loading && !error && onsens.length > 0 && (
