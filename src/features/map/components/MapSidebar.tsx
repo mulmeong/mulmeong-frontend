@@ -6,10 +6,11 @@ import Tab from '@/components/ui/Tab'
 import { cn } from '@/lib/cn'
 import { REGIONS } from '@/types/onsen'
 
+import type { OnsenListItem } from '@/features/map/api/map'
 import type { Onsen } from '@/types/onsen'
 
 type MapSidebarProps = {
-  onsens: Onsen[]
+  onsens: OnsenListItem[]
   loading: boolean
   error?: string
   selectedId?: number
@@ -139,6 +140,7 @@ export default function MapSidebar({
               <li key={onsen.id} className="border-border-default border-b last:border-b-0">
                 <OnsenCard
                   onsen={onsen}
+                  distanceKm={onsen.distanceKm}
                   selected={onsen.id === selectedId}
                   onClick={() => onSelect(onsen)}
                 />

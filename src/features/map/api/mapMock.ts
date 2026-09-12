@@ -1,6 +1,25 @@
-import type { Onsen } from '@/types/onsen'
+import type { Onsen, OnsenWithDistance } from '@/types/onsen'
 
 const MOCK_DELAY_MS = 300
+
+/** 목 거리 계산 기준점 — MapCanvas의 초기 중심(강남구청)과 같게 둔다. */
+const ORIGIN = { lat: 37.5172, lng: 127.0473 }
+
+const EARTH_RADIUS_KM = 6371
+
+/**
+ * 목 전용 직선거리. 실제 서비스에서는 백엔드가 요청 좌표 기준으로 distanceKm을 붙여준다
+ * (기능명세서 §4-2 OnsenWithDistance) — BE 연동되면 이 함수는 지운다.
+ */
+function distanceKmFrom(lat: number, lng: number): number {
+  const toRad = (deg: number) => (deg * Math.PI) / 180
+  const dLat = toRad(lat - ORIGIN.lat)
+  const dLng = toRad(lng - ORIGIN.lng)
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(ORIGIN.lat)) * Math.cos(toRad(lat)) * Math.sin(dLng / 2) ** 2
+  return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(a))
+}
 
 /** 백엔드 연동 전까지 쓰는 표본. 좌표는 강남 일대 기준. */
 const MOCK_ONSENS: Onsen[] = [
@@ -59,11 +78,14 @@ function delay<T>(value: T): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(value), MOCK_DELAY_MS))
 }
 
-export function mockSearchOnsens(keyword?: string, region?: string): Promise<Onsen[]> {
+export function mockSearchOnsens(keyword?: string, region?: string): Promise<OnsenWithDistance[]> {
   const filtered = MOCK_ONSENS.filter((onsen) => {
     const matchesKeyword = !keyword || onsen.name.includes(keyword)
     const matchesRegion = !region || onsen.address.startsWith(region)
     return matchesKeyword && matchesRegion
   })
+    .map((onsen) => ({ ...onsen, distanceKm: distanceKmFrom(onsen.lat, onsen.lng) }))
+    .sort((a, b) => a.distanceKm - b.distanceKm)
+
   return delay(filtered)
 }

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError } from '@/api/ApiError'
 import { searchOnsens } from '@/features/map/api/map'
 
-import type { Onsen } from '@/types/onsen'
+import type { OnsenListItem } from '@/features/map/api/map'
 
 type Filters = {
   keyword?: string
@@ -15,11 +15,11 @@ type Filters = {
  * 같은 조건으로는 다시 요청하지 않는다 — 관광공사·카카오 API에 일일 쿼터가 있다.
  */
 export function useOnsens() {
-  const [onsens, setOnsens] = useState<Onsen[]>([])
+  const [onsens, setOnsens] = useState<OnsenListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>()
 
-  const cache = useRef(new Map<string, Onsen[]>())
+  const cache = useRef(new Map<string, OnsenListItem[]>())
   /** 늦게 도착한 이전 요청이 최신 결과를 덮어쓰지 않게 한다. */
   const requestId = useRef(0)
 
