@@ -4,10 +4,22 @@ import { ApiError } from '@/api/ApiError'
 import { searchOnsens } from '@/features/map/api/map'
 
 import type { OnsenListItem } from '@/features/map/api/map'
+import type { MapBounds } from '@/types/onsen'
 
 type Filters = {
   keyword?: string
   region?: string
+  bounds?: MapBounds
+}
+
+/**
+ * 캐시 키의 좌표는 소수 3자리로 줄인다 — 1픽셀 팬마다 키가 새로 생기면
+ * 쿼터 방어가 무력해진다 (약 100m 단위).
+ */
+function boundsKey(bounds?: MapBounds): string {
+  if (!bounds) return ''
+  const r = (n: number) => n.toFixed(3)
+  return `${r(bounds.swLat)},${r(bounds.swLng)},${r(bounds.neLat)},${r(bounds.neLng)}`
 }
 
 /**
@@ -24,7 +36,7 @@ export function useOnsens() {
   const requestId = useRef(0)
 
   const load = useCallback(async (filters: Filters = {}) => {
-    const key = `${filters.keyword ?? ''}|${filters.region ?? ''}`
+    const key = `${filters.keyword ?? ''}|${filters.region ?? ''}|${boundsKey(filters.bounds)}`
 
     const cached = cache.current.get(key)
     if (cached) {

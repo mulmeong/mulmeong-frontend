@@ -1,9 +1,9 @@
-import type { Onsen, OnsenWithDistance } from '@/types/onsen'
+import type { MapBounds, Onsen, OnsenWithDistance } from '@/types/onsen'
 
 const MOCK_DELAY_MS = 300
 
-/** 목 거리 계산 기준점 — MapCanvas의 초기 중심(강남구청)과 같게 둔다. */
-const ORIGIN = { lat: 37.5172, lng: 127.0473 }
+/** 지도 영역이 없을 때 쓰는 기준점 — MapCanvas의 초기 중심(강남구청)과 같게 둔다. */
+const DEFAULT_ORIGIN = { lat: 37.5172, lng: 127.0473 }
 
 const EARTH_RADIUS_KM = 6371
 
@@ -11,14 +11,32 @@ const EARTH_RADIUS_KM = 6371
  * 목 전용 직선거리. 실제 서비스에서는 백엔드가 요청 좌표 기준으로 distanceKm을 붙여준다
  * (기능명세서 §4-2 OnsenWithDistance) — BE 연동되면 이 함수는 지운다.
  */
-function distanceKmFrom(lat: number, lng: number): number {
+function distanceKmBetween(origin: { lat: number; lng: number }, lat: number, lng: number): number {
   const toRad = (deg: number) => (deg * Math.PI) / 180
-  const dLat = toRad(lat - ORIGIN.lat)
-  const dLng = toRad(lng - ORIGIN.lng)
+  const dLat = toRad(lat - origin.lat)
+  const dLng = toRad(lng - origin.lng)
   const a =
     Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(ORIGIN.lat)) * Math.cos(toRad(lat)) * Math.sin(dLng / 2) ** 2
+    Math.cos(toRad(origin.lat)) * Math.cos(toRad(lat)) * Math.sin(dLng / 2) ** 2
   return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(a))
+}
+
+/** 거리 기준점은 보이는 영역의 중심 — "현재 지도에서"가 뜻하는 바와 맞춘다. */
+function originOf(bounds?: MapBounds) {
+  if (!bounds) return DEFAULT_ORIGIN
+  return {
+    lat: (bounds.swLat + bounds.neLat) / 2,
+    lng: (bounds.swLng + bounds.neLng) / 2,
+  }
+}
+
+function isInside(onsen: Onsen, bounds: MapBounds): boolean {
+  return (
+    onsen.lat >= bounds.swLat &&
+    onsen.lat <= bounds.neLat &&
+    onsen.lng >= bounds.swLng &&
+    onsen.lng <= bounds.neLng
+  )
 }
 
 /**
@@ -261,13 +279,24 @@ function delay<T>(value: T): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(value), MOCK_DELAY_MS))
 }
 
-export function mockSearchOnsens(keyword?: string, region?: string): Promise<OnsenWithDistance[]> {
+export function mockSearchOnsens(
+  keyword?: string,
+  region?: string,
+  bounds?: MapBounds,
+): Promise<OnsenWithDistance[]> {
+  const origin = originOf(bounds)
+
   const filtered = MOCK_ONSENS.filter((onsen) => {
     const matchesKeyword = !keyword || onsen.name.includes(keyword)
     const matchesRegion = !region || onsen.address.startsWith(region)
-    return matchesKeyword && matchesRegion
+    // 지역·검색어를 직접 고른 경우엔 영역 밖도 보여준다 (고른 결과가 사라지면 혼란스럽다).
+    const matchesBounds = !bounds || keyword || region || isInside(onsen, bounds)
+    return matchesKeyword && matchesRegion && matchesBounds
   })
-    .map((onsen) => ({ ...onsen, distanceKm: distanceKmFrom(onsen.lat, onsen.lng) }))
+    .map((onsen) => ({
+      ...onsen,
+      distanceKm: distanceKmBetween(origin, onsen.lat, onsen.lng),
+    }))
     .sort((a, b) => a.distanceKm - b.distanceKm)
 
   return delay(filtered)

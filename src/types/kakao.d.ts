@@ -12,6 +12,8 @@ declare namespace kakao.maps {
   class LatLngBounds {
     extend(latlng: LatLng): void
     isEmpty(): boolean
+    getSouthWest(): LatLng
+    getNorthEast(): LatLng
   }
 
   class Map {
@@ -19,6 +21,7 @@ declare namespace kakao.maps {
     getCenter(): LatLng
     setCenter(latlng: LatLng): void
     setLevel(level: number): void
+    getBounds(): LatLngBounds
     setBounds(bounds: LatLngBounds): void
     relayout(): void
   }
@@ -30,6 +33,7 @@ declare namespace kakao.maps {
 
   namespace event {
     function addListener(target: unknown, type: string, handler: () => void): void
+    function removeListener(target: unknown, type: string, handler: () => void): void
   }
 
   function load(callback: () => void): void

@@ -2,18 +2,28 @@ import { useEffect, useRef, useState } from 'react'
 
 import { loadKakaoMap } from '@/features/map/utils/loadKakaoMap'
 
-import type { Onsen } from '@/types/onsen'
+import type { MapBounds, Onsen } from '@/types/onsen'
 
 type MapCanvasProps = {
   onsens: Onsen[]
   selectedId?: number
   onSelect?: (onsen: Onsen) => void
+  /** MAP-03 이 지역 재검색 — 팬·줌이 멎으면 보이는 영역을 알린다. */
+  onBoundsChange?: (bounds: MapBounds) => void
 }
+
+/** idle이 연달아 오는 걸 묶는다 — 쿼터 방어 (CLAUDE.md 비기능 요구사항). */
+const BOUNDS_DEBOUNCE_MS = 600
 
 /** 시안 기준 초기 중심 — 강남구청 인근. */
 const DEFAULT_CENTER = { lat: 37.5172, lng: 127.0473 }
 
-export default function MapCanvas({ onsens, selectedId, onSelect }: MapCanvasProps) {
+export default function MapCanvas({
+  onsens,
+  selectedId,
+  onSelect,
+  onBoundsChange,
+}: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<kakao.maps.Map | null>(null)
   const markersRef = useRef<kakao.maps.Marker[]>([])
@@ -60,13 +70,39 @@ export default function MapCanvas({ onsens, selectedId, onSelect }: MapCanvasPro
       return marker
     })
 
-    // 결과가 모두 보이도록 범위를 맞춘다.
-    if (onsens.length > 0) {
-      const bounds = new maps.LatLngBounds()
-      onsens.forEach((onsen) => bounds.extend(new maps.LatLng(onsen.lat, onsen.lng)))
-      if (!bounds.isEmpty()) map.setBounds(bounds)
-    }
+    // 결과 전체에 범위를 맞추지 않는다 — MAP-03이 보이는 영역 기준이라 서로 싸운다.
   }, [onsens, ready, onSelect])
+
+  // MAP-03: 팬·줌이 멎으면(idle) 보이는 영역을 알린다.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!ready || !map || !onBoundsChange) return
+
+    let timer: ReturnType<typeof setTimeout> | undefined
+
+    const handleIdle = () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => {
+        const bounds = map.getBounds()
+        const sw = bounds.getSouthWest()
+        const ne = bounds.getNorthEast()
+        onBoundsChange({
+          swLat: sw.getLat(),
+          swLng: sw.getLng(),
+          neLat: ne.getLat(),
+          neLng: ne.getLng(),
+        })
+      }, BOUNDS_DEBOUNCE_MS)
+    }
+
+    window.kakao.maps.event.addListener(map, 'idle', handleIdle)
+    handleIdle()
+
+    return () => {
+      clearTimeout(timer)
+      window.kakao.maps.event.removeListener(map, 'idle', handleIdle)
+    }
+  }, [ready, onBoundsChange])
 
   // 상세패널이 열리고 닫히면 지도 컨테이너 폭이 바뀐다 — relayout 없이는 타일이 잘린다.
   useEffect(() => {

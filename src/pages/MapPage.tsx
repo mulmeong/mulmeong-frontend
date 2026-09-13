@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import Header from '@/components/ui/Header'
@@ -8,7 +8,7 @@ import OnsenDetailPanel from '@/features/map/components/OnsenDetailPanel'
 import { useOnsens } from '@/features/map/hooks/useOnsens'
 import { cn } from '@/lib/cn'
 
-import type { Onsen } from '@/types/onsen'
+import type { MapBounds, Onsen } from '@/types/onsen'
 
 export default function MapPage() {
   const navigate = useNavigate()
@@ -16,6 +16,24 @@ export default function MapPage() {
   const [selectedId, setSelectedId] = useState<number>()
 
   const handleSelect = useCallback((onsen: Onsen) => setSelectedId(onsen.id), [])
+
+  // 검색어·지역은 MapSidebar가 들고 있다 — 지도를 움직여도 그 조건을 잃지 않게 기억한다.
+  const filtersRef = useRef<{ keyword?: string; region?: string }>({})
+
+  const handleSearch = useCallback(
+    (filters: { keyword?: string; region?: string }) => {
+      filtersRef.current = filters
+      void load(filters)
+    },
+    [load],
+  )
+
+  const handleBoundsChange = useCallback(
+    (bounds: MapBounds) => {
+      void load({ ...filtersRef.current, bounds })
+    },
+    [load],
+  )
 
   // 목록·마커가 같은 선택 상태를 쓰므로 객체는 id로 되찾는다 (사본을 따로 들지 않는다).
   const selected = onsens.find((onsen) => onsen.id === selectedId)
@@ -40,7 +58,7 @@ export default function MapPage() {
             error={error}
             selectedId={selectedId}
             onSelect={handleSelect}
-            onSearch={load}
+            onSearch={handleSearch}
           />
         </aside>
 
@@ -52,7 +70,12 @@ export default function MapPage() {
         )}
 
         <main className="min-h-0 flex-1">
-          <MapCanvas onsens={onsens} selectedId={selectedId} onSelect={handleSelect} />
+          <MapCanvas
+            onsens={onsens}
+            selectedId={selectedId}
+            onSelect={handleSelect}
+            onBoundsChange={handleBoundsChange}
+          />
         </main>
       </div>
     </div>

@@ -18,16 +18,15 @@ export type Onsen = {
 /** 지도 목록 응답에만 붙는 거리(km). 기준점은 요청 좌표. */
 export type OnsenWithDistance = Onsen & { distanceKm: number }
 
+/** 지도에 보이는 영역 (MAP-03 이 지역 재검색). */
+export type MapBounds = {
+  swLat: number
+  swLng: number
+  neLat: number
+  neLng: number
+}
+
 /** 지역 필터 단위 — 포도알 지도(MY-02)와 같은 시·도 17단위. */
-export const REGIONS = [
-  '서울',
-  '경기',
-  '인천',
-  '강원',
-  '충청',
-  '경상',
-  '전라',
-  '제주',
-] as const
+export const REGIONS = ['서울', '경기', '인천', '강원', '충청', '경상', '전라', '제주'] as const
 
 export type Region = (typeof REGIONS)[number]
