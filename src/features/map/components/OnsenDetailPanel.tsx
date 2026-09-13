@@ -24,7 +24,7 @@ export default function OnsenDetailPanel({ onsen, onClose }: OnsenDetailPanelPro
   const { name, address, imageUrl, rating, reviewCount } = onsen
 
   return (
-    <div className="bg-surface flex h-full min-w-0 flex-col overflow-y-auto px-[13px] pb-8">
+    <div className="bg-surface scrollbar-thin flex h-full min-w-0 flex-col overflow-y-auto px-[13px] pb-8">
       <div className="flex justify-end pt-[30px]">
         <button
           type="button"
