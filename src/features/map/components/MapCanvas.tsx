@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 
 import { loadKakaoMap } from '@/features/map/utils/loadKakaoMap'
 
+import { NATIONAL_VIEW } from '@/types/onsen'
+
 import type { MapBounds, Onsen } from '@/types/onsen'
+
+type MapView = { lat: number; lng: number; level: number }
 
 type MapCanvasProps = {
   onsens: Onsen[]
@@ -10,19 +14,19 @@ type MapCanvasProps = {
   onSelect?: (onsen: Onsen) => void
   /** MAP-03 이 지역 재검색 — 팬·줌이 멎으면 보이는 영역을 알린다. */
   onBoundsChange?: (bounds: MapBounds) => void
+  /** 지역을 고르거나 검색하면 그쪽으로 지도를 옮긴다. 없으면 전국 뷰 그대로. */
+  focus?: MapView
 }
 
 /** idle이 연달아 오는 걸 묶는다 — 쿼터 방어 (CLAUDE.md 비기능 요구사항). */
 const BOUNDS_DEBOUNCE_MS = 600
-
-/** 시안 기준 초기 중심 — 강남구청 인근. */
-const DEFAULT_CENTER = { lat: 37.5172, lng: 127.0473 }
 
 export default function MapCanvas({
   onsens,
   selectedId,
   onSelect,
   onBoundsChange,
+  focus,
 }: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<kakao.maps.Map | null>(null)
@@ -38,8 +42,8 @@ export default function MapCanvas({
       .then((maps) => {
         if (cancelled || !containerRef.current) return
         mapRef.current = new maps.Map(containerRef.current, {
-          center: new maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng),
-          level: 5,
+          center: new maps.LatLng(NATIONAL_VIEW.lat, NATIONAL_VIEW.lng),
+          level: NATIONAL_VIEW.level,
         })
         setReady(true)
       })
@@ -103,6 +107,14 @@ export default function MapCanvas({
       window.kakao.maps.event.removeListener(map, 'idle', handleIdle)
     }
   }, [ready, onBoundsChange])
+
+  // 지역 선택·검색이 지도를 옮긴다. 사용자가 그 뒤 팬·줌한 건 건드리지 않는다.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!ready || !map || !focus) return
+    map.setLevel(focus.level)
+    map.setCenter(new window.kakao.maps.LatLng(focus.lat, focus.lng))
+  }, [focus, ready])
 
   // 상세패널이 열리고 닫히면 지도 컨테이너 폭이 바뀐다 — relayout 없이는 타일이 잘린다.
   useEffect(() => {

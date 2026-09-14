@@ -29,4 +29,22 @@ export type MapBounds = {
 /** 지역 필터 단위 — 포도알 지도(MY-02)와 같은 시·도 17단위. */
 export const REGIONS = ['서울', '경기', '인천', '강원', '충청', '경상', '전라', '제주'] as const
 
+/** 지도를 처음 열었을 때 보여주는 전국 뷰. */
+export const NATIONAL_VIEW = { lat: 36.5, lng: 127.8, level: 13 } as const
+
+/**
+ * 지역을 고르면 지도를 옮길 위치.
+ * 명세에 없는 값이라 대략치로 잡았다 — 기획·BE에서 확정되면 교체한다.
+ */
+export const REGION_VIEWS: Record<Region, { lat: number; lng: number; level: number }> = {
+  서울: { lat: 37.5665, lng: 126.978, level: 8 },
+  경기: { lat: 37.4138, lng: 127.5183, level: 10 },
+  인천: { lat: 37.4563, lng: 126.7052, level: 9 },
+  강원: { lat: 37.8228, lng: 128.1555, level: 11 },
+  충청: { lat: 36.6358, lng: 127.4913, level: 11 },
+  경상: { lat: 35.8, lng: 128.6, level: 11 },
+  전라: { lat: 35.3, lng: 127.0, level: 11 },
+  제주: { lat: 33.4, lng: 126.55, level: 10 },
+}
+
 export type Region = (typeof REGIONS)[number]

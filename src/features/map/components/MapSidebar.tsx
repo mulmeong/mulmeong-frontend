@@ -41,6 +41,9 @@ export default function MapSidebar({
   const [keyword, setKeyword] = useState('')
   const [region, setRegion] = useState<string>()
 
+  /** 아무 조건도 없으면 '현재 지도에서'를 감춘다 — 전국 뷰라 목록이 의미 없다. */
+  const hasFilter = Boolean(keyword.trim() || region)
+
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
     onSearch({ keyword: keyword.trim() || undefined, region })
@@ -121,51 +124,54 @@ export default function MapSidebar({
         </div>
       </section>
 
-      <hr className="border-border-default mt-4 border-t-0 border-b" />
+      {/* 검색 전에는 목록 대신 지역·추천으로 탐색을 유도한다 (전국 목록을 쏟아내지 않는다). */}
+      {hasFilter && <hr className="border-border-default mt-4 border-t-0 border-b" />}
 
-      <section className="pt-5">
-        <SectionHeading>현재 지도에서</SectionHeading>
+      {hasFilter && (
+        <section className="pt-5">
+          <SectionHeading>현재 지도에서</SectionHeading>
 
-        {loading && <p className="text-text-secondary mt-2.5 text-[13px]">불러오는 중…</p>}
+          {loading && <p className="text-text-secondary mt-2.5 text-[13px]">불러오는 중…</p>}
 
-        {error && (
-          <p role="alert" className="text-danger mt-2.5 text-[13px]">
-            {error}
-          </p>
-        )}
-
-        {!loading && !error && onsens.length === 0 && (
-          <div className="mt-2.5 flex flex-col items-center">
-            <p className="text-text-secondary max-w-[194px] text-center text-[13px] leading-[1.6]">
-              검색 결과가 없어요. 다른 지역이나 검색어로 찾아보세요.
+          {error && (
+            <p role="alert" className="text-danger mt-2.5 text-[13px]">
+              {error}
             </p>
-            {(keyword.trim() || region) && (
-              <button
-                type="button"
-                onClick={handleReset}
-                className="text-text-primary mt-3 text-[12px] underline underline-offset-2 outline-none"
-              >
-                조건 초기화
-              </button>
-            )}
-          </div>
-        )}
+          )}
 
-        {!loading && !error && onsens.length > 0 && (
-          <ul className="mt-2 flex flex-col gap-2">
-            {onsens.map((onsen) => (
-              <li key={onsen.id} className="border-border-default border-b last:border-b-0">
-                <OnsenCard
-                  onsen={onsen}
-                  distanceKm={onsen.distanceKm}
-                  selected={onsen.id === selectedId}
-                  onClick={() => onSelect(onsen)}
-                />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+          {!loading && !error && onsens.length === 0 && (
+            <div className="mt-2.5 flex flex-col items-center">
+              <p className="text-text-secondary max-w-[194px] text-center text-[13px] leading-[1.6]">
+                검색 결과가 없어요. 다른 지역이나 검색어로 찾아보세요.
+              </p>
+              {(keyword.trim() || region) && (
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="text-text-primary mt-3 text-[12px] underline underline-offset-2 outline-none"
+                >
+                  조건 초기화
+                </button>
+              )}
+            </div>
+          )}
+
+          {!loading && !error && onsens.length > 0 && (
+            <ul className="mt-2 flex flex-col gap-2">
+              {onsens.map((onsen) => (
+                <li key={onsen.id} className="border-border-default border-b last:border-b-0">
+                  <OnsenCard
+                    onsen={onsen}
+                    distanceKm={onsen.distanceKm}
+                    selected={onsen.id === selectedId}
+                    onClick={() => onSelect(onsen)}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
     </div>
   )
 }
