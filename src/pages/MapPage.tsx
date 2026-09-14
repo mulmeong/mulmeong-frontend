@@ -10,7 +10,10 @@ import { cn } from '@/lib/cn'
 
 import { REGION_VIEWS } from '@/types/onsen'
 
-import type { MapBounds, Onsen, Region } from '@/types/onsen'
+import type { MapBounds, MapView, Onsen, Region } from '@/types/onsen'
+
+/** 검색 결과가 하나뿐일 때 지도를 얼마나 당길지. */
+const SINGLE_RESULT_LEVEL = 5
 
 export default function MapPage() {
   const navigate = useNavigate()
@@ -22,15 +25,38 @@ export default function MapPage() {
   // 검색어·지역은 MapSidebar가 들고 있다 — 지도를 움직여도 그 조건을 잃지 않게 기억한다.
   const filtersRef = useRef<{ keyword?: string; region?: string }>({})
   const [hasFilter, setHasFilter] = useState(false)
-  const [focus, setFocus] = useState<{ lat: number; lng: number; level: number }>()
+  const [focus, setFocus] = useState<MapView>()
 
   const handleSearch = useCallback(
-    (filters: { keyword?: string; region?: string }) => {
+    async (filters: { keyword?: string; region?: string }) => {
       filtersRef.current = filters
       setHasFilter(Boolean(filters.keyword || filters.region))
-      // 지역을 고르면 그쪽으로 지도를 옮긴다. 검색어만 있으면 보던 화면을 유지한다.
-      if (filters.region) setFocus(REGION_VIEWS[filters.region as Region])
-      void load(filters)
+
+      const results = await load(filters)
+
+      if (filters.region) {
+        // 지역은 결과와 무관하게 그 지역이 보이게 한다.
+        setFocus(REGION_VIEWS[filters.region as Region])
+        return
+      }
+
+      // 검색어로 찾은 결과가 화면 밖이면 못 보므로 결과에 맞춰 옮긴다.
+      if (!filters.keyword || results.length === 0) return
+
+      if (results.length === 1) {
+        const [only] = results
+        setFocus({ lat: only.lat, lng: only.lng, level: SINGLE_RESULT_LEVEL })
+        return
+      }
+
+      setFocus({
+        bounds: {
+          swLat: Math.min(...results.map((o) => o.lat)),
+          swLng: Math.min(...results.map((o) => o.lng)),
+          neLat: Math.max(...results.map((o) => o.lat)),
+          neLng: Math.max(...results.map((o) => o.lng)),
+        },
+      })
     },
     [load],
   )

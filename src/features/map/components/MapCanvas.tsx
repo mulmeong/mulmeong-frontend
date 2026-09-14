@@ -4,9 +4,7 @@ import { loadKakaoMap } from '@/features/map/utils/loadKakaoMap'
 
 import { NATIONAL_VIEW } from '@/types/onsen'
 
-import type { MapBounds, Onsen } from '@/types/onsen'
-
-type MapView = { lat: number; lng: number; level: number }
+import type { MapBounds, MapView, Onsen } from '@/types/onsen'
 
 type MapCanvasProps = {
   onsens: Onsen[]
@@ -112,8 +110,20 @@ export default function MapCanvas({
   useEffect(() => {
     const map = mapRef.current
     if (!ready || !map || !focus) return
+
+    const maps = window.kakao.maps
+
+    if ('bounds' in focus) {
+      const { swLat, swLng, neLat, neLng } = focus.bounds
+      const area = new maps.LatLngBounds()
+      area.extend(new maps.LatLng(swLat, swLng))
+      area.extend(new maps.LatLng(neLat, neLng))
+      if (!area.isEmpty()) map.setBounds(area)
+      return
+    }
+
     map.setLevel(focus.level)
-    map.setCenter(new window.kakao.maps.LatLng(focus.lat, focus.lng))
+    map.setCenter(new maps.LatLng(focus.lat, focus.lng))
   }, [focus, ready])
 
   // 상세패널이 열리고 닫히면 지도 컨테이너 폭이 바뀐다 — relayout 없이는 타일이 잘린다.

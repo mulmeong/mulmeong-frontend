@@ -35,7 +35,11 @@ export function useOnsens() {
   /** 늦게 도착한 이전 요청이 최신 결과를 덮어쓰지 않게 한다. */
   const requestId = useRef(0)
 
-  const load = useCallback(async (filters: Filters = {}) => {
+  /**
+   * 결과를 반환한다 — 호출부가 도착한 목록으로 곧바로 후속 처리(지도 이동 등)를 하게.
+   * 실패했거나 뒤늦게 도착한 요청은 빈 배열이라, 낡은 결과로 화면을 움직이지 않는다.
+   */
+  const load = useCallback(async (filters: Filters = {}): Promise<OnsenListItem[]> => {
     const key = `${filters.keyword ?? ''}|${filters.region ?? ''}|${boundsKey(filters.bounds)}`
 
     const cached = cache.current.get(key)
@@ -43,7 +47,7 @@ export function useOnsens() {
       setOnsens(cached)
       setLoading(false)
       setError(undefined)
-      return
+      return cached
     }
 
     const id = ++requestId.current
@@ -51,12 +55,14 @@ export function useOnsens() {
     setError(undefined)
     try {
       const result = await searchOnsens(filters)
-      if (id !== requestId.current) return
+      if (id !== requestId.current) return []
       cache.current.set(key, result)
       setOnsens(result)
+      return result
     } catch (err) {
-      if (id !== requestId.current) return
+      if (id !== requestId.current) return []
       setError(err instanceof ApiError ? err.message : '목록을 불러오지 못했습니다.')
+      return []
     } finally {
       if (id === requestId.current) setLoading(false)
     }
