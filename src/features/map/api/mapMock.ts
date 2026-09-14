@@ -1,3 +1,6 @@
+import { REGIONS } from '@/types/onsen'
+
+import type { Suggestion } from '@/features/map/api/map'
 import type { MapBounds, Onsen, OnsenWithDistance } from '@/types/onsen'
 
 const MOCK_DELAY_MS = 300
@@ -326,6 +329,26 @@ const MOCK_ONSENS: Onsen[] = [
 
 function delay<T>(value: T): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(value), MOCK_DELAY_MS))
+}
+
+const MAX_SUGGESTIONS = 6
+
+/** 목 자동완성 — 이름·주소 부분일치. BE가 붙으면 이 함수는 지운다. */
+export function mockSuggest(keyword: string): Promise<Suggestion[]> {
+  const regions: Suggestion[] = REGIONS.filter((region) => region.includes(keyword)).map(
+    (region) => ({ type: 'region', value: region }),
+  )
+
+  const onsens: Suggestion[] = MOCK_ONSENS.filter(
+    (onsen) => onsen.name.includes(keyword) || onsen.address.includes(keyword),
+  ).map((onsen) => ({
+    type: 'onsen',
+    id: onsen.id,
+    name: onsen.name,
+    address: onsen.address,
+  }))
+
+  return delay([...regions, ...onsens].slice(0, MAX_SUGGESTIONS))
 }
 
 export function mockSearchOnsens(

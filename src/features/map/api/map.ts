@@ -3,7 +3,7 @@ import { env } from '@/lib/env'
 
 import type { MapBounds, Onsen } from '@/types/onsen'
 
-import { mockSearchOnsens } from './mapMock'
+import { mockSearchOnsens, mockSuggest } from './mapMock'
 
 export type SearchOnsensParams = {
   keyword?: string
@@ -17,6 +17,24 @@ export type SearchOnsensParams = {
  * 아직 확인되지 않았다. 확인되면 OnsenWithDistance로 좁힌다.
  */
 export type OnsenListItem = Onsen & { distanceKm?: number }
+
+/**
+ * MAP-05 자동완성 제안. 온천명과 지역명을 같이 돌려준다.
+ * 시안이 없어 형태는 우리가 정했다 — BE 검색 스펙이 정해지면 맞춘다.
+ */
+export type Suggestion =
+  { type: 'region'; value: string } | { type: 'onsen'; id: number; name: string; address: string }
+
+export function suggestPlaces(keyword: string): Promise<Suggestion[]> {
+  const trimmed = keyword.trim()
+  if (!trimmed) return Promise.resolve([])
+
+  if (env.useMock) return mockSuggest(trimmed)
+  return api.get<Suggestion[]>('/onsens/suggest', {
+    params: { keyword: trimmed },
+    skipAuth: true,
+  })
+}
 
 export function searchOnsens({ keyword, region, bounds }: SearchOnsensParams = {}): Promise<
   OnsenListItem[]

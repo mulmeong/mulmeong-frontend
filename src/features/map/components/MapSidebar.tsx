@@ -1,12 +1,14 @@
-import { useState, type FormEvent } from 'react'
+import { useId, useState, type FormEvent, type KeyboardEvent } from 'react'
 
 import Input from '@/components/ui/Input'
 import Tab from '@/components/ui/Tab'
 import SearchResultItem from '@/features/map/components/SearchResultItem'
+import SearchSuggestions from '@/features/map/components/SearchSuggestions'
+import { useSuggestions } from '@/features/map/hooks/useSuggestions'
 import { cn } from '@/lib/cn'
 import { REGIONS } from '@/types/onsen'
 
-import type { OnsenListItem } from '@/features/map/api/map'
+import type { OnsenListItem, Suggestion } from '@/features/map/api/map'
 import type { Onsen } from '@/types/onsen'
 
 type MapSidebarProps = {
@@ -57,11 +59,57 @@ export default function MapSidebar({
   const [searchedKeyword, setSearchedKeyword] = useState('')
   const isSearching = Boolean(searchedKeyword)
 
+  /** 자동완성 (MAP-05) — 입력창에 포커스가 있고 아직 제출하지 않았을 때만 연다. */
+  const [focused, setFocused] = useState(false)
+  const [activeIndex, setActiveIndex] = useState(-1)
+  const { suggestions, clear } = useSuggestions(keyword, focused)
+  const listboxId = useId()
+  const optionId = (index: number) => `${listboxId}-${index}`
+  const isOpen = focused && suggestions.length > 0
+
+  function runSearch(next: string, nextRegion = region) {
+    setSearchedKeyword(next)
+    clear()
+    setActiveIndex(-1)
+    onSearch({ keyword: next || undefined, region: nextRegion })
+  }
+
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    const next = keyword.trim()
-    setSearchedKeyword(next)
-    onSearch({ keyword: next || undefined, region })
+    if (isOpen && activeIndex >= 0) {
+      handlePick(suggestions[activeIndex])
+      return
+    }
+    runSearch(keyword.trim())
+  }
+
+  function handlePick(suggestion: Suggestion) {
+    if (suggestion.type === 'region') {
+      setKeyword('')
+      setRegion(suggestion.value)
+      runSearch('', suggestion.value)
+      return
+    }
+    // 온천 제안은 이름으로 검색해 결과에 담는다 — 지도 이동은 기존 검색 경로가 처리한다.
+    setKeyword(suggestion.name)
+    runSearch(suggestion.name)
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Escape') {
+      clear()
+      setActiveIndex(-1)
+      return
+    }
+    if (!isOpen) return
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      setActiveIndex((prev) => (prev + 1) % suggestions.length)
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      setActiveIndex((prev) => (prev <= 0 ? suggestions.length - 1 : prev - 1))
+    }
   }
 
   function handleRegion(next: string) {
@@ -87,14 +135,35 @@ export default function MapSidebar({
         </Tab>
       </div>
 
-      <form onSubmit={handleSubmit} className="pt-5">
+      <form onSubmit={handleSubmit} className="relative pt-5">
         <Input
           variant="search"
           placeholder="온천·사우나 검색"
           value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
+          onChange={(e) => {
+            setKeyword(e.target.value)
+            setActiveIndex(-1)
+          }}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          onKeyDown={handleKeyDown}
           aria-label="온천·사우나 검색"
+          role="combobox"
+          aria-expanded={isOpen}
+          aria-controls={isOpen ? listboxId : undefined}
+          aria-activedescendant={activeIndex >= 0 ? optionId(activeIndex) : undefined}
+          aria-autocomplete="list"
         />
+        {isOpen && (
+          <SearchSuggestions
+            suggestions={suggestions}
+            activeIndex={activeIndex}
+            listboxId={listboxId}
+            optionId={optionId}
+            onPick={handlePick}
+            keyword={keyword.trim()}
+          />
+        )}
       </form>
 
       {isSearching && (
