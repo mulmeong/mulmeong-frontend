@@ -104,52 +104,81 @@ export default function OnsenDetailPanel({ onsen, onClose }: OnsenDetailPanelPro
   )
 }
 
-function EmptyNote() {
-  return <p className="text-text-secondary text-[13px] leading-[1.6]">등록된 정보가 없습니다.</p>
-}
-
-/** 시안의 데이터행 — 라벨 64px + 값. */
+/** 시안 정보 탭의 행 — 라벨 64px + 값, 행 높이 32px. */
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-baseline py-[9px]">
+    <div className="flex items-baseline py-2">
       <span className="text-text-secondary w-16 shrink-0 text-[12px]">{label}</span>
-      <span className="text-text-primary min-w-0 flex-1 text-[13px]">{value}</span>
+      <span className="text-text-primary min-w-0 flex-1 text-[14px]">{value}</span>
     </div>
   )
 }
 
-function formatFee(won: number) {
-  return `${won.toLocaleString('ko-KR')}원`
+function Section({ title, rows }: { title: string; rows: [string, string][] }) {
+  if (rows.length === 0) return null
+  return (
+    <section>
+      <h3 className="text-text-secondary text-[12px]">{title}</h3>
+      <div className="mt-2">
+        {rows.map(([label, value]) => (
+          <Row key={label} label={label} value={value} />
+        ))}
+      </div>
+    </section>
+  )
 }
 
-/** 전화·홈페이지·휴무일은 시안에 있지만 명세에 근거가 없어 넣지 않는다. */
+function rowsOf(entries: [string, string | undefined][]) {
+  return entries.filter((entry): entry is [string, string] => Boolean(entry[1]))
+}
+
+/** 시안 '상세패널 - 정보'(1:915) — 기본 정보 / 이용 안내 / 참고사항. */
 function Details({ onsen }: { onsen: OnsenListItem }) {
-  const { address, waterTempC, waterQuality, admissionFee, facilities, transitAccessible } = onsen
+  const {
+    address,
+    openingHours,
+    phone,
+    homepage,
+    feeNote,
+    admissionFee,
+    closedDays,
+    parking,
+    facilities,
+    notice,
+  } = onsen
 
-  const rows = [
-    { label: '주소', value: address },
-    { label: '수온', value: waterTempC !== undefined ? `${waterTempC}℃` : undefined },
-    { label: '수질', value: waterQuality },
-    { label: '이용요금', value: admissionFee !== undefined ? formatFee(admissionFee) : undefined },
-    { label: '편의시설', value: facilities?.length ? facilities.join(' · ') : undefined },
-    {
-      label: '대중교통',
-      value:
-        transitAccessible === undefined
-          ? undefined
-          : transitAccessible
-            ? '대중교통으로 갈 수 있어요'
-            : '자차 이용을 권합니다',
-    },
-  ].filter((row): row is { label: string; value: string } => Boolean(row.value))
+  const basic = rowsOf([
+    ['주소', address],
+    ['운영시간', openingHours],
+    ['전화번호', phone],
+    ['홈페이지', homepage],
+  ])
 
-  if (rows.length === 0) return <EmptyNote />
+  const usage = rowsOf([
+    [
+      '이용요금',
+      feeNote ??
+        (admissionFee !== undefined ? `성인 ${admissionFee.toLocaleString('ko-KR')}원` : undefined),
+    ],
+    ['휴무일', closedDays],
+    ['주차', parking],
+    ['편의시설', facilities?.length ? facilities.join(' · ') : undefined],
+  ])
+
+  if (basic.length === 0 && usage.length === 0 && !notice) {
+    return <p className="text-text-secondary text-[13px] leading-[1.6]">등록된 정보가 없습니다.</p>
+  }
 
   return (
-    <div className="divide-border-default divide-y">
-      {rows.map((row) => (
-        <Row key={row.label} label={row.label} value={row.value} />
-      ))}
+    <div className="flex flex-col gap-6">
+      <Section title="기본 정보" rows={basic} />
+      <Section title="이용 안내" rows={usage} />
+      {notice && (
+        <section>
+          <h3 className="text-text-secondary text-[12px]">참고사항</h3>
+          <p className="text-text-primary mt-2 text-[14px] leading-[1.6]">{notice}</p>
+        </section>
+      )}
     </div>
   )
 }

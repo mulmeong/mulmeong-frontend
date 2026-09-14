@@ -21,16 +21,39 @@ export type Onsen = {
 
   /** 원천 수온(℃). */
   waterTempC?: number
-  /** 수질 유형 — 탄산천·유황천 등. */
+  /** 수질 유형 — 중탄산천·유황천 등. */
   waterQuality?: string
+  /** 주요 성분 — 예: Ca-HCO₃. */
+  mainComponent?: string
+  /** pH 수치와 해설 — 예: 7.8, '약알칼리성'. */
+  ph?: number
+  phLabel?: string
+  /** 수질 한 줄 해설 (시안 '한눈에'). */
+  description?: string
+  /** 온천 특징 — 천연 온천수·노천탕 운영 등. */
+  features?: string[]
   /** 효능 한 줄 (PAM-01). */
   benefits?: string
+
+  /** 운영시간 — 예: '10:00 — 22:00'. */
+  openingHours?: string
+  /** 휴무 — 예: '매주 화요일'. */
+  closedDays?: string
+  /** 주차 안내 — 예: '전용 주차장 80면, 무료'. */
+  parking?: string
   /** 시설 그리드 항목 (PAM-03) — 탈의실·수건대여 등. */
   facilities?: string[]
-  /** 성인 기준 입장료(원). */
+  /** 성인 기준 입장료(원). 목록·요약에서 숫자로 쓴다. */
   admissionFee?: number
+  /** 요금 상세 문구 — 예: '성인 12,000원 · 어린이 8,000원'. */
+  feeNote?: string
   /** 뚜벅이 접근 가능 여부 (PAM-03). */
   transitAccessible?: boolean
+
+  phone?: string
+  homepage?: string
+  /** 참고사항 자유 문구 (시안 '정보'). */
+  notice?: string
 }
 
 /** 지도 목록 응답에만 붙는 거리(km). 기준점은 요청 좌표. */
