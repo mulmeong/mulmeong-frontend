@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import OnsenSpecSummary from '@/components/OnsenSpecSummary'
 import { cn } from '@/lib/cn'
 
 import type { OnsenListItem } from '@/features/map/api/map'
@@ -90,7 +91,7 @@ export default function OnsenDetailPanel({ onsen, onClose }: OnsenDetailPanelPro
       </div>
 
       <div className="pt-5">
-        {tab === '한눈에' && <AtAGlance onsen={onsen} />}
+        {tab === '한눈에' && <OnsenSpecSummary onsen={onsen} />}
         {tab === '정보' && <Details onsen={onsen} />}
         {/* 리뷰는 REV-*, 주변은 PAM-04 — 각 기능이 붙어야 채울 수 있다. */}
         {(tab === '리뷰' || tab === '주변') && (
@@ -119,43 +120,6 @@ function Row({ label, value }: { label: string; value: string }) {
 
 function formatFee(won: number) {
   return `${won.toLocaleString('ko-KR')}원`
-}
-
-/** PAM-01 스펙 뱃지(수온·수질·접근성) + 효능 한 줄. MAP-02도 같은 항목을 쓴다. */
-function AtAGlance({ onsen }: { onsen: OnsenListItem }) {
-  const { waterTempC, waterQuality, benefits, admissionFee, transitAccessible, tags } = onsen
-
-  const badges = [
-    waterTempC !== undefined ? `${waterTempC}℃` : undefined,
-    waterQuality,
-    transitAccessible === undefined ? undefined : transitAccessible ? '뚜벅이 가능' : '자차 권장',
-    admissionFee !== undefined ? formatFee(admissionFee) : undefined,
-  ].filter((badge): badge is string => Boolean(badge))
-
-  if (badges.length === 0 && !benefits && tags.length === 0) return <EmptyNote />
-
-  return (
-    <div>
-      {badges.length > 0 && (
-        <ul className="flex flex-wrap gap-1.5">
-          {badges.map((badge) => (
-            <li
-              key={badge}
-              className="border-border-default text-text-primary rounded-full border px-2.5 py-1 text-[12px]"
-            >
-              {badge}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {benefits && <p className="text-text-primary mt-3 text-[13px] leading-[1.6]">{benefits}</p>}
-
-      {tags.length > 0 && (
-        <p className="text-text-secondary mt-3 text-[12px]">{tags.map((t) => `#${t}`).join(' ')}</p>
-      )}
-    </div>
-  )
 }
 
 /** 전화·홈페이지·휴무일은 시안에 있지만 명세에 근거가 없어 넣지 않는다. */
