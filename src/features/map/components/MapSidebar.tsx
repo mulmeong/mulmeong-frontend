@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react'
 import OnsenCard from '@/components/OnsenCard'
 import Input from '@/components/ui/Input'
 import Tab from '@/components/ui/Tab'
+import SearchResultItem from '@/features/map/components/SearchResultItem'
 import { cn } from '@/lib/cn'
 import { REGIONS } from '@/types/onsen'
 
@@ -44,9 +45,15 @@ export default function MapSidebar({
   /** 아무 조건도 없으면 '현재 지도에서'를 감춘다 — 전국 뷰라 목록이 의미 없다. */
   const hasFilter = Boolean(keyword.trim() || region)
 
+  /** 검색어가 있으면 시안의 검색 화면(1:555)으로 바뀐다 — 지역·큐레이션은 숨는다. */
+  const [searchedKeyword, setSearchedKeyword] = useState('')
+  const isSearching = Boolean(searchedKeyword)
+
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    onSearch({ keyword: keyword.trim() || undefined, region })
+    const next = keyword.trim()
+    setSearchedKeyword(next)
+    onSearch({ keyword: next || undefined, region })
   }
 
   function handleRegion(next: string) {
@@ -58,6 +65,7 @@ export default function MapSidebar({
   function handleReset() {
     setKeyword('')
     setRegion(undefined)
+    setSearchedKeyword('')
     onSearch({})
   }
 
@@ -81,53 +89,111 @@ export default function MapSidebar({
         />
       </form>
 
-      <section className="pt-6">
-        <SectionHeading>지역으로 둘러보기</SectionHeading>
-        <div className="mt-2.5 grid grid-cols-4 gap-x-0 gap-y-2.5">
-          {REGIONS.map((item) => (
-            <button
-              key={item}
-              type="button"
-              aria-pressed={region === item}
-              onClick={() => handleRegion(item)}
-              className={cn(
-                'py-1 text-left text-[14px] outline-none',
-                'focus-visible:underline focus-visible:underline-offset-2',
-                region === item ? 'text-text-primary font-bold' : 'text-text-primary font-normal',
-              )}
-            >
-              {item}
-            </button>
-          ))}
-        </div>
-      </section>
+      {isSearching && (
+        <section className="pt-5">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-text-primary min-w-0 truncate text-[15px] font-bold">
+              “{searchedKeyword}” 검색 결과
+            </h2>
+            {!loading && !error && (
+              <span className="text-text-secondary shrink-0 text-[13px]">{onsens.length}</span>
+            )}
+          </div>
 
-      <hr className="border-border-default mt-5 border-t-0 border-b" />
+          {loading && <p className="text-text-secondary mt-2.5 text-[13px]">불러오는 중…</p>}
 
-      <section className="pt-5">
-        <SectionHeading>지금 이런 곳은 어때요</SectionHeading>
-        <ul className="mt-2.5 grid grid-cols-2 gap-2.5">
-          {SUGGESTIONS.map((label) => (
-            <li key={label} className="min-w-0">
-              <div className="bg-surface-dim aspect-[155/72] w-full rounded-sm" />
-              <p className="text-text-primary mt-1.5 text-[12.5px] leading-[1.35]">{label}</p>
-            </li>
-          ))}
-        </ul>
-        <div className="mt-3 flex justify-end">
-          <button
-            type="button"
-            className="text-text-secondary text-[12px] outline-none focus-visible:underline focus-visible:underline-offset-2"
-          >
-            → 전체보기
-          </button>
-        </div>
-      </section>
+          {error && (
+            <p role="alert" className="text-danger mt-2.5 text-[13px]">
+              {error}
+            </p>
+          )}
+
+          {!loading && !error && onsens.length === 0 && (
+            <div className="mt-2.5 flex flex-col items-center">
+              <p className="text-text-secondary max-w-[194px] text-center text-[13px] leading-[1.6]">
+                검색 결과가 없어요. 다른 지역이나 검색어로 찾아보세요.
+              </p>
+              <button
+                type="button"
+                onClick={handleReset}
+                className="text-text-primary mt-3 text-[12px] underline underline-offset-2 outline-none"
+              >
+                조건 초기화
+              </button>
+            </div>
+          )}
+
+          {!loading && !error && onsens.length > 0 && (
+            <ul className="mt-2 flex flex-col">
+              {onsens.map((onsen) => (
+                <li key={onsen.id} className="border-border-default border-b last:border-b-0">
+                  <SearchResultItem
+                    onsen={onsen}
+                    selected={onsen.id === selectedId}
+                    onClick={() => onSelect(onsen)}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
+      {!isSearching && (
+        <>
+          <section className="pt-6">
+            <SectionHeading>지역으로 둘러보기</SectionHeading>
+            <div className="mt-2.5 grid grid-cols-4 gap-x-0 gap-y-2.5">
+              {REGIONS.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  aria-pressed={region === item}
+                  onClick={() => handleRegion(item)}
+                  className={cn(
+                    'py-1 text-left text-[14px] outline-none',
+                    'focus-visible:underline focus-visible:underline-offset-2',
+                    region === item
+                      ? 'text-text-primary font-bold'
+                      : 'text-text-primary font-normal',
+                  )}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <hr className="border-border-default mt-5 border-t-0 border-b" />
+
+          <section className="pt-5">
+            <SectionHeading>지금 이런 곳은 어때요</SectionHeading>
+            <ul className="mt-2.5 grid grid-cols-2 gap-2.5">
+              {SUGGESTIONS.map((label) => (
+                <li key={label} className="min-w-0">
+                  <div className="bg-surface-dim aspect-[155/72] w-full rounded-sm" />
+                  <p className="text-text-primary mt-1.5 text-[12.5px] leading-[1.35]">{label}</p>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-3 flex justify-end">
+              <button
+                type="button"
+                className="text-text-secondary text-[12px] outline-none focus-visible:underline focus-visible:underline-offset-2"
+              >
+                → 전체보기
+              </button>
+            </div>
+          </section>
+        </>
+      )}
 
       {/* 검색 전에는 목록 대신 지역·추천으로 탐색을 유도한다 (전국 목록을 쏟아내지 않는다). */}
-      {hasFilter && <hr className="border-border-default mt-4 border-t-0 border-b" />}
+      {!isSearching && hasFilter && (
+        <hr className="border-border-default mt-4 border-t-0 border-b" />
+      )}
 
-      {hasFilter && (
+      {!isSearching && hasFilter && (
         <section className="pt-5">
           <SectionHeading>현재 지도에서</SectionHeading>
 
