@@ -13,8 +13,8 @@ function formatDistance(km: number) {
 }
 
 /**
- * 시안 'Search Result Item'(1:834, 330×63). 심볼 내부가 비어 있어
- * 썸네일·3행 구성은 검색 화면 시안을 보고 맞췄다.
+ * 검색 결과 한 줄. 행 사이를 divider 대신 여백과 hover 배경으로 구분한다
+ * (시안에는 구분선이 있지만 팀 논의로 밀도·가독성을 우선했다).
  */
 export default function SearchResultItem({ onsen, selected, onClick }: SearchResultItemProps) {
   const { name, address, imageUrl, waterQuality, waterTempC, tags, distanceKm } = onsen
@@ -31,35 +31,36 @@ export default function SearchResultItem({ onsen, selected, onClick }: SearchRes
       onClick={onClick}
       aria-current={selected || undefined}
       className={cn(
-        'flex w-full items-center gap-3 py-2 text-left',
-        'outline-none focus-visible:underline focus-visible:underline-offset-2',
+        '-mx-2 flex w-[calc(100%+1rem)] items-center gap-3 rounded-sm px-2 py-2.5 text-left',
+        'transition-colors outline-none focus-visible:underline focus-visible:underline-offset-2',
+        selected ? 'bg-surface-dim' : 'hover:bg-surface-dim',
       )}
     >
       {imageUrl ? (
-        <img src={imageUrl} alt="" className="size-[47px] shrink-0 rounded-sm object-cover" />
+        <img src={imageUrl} alt="" className="size-11 shrink-0 rounded-sm object-cover" />
       ) : (
-        <div className="bg-surface-dim size-[47px] shrink-0 rounded-sm" />
+        <div className="bg-surface-dim size-11 shrink-0 rounded-sm" />
       )}
 
       <span className="min-w-0 flex-1">
         <span
           className={cn(
-            'text-text-primary block truncate text-[15px]',
-            selected ? 'font-bold' : 'font-semibold',
+            'text-text-primary block truncate text-[14px]',
+            selected ? 'font-semibold' : 'font-medium',
           )}
         >
           {name}
         </span>
-        <span className="text-text-secondary mt-[2px] block truncate text-[12px]">
-          온천 · {address}
-        </span>
         {specLine && (
-          <span className="text-text-primary mt-[2px] block truncate text-[13px]">{specLine}</span>
+          <span className="text-text-secondary mt-[3px] block truncate text-[12px]">
+            {specLine}
+          </span>
         )}
+        <span className="text-text-secondary mt-[2px] block truncate text-[11px]">{address}</span>
       </span>
 
       {distanceKm !== undefined && (
-        <span className="text-text-secondary shrink-0 self-end pb-1 text-[13px]">
+        <span className="text-text-secondary shrink-0 text-[12px]">
           {formatDistance(distanceKm)}
         </span>
       )}

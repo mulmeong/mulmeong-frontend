@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react'
 
-import OnsenCard from '@/components/OnsenCard'
 import Input from '@/components/ui/Input'
 import Tab from '@/components/ui/Tab'
 import SearchResultItem from '@/features/map/components/SearchResultItem'
@@ -27,10 +26,19 @@ const SUGGESTIONS = [
   '조용히 혼자 쉬기 좋은 곳',
 ]
 
-function SectionHeading({ children }: { children: string }) {
-  return <h2 className="text-text-secondary text-[12px] tracking-[0.02em]">{children}</h2>
+function SectionLabel({ children }: { children: string }) {
+  return <h2 className="text-text-secondary text-[11px] tracking-[0.04em]">{children}</h2>
 }
 
+function formatDistance(km: number) {
+  return km < 1 ? `${Math.round(km * 1000)}m` : `${km.toFixed(1)}km`
+}
+
+/**
+ * 사이드바는 시안(1:479/1:555)의 좌표를 그대로 따르지 않는다.
+ * 팀 논의로 밀도·위계를 우선하기로 해서, divider를 걷어내고 여백으로 섹션을 나눈다.
+ * 검색 → 지역 → 추천 → 현재 지도에서 순으로 읽히게 하는 것이 기준이다.
+ */
 export default function MapSidebar({
   onsens,
   loading,
@@ -45,7 +53,7 @@ export default function MapSidebar({
   /** 아무 조건도 없으면 '현재 지도에서'를 감춘다 — 전국 뷰라 목록이 의미 없다. */
   const hasFilter = Boolean(keyword.trim() || region)
 
-  /** 검색어가 있으면 시안의 검색 화면(1:555)으로 바뀐다 — 지역·큐레이션은 숨는다. */
+  /** 검색어가 있으면 검색 결과 화면으로 바뀐다 — 지역·추천은 숨는다. */
   const [searchedKeyword, setSearchedKeyword] = useState('')
   const isSearching = Boolean(searchedKeyword)
 
@@ -70,16 +78,16 @@ export default function MapSidebar({
   }
 
   return (
-    <div className="bg-surface scrollbar-thin flex h-full min-w-0 flex-col overflow-x-hidden overflow-y-auto px-4 pb-8 sm:px-[15px]">
-      {/* 길찾기(MAP-08)는 ① 범위다 — 모드 전환·경로 API가 아직 없어 비활성일 뿐이다. */}
-      <div role="tablist" className="flex gap-5 pt-5">
+    <div className="bg-surface scrollbar-thin flex h-full min-w-0 flex-col overflow-x-hidden overflow-y-auto px-5 pb-10">
+      <div role="tablist" className="flex gap-5 pt-6">
         <Tab selected>장소 검색</Tab>
+        {/* 길찾기(MAP-08)는 ① 범위다 — 모드 전환·경로 API가 아직 없어 비활성일 뿐이다. */}
         <Tab disabled className="cursor-not-allowed">
           길찾기
         </Tab>
       </div>
 
-      <form onSubmit={handleSubmit} className="pt-4">
+      <form onSubmit={handleSubmit} className="pt-5">
         <Input
           variant="search"
           placeholder="온천·사우나 검색"
@@ -90,26 +98,26 @@ export default function MapSidebar({
       </form>
 
       {isSearching && (
-        <section className="pt-5">
+        <section className="pt-8">
           <div className="flex items-baseline justify-between gap-3">
-            <h2 className="text-text-primary min-w-0 truncate text-[15px] font-bold">
+            <h2 className="text-text-primary min-w-0 truncate text-[15px] font-semibold">
               “{searchedKeyword}” 검색 결과
             </h2>
             {!loading && !error && (
-              <span className="text-text-secondary shrink-0 text-[13px]">{onsens.length}</span>
+              <span className="text-text-secondary shrink-0 text-[12px]">{onsens.length}</span>
             )}
           </div>
 
-          {loading && <p className="text-text-secondary mt-2.5 text-[13px]">불러오는 중…</p>}
+          {loading && <p className="text-text-secondary mt-3 text-[13px]">불러오는 중…</p>}
 
           {error && (
-            <p role="alert" className="text-danger mt-2.5 text-[13px]">
+            <p role="alert" className="text-danger mt-3 text-[13px]">
               {error}
             </p>
           )}
 
           {!loading && !error && onsens.length === 0 && (
-            <div className="mt-2.5 flex flex-col items-center">
+            <div className="mt-3 flex flex-col items-center">
               <p className="text-text-secondary max-w-[194px] text-center text-[13px] leading-[1.6]">
                 검색 결과가 없어요. 다른 지역이나 검색어로 찾아보세요.
               </p>
@@ -126,7 +134,7 @@ export default function MapSidebar({
           {!loading && !error && onsens.length > 0 && (
             <ul className="mt-2 flex flex-col">
               {onsens.map((onsen) => (
-                <li key={onsen.id} className="border-border-default border-b last:border-b-0">
+                <li key={onsen.id}>
                   <SearchResultItem
                     onsen={onsen}
                     selected={onsen.id === selectedId}
@@ -141,9 +149,9 @@ export default function MapSidebar({
 
       {!isSearching && (
         <>
-          <section className="pt-6">
-            <SectionHeading>지역으로 둘러보기</SectionHeading>
-            <div className="mt-2.5 grid grid-cols-4 gap-x-0 gap-y-2.5">
+          <section className="pt-8">
+            <SectionLabel>지역으로 둘러보기</SectionLabel>
+            <div className="mt-3 flex flex-wrap gap-x-1.5 gap-y-2">
               {REGIONS.map((item) => (
                 <button
                   key={item}
@@ -151,11 +159,10 @@ export default function MapSidebar({
                   aria-pressed={region === item}
                   onClick={() => handleRegion(item)}
                   className={cn(
-                    'py-1 text-left text-[14px] outline-none',
-                    'focus-visible:underline focus-visible:underline-offset-2',
+                    'rounded-full px-3 py-1.5 text-[13px] transition-colors outline-none',
                     region === item
-                      ? 'text-text-primary font-bold'
-                      : 'text-text-primary font-normal',
+                      ? 'bg-inverse text-text-inverse font-medium'
+                      : 'text-text-primary hover:bg-surface-dim',
                   )}
                 >
                   {item}
@@ -164,74 +171,85 @@ export default function MapSidebar({
             </div>
           </section>
 
-          <hr className="border-border-default mt-5 border-t-0 border-b" />
+          <section className="pt-8">
+            <div className="flex items-baseline justify-between gap-3">
+              <SectionLabel>지금 이런 곳은 어때요</SectionLabel>
+              <button
+                type="button"
+                className="text-text-secondary shrink-0 text-[11px] outline-none hover:underline"
+              >
+                전체보기
+              </button>
+            </div>
 
-          <section className="pt-5">
-            <SectionHeading>지금 이런 곳은 어때요</SectionHeading>
-            <ul className="mt-2.5 grid grid-cols-2 gap-2.5">
+            {/* 가로 스크롤 — 추천이 세로 공간을 먹어 목록을 밀어내지 않게 한다. */}
+            <ul className="scrollbar-thin mt-3 flex snap-x gap-2.5 overflow-x-auto pb-1">
               {SUGGESTIONS.map((label) => (
-                <li key={label} className="min-w-0">
-                  <div className="bg-surface-dim aspect-[155/72] w-full rounded-sm" />
-                  <p className="text-text-primary mt-1.5 text-[12.5px] leading-[1.35]">{label}</p>
+                <li key={label} className="w-[132px] shrink-0 snap-start">
+                  <div className="bg-surface-dim aspect-[132/74] w-full rounded-sm" />
+                  <p className="text-text-primary mt-1.5 truncate text-[12px]">{label}</p>
                 </li>
               ))}
             </ul>
-            <div className="mt-3 flex justify-end">
-              <button
-                type="button"
-                className="text-text-secondary text-[12px] outline-none focus-visible:underline focus-visible:underline-offset-2"
-              >
-                → 전체보기
-              </button>
-            </div>
           </section>
         </>
       )}
 
-      {/* 검색 전에는 목록 대신 지역·추천으로 탐색을 유도한다 (전국 목록을 쏟아내지 않는다). */}
       {!isSearching && hasFilter && (
-        <hr className="border-border-default mt-4 border-t-0 border-b" />
-      )}
+        <section className="pt-8">
+          <SectionLabel>현재 지도에서</SectionLabel>
 
-      {!isSearching && hasFilter && (
-        <section className="pt-5">
-          <SectionHeading>현재 지도에서</SectionHeading>
-
-          {loading && <p className="text-text-secondary mt-2.5 text-[13px]">불러오는 중…</p>}
+          {loading && <p className="text-text-secondary mt-3 text-[13px]">불러오는 중…</p>}
 
           {error && (
-            <p role="alert" className="text-danger mt-2.5 text-[13px]">
+            <p role="alert" className="text-danger mt-3 text-[13px]">
               {error}
             </p>
           )}
 
           {!loading && !error && onsens.length === 0 && (
-            <div className="mt-2.5 flex flex-col items-center">
+            <div className="mt-3 flex flex-col items-center">
               <p className="text-text-secondary max-w-[194px] text-center text-[13px] leading-[1.6]">
                 검색 결과가 없어요. 다른 지역이나 검색어로 찾아보세요.
               </p>
-              {(keyword.trim() || region) && (
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  className="text-text-primary mt-3 text-[12px] underline underline-offset-2 outline-none"
-                >
-                  조건 초기화
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={handleReset}
+                className="text-text-primary mt-3 text-[12px] underline underline-offset-2 outline-none"
+              >
+                조건 초기화
+              </button>
             </div>
           )}
 
           {!loading && !error && onsens.length > 0 && (
-            <ul className="mt-2 flex flex-col gap-2">
+            <ul className="mt-2 flex flex-col">
               {onsens.map((onsen) => (
-                <li key={onsen.id} className="border-border-default border-b last:border-b-0">
-                  <OnsenCard
-                    onsen={onsen}
-                    distanceKm={onsen.distanceKm}
-                    selected={onsen.id === selectedId}
+                <li key={onsen.id}>
+                  <button
+                    type="button"
                     onClick={() => onSelect(onsen)}
-                  />
+                    aria-current={onsen.id === selectedId || undefined}
+                    className={cn(
+                      '-mx-2 flex w-[calc(100%+1rem)] items-baseline justify-between gap-3 rounded-sm px-2 py-2.5 text-left',
+                      'transition-colors outline-none focus-visible:underline focus-visible:underline-offset-2',
+                      onsen.id === selectedId ? 'bg-surface-dim' : 'hover:bg-surface-dim',
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'text-text-primary min-w-0 truncate text-[14px]',
+                        onsen.id === selectedId ? 'font-semibold' : 'font-medium',
+                      )}
+                    >
+                      {onsen.name}
+                    </span>
+                    {onsen.distanceKm !== undefined && (
+                      <span className="text-text-secondary shrink-0 text-[12px]">
+                        {formatDistance(onsen.distanceKm)}
+                      </span>
+                    )}
+                  </button>
                 </li>
               ))}
             </ul>
