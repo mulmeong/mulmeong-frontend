@@ -13,6 +13,24 @@ export type Onsen = {
   reviewCount: number
   /** 노천탕·개인탕 등. 필터와 칩에 같이 쓴다. */
   tags: string[]
+
+  /*
+   * 아래는 상세(MAP-02 카드·PAM-01/03 팜플렛)에서 쓰는 스펙.
+   * 출처가 행안부 온천현황이라 505곳 중 일부만 값이 있다(명세 §4: 86/93 매칭).
+   */
+
+  /** 원천 수온(℃). */
+  waterTempC?: number
+  /** 수질 유형 — 탄산천·유황천 등. */
+  waterQuality?: string
+  /** 효능 한 줄 (PAM-01). */
+  benefits?: string
+  /** 시설 그리드 항목 (PAM-03) — 탈의실·수건대여 등. */
+  facilities?: string[]
+  /** 성인 기준 입장료(원). */
+  admissionFee?: number
+  /** 뚜벅이 접근 가능 여부 (PAM-03). */
+  transitAccessible?: boolean
 }
 
 /** 지도 목록 응답에만 붙는 거리(km). 기준점은 요청 좌표. */

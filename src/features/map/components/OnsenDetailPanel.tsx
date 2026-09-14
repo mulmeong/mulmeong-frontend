@@ -15,8 +15,8 @@ type OnsenDetailPanelProps = {
 }
 
 /**
- * MAP-02 상세패널 껍데기. 탭 내용은 각각 별도 기능(REV-*, PAM-04)과 상세 응답 스키마가
- * 정해진 뒤에 채운다 — 지금은 Onsen에 있는 필드만 쓴다.
+ * MAP-02 상세패널. 한눈에·정보 탭은 명세에 있는 온천 스펙(수온·수질·효능·시설·요금·뚜벅이)으로
+ * 채우고, 리뷰(REV-*)·주변(PAM-04)은 해당 기능이 붙어야 한다.
  */
 export default function OnsenDetailPanel({ onsen, onClose }: OnsenDetailPanelProps) {
   const [tab, setTab] = useState<DetailTab>('한눈에')
@@ -89,9 +89,103 @@ export default function OnsenDetailPanel({ onsen, onClose }: OnsenDetailPanelPro
         ))}
       </div>
 
-      <p className="text-text-secondary pt-5 text-[13px] leading-[1.6]">
-        {tab} 정보는 준비 중입니다.
-      </p>
+      <div className="pt-5">
+        {tab === '한눈에' && <AtAGlance onsen={onsen} />}
+        {tab === '정보' && <Details onsen={onsen} />}
+        {/* 리뷰는 REV-*, 주변은 PAM-04 — 각 기능이 붙어야 채울 수 있다. */}
+        {(tab === '리뷰' || tab === '주변') && (
+          <p className="text-text-secondary text-[13px] leading-[1.6]">
+            {tab} 정보는 준비 중입니다.
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function EmptyNote() {
+  return <p className="text-text-secondary text-[13px] leading-[1.6]">등록된 정보가 없습니다.</p>
+}
+
+/** 시안의 데이터행 — 라벨 64px + 값. */
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline py-[9px]">
+      <span className="text-text-secondary w-16 shrink-0 text-[12px]">{label}</span>
+      <span className="text-text-primary min-w-0 flex-1 text-[13px]">{value}</span>
+    </div>
+  )
+}
+
+function formatFee(won: number) {
+  return `${won.toLocaleString('ko-KR')}원`
+}
+
+/** PAM-01 스펙 뱃지(수온·수질·접근성) + 효능 한 줄. MAP-02도 같은 항목을 쓴다. */
+function AtAGlance({ onsen }: { onsen: OnsenListItem }) {
+  const { waterTempC, waterQuality, benefits, admissionFee, transitAccessible, tags } = onsen
+
+  const badges = [
+    waterTempC !== undefined ? `${waterTempC}℃` : undefined,
+    waterQuality,
+    transitAccessible === undefined ? undefined : transitAccessible ? '뚜벅이 가능' : '자차 권장',
+    admissionFee !== undefined ? formatFee(admissionFee) : undefined,
+  ].filter((badge): badge is string => Boolean(badge))
+
+  if (badges.length === 0 && !benefits && tags.length === 0) return <EmptyNote />
+
+  return (
+    <div>
+      {badges.length > 0 && (
+        <ul className="flex flex-wrap gap-1.5">
+          {badges.map((badge) => (
+            <li
+              key={badge}
+              className="border-border-default text-text-primary rounded-full border px-2.5 py-1 text-[12px]"
+            >
+              {badge}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {benefits && <p className="text-text-primary mt-3 text-[13px] leading-[1.6]">{benefits}</p>}
+
+      {tags.length > 0 && (
+        <p className="text-text-secondary mt-3 text-[12px]">{tags.map((t) => `#${t}`).join(' ')}</p>
+      )}
+    </div>
+  )
+}
+
+/** 전화·홈페이지·휴무일은 시안에 있지만 명세에 근거가 없어 넣지 않는다. */
+function Details({ onsen }: { onsen: OnsenListItem }) {
+  const { address, waterTempC, waterQuality, admissionFee, facilities, transitAccessible } = onsen
+
+  const rows = [
+    { label: '주소', value: address },
+    { label: '수온', value: waterTempC !== undefined ? `${waterTempC}℃` : undefined },
+    { label: '수질', value: waterQuality },
+    { label: '이용요금', value: admissionFee !== undefined ? formatFee(admissionFee) : undefined },
+    { label: '편의시설', value: facilities?.length ? facilities.join(' · ') : undefined },
+    {
+      label: '대중교통',
+      value:
+        transitAccessible === undefined
+          ? undefined
+          : transitAccessible
+            ? '대중교통으로 갈 수 있어요'
+            : '자차 이용을 권합니다',
+    },
+  ].filter((row): row is { label: string; value: string } => Boolean(row.value))
+
+  if (rows.length === 0) return <EmptyNote />
+
+  return (
+    <div className="divide-border-default divide-y">
+      {rows.map((row) => (
+        <Row key={row.label} label={row.label} value={row.value} />
+      ))}
     </div>
   )
 }
