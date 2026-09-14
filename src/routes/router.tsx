@@ -3,6 +3,7 @@ import { createBrowserRouter } from 'react-router-dom'
 import RootLayout from '@/components/RootLayout'
 import MyPageLayout from '@/features/mypage/components/MyPageLayout'
 import HomePage from '@/pages/HomePage'
+import MagazineArchivePage from '@/pages/MagazineArchivePage'
 import MagazineDetailPage from '@/pages/MagazineDetailPage'
 import MagazinePage from '@/pages/MagazinePage'
 import NotFoundPage from '@/pages/NotFoundPage'
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <HomePage /> },
       { path: 'magazine', element: <MagazinePage /> },
+      { path: 'magazine/archive', element: <MagazineArchivePage /> },
       { path: 'magazine/:id', element: <MagazineDetailPage /> },
       {
         path: 'my',

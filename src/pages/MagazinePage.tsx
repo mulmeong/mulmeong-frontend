@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import MagazineCard from '@/features/magazine/components/MagazineCard'
 import { useIssue } from '@/features/magazine/hooks/useIssue'
@@ -84,6 +85,15 @@ export default function MagazinePage() {
           ))}
         </ul>
       )}
+
+      <div className="mt-6 flex justify-end">
+        <Link
+          to="/magazine/archive"
+          className="text-text-secondary hover:text-text-primary text-[13px] outline-none hover:underline"
+        >
+          → 전체 아카이브 보기
+        </Link>
+      </div>
     </div>
   )
 }
