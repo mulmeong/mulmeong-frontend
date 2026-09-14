@@ -22,6 +22,31 @@
   --font-sans:
     Inter, 'Gothic A1', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo',
     'Malgun Gothic', sans-serif;
+
+  /* 히어로 워드마크 전용 (Bold 700만 로드) */
+  --font-display: 'Cormorant Garamond', 'Times New Roman', serif;
+  /* 영문 캡션·태그라인 (Regular 400만 로드) */
+  --font-serif: Lora, 'Times New Roman', serif;
+  /* 패널 번호 등 숫자 표기 (Regular 400만 로드) */
+  --font-numeral: 'Instrument Serif', 'Times New Roman', serif;
+
+  /*
+    진입 시 아래에서 떠오르며 나타난다.
+    both = 지연 시간 동안에도 시작 상태(투명)를 유지한다.
+    이게 없으면 보였다가 사라진 뒤 다시 나타나 깜빡인다.
+  */
+  --animate-fade-up: fade-up 800ms cubic-bezier(0.4, 0, 0.2, 1) both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
 :root {
