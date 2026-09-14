@@ -10,7 +10,11 @@ export function loadKakaoMap(): Promise<typeof kakao.maps> {
 
   loading = new Promise((resolve, reject) => {
     if (!env.kakaoMapKey) {
-      reject(new Error('VITE_KAKAO_MAP_KEY 가 비어 있습니다. .env 에 카카오맵 JavaScript 키를 넣어주세요.'))
+      reject(
+        new Error(
+          'VITE_KAKAO_MAP_KEY 가 비어 있습니다. .env 에 카카오맵 JavaScript 키를 넣어주세요.',
+        ),
+      )
       return
     }
 
