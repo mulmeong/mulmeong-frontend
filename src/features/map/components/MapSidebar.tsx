@@ -4,6 +4,7 @@ import Input from '@/components/ui/Input'
 import Tab from '@/components/ui/Tab'
 import SearchResultItem from '@/features/map/components/SearchResultItem'
 import SearchSuggestions from '@/features/map/components/SearchSuggestions'
+import SidebarMagazine from '@/features/map/components/SidebarMagazine'
 import { useSuggestions } from '@/features/map/hooks/useSuggestions'
 import { cn } from '@/lib/cn'
 import { REGIONS } from '@/types/onsen'
@@ -325,6 +326,9 @@ export default function MapSidebar({
           )}
         </section>
       )}
+
+      {/* MAP-07 매거진 고정 — 검색 중에도 남겨 다른 글로 넘어갈 수 있게 한다. */}
+      <SidebarMagazine />
     </div>
   )
 }
