@@ -5,11 +5,7 @@ import Header from '@/components/ui/Header'
 import ConditionPanel from '@/features/dart/components/ConditionPanel'
 import ResultCard from '@/features/dart/components/ResultCard'
 import SaveCompleteModal from '@/features/dart/components/SaveCompleteModal'
-import {
-  DEFAULT_CONDITIONS,
-  SAMPLE_RESULT,
-  type DartConditions,
-} from '@/features/dart/constants'
+import { DEFAULT_CONDITIONS, SAMPLE_RESULT, type DartConditions } from '@/features/dart/constants'
 import KoreaMap from '@/features/dart/koreaMap/KoreaMap'
 
 import type { Onsen } from '@/types/onsen'

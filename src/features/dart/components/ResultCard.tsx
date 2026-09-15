@@ -71,9 +71,7 @@ export default function ResultCard({
 
       <div className="flex flex-none flex-col gap-1.5 px-[30px] pt-[22px]">
         <span className="text-[12px] text-[#8A9491]">{meta}</span>
-        {description && (
-          <p className="text-[13.5px] leading-[1.8] text-[#2C3331]">{description}</p>
-        )}
+        {description && <p className="text-[13.5px] leading-[1.8] text-[#2C3331]">{description}</p>}
       </div>
 
       <div role="tablist" className="mt-[18px] flex flex-none border-y border-[#E2E5E4]">
