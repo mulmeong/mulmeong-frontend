@@ -4,6 +4,9 @@ import RootLayout from '@/components/RootLayout'
 import MyPageLayout from '@/features/mypage/components/MyPageLayout'
 import DartPage from '@/pages/DartPage'
 import HomePage from '@/pages/HomePage'
+import MagazineArchivePage from '@/pages/MagazineArchivePage'
+import MagazineDetailPage from '@/pages/MagazineDetailPage'
+import MagazinePage from '@/pages/MagazinePage'
 import MapPage from '@/pages/MapPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 import LoginPage from '@/pages/auth/LoginPage'
@@ -30,6 +33,9 @@ export const router = createBrowserRouter([
     path: '/',
     element: <RootLayout />,
     children: [
+      { path: 'magazine', element: <MagazinePage /> },
+      { path: 'magazine/archive', element: <MagazineArchivePage /> },
+      { path: 'magazine/:id', element: <MagazineDetailPage /> },
       {
         path: 'my',
         element: <MyPageLayout />,
