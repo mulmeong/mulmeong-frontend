@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom'
 
 import RootLayout from '@/components/RootLayout'
 import MyPageLayout from '@/features/mypage/components/MyPageLayout'
+import DartPage from '@/pages/DartPage'
 import HomePage from '@/pages/HomePage'
 import MapPage from '@/pages/MapPage'
 import NotFoundPage from '@/pages/NotFoundPage'
@@ -23,6 +24,8 @@ export const router = createBrowserRouter([
   { path: '/signup/done', element: <SignupDonePage /> },
   // 지도는 화면을 꽉 채우는 레이아웃이라 RootLayout 밖에 둔다 (헤더는 페이지가 직접 렌더).
   { path: '/map', element: <MapPage /> },
+  // 다트도 같은 이유 — 왼쪽 지도 + 오른쪽 400px 패널로 화면을 채운다.
+  { path: '/dart', element: <DartPage /> },
   {
     path: '/',
     element: <RootLayout />,
