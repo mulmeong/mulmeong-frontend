@@ -19,6 +19,12 @@ type MapCanvasProps = {
 /** idle이 연달아 오는 걸 묶는다 — 쿼터 방어 (CLAUDE.md 비기능 요구사항). */
 const BOUNDS_DEBOUNCE_MS = 600
 
+/** 이 레벨 이상 확대하면 클러스터를 풀고 개별 마커를 보여준다. */
+const CLUSTER_MIN_LEVEL = 7
+
+/** 클러스터를 누르면 한 단계 더 확대한다. */
+const CLUSTER_ZOOM_STEP = 2
+
 export default function MapCanvas({
   onsens,
   selectedId,
@@ -29,6 +35,7 @@ export default function MapCanvas({
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<kakao.maps.Map | null>(null)
   const markersRef = useRef<kakao.maps.Marker[]>([])
+  const clustererRef = useRef<kakao.maps.MarkerClusterer | null>(null)
 
   const [error, setError] = useState<string>()
   const [ready, setReady] = useState(false)
@@ -54,23 +61,48 @@ export default function MapCanvas({
     }
   }, [])
 
+  // MAP-01 클러스터링 — 전국 뷰에서 마커 수백 개가 겹치는 걸 막는다.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!ready || !map || clustererRef.current) return
+
+    const maps = window.kakao.maps
+    const clusterer = new maps.MarkerClusterer({
+      map,
+      averageCenter: true,
+      minLevel: CLUSTER_MIN_LEVEL,
+      // 기본 클릭 확대는 한 번에 많이 당겨서 직접 단계를 정한다.
+      disableClickZoom: true,
+    })
+
+    maps.event.addListener(clusterer, 'clusterclick', (cluster) => {
+      map.setLevel(Math.max(1, map.getLevel() - CLUSTER_ZOOM_STEP))
+      map.setCenter(cluster.getCenter())
+    })
+
+    clustererRef.current = clusterer
+  }, [ready])
+
   // 목록이 바뀌면 마커를 다시 그린다.
   useEffect(() => {
     const map = mapRef.current
-    if (!ready || !map) return
+    const clusterer = clustererRef.current
+    if (!ready || !map || !clusterer) return
 
     const maps = window.kakao.maps
-    markersRef.current.forEach((marker) => marker.setMap(null))
+    clusterer.clear()
 
     markersRef.current = onsens.map((onsen) => {
       const marker = new maps.Marker({
         position: new maps.LatLng(onsen.lat, onsen.lng),
         title: onsen.name,
       })
-      marker.setMap(map)
       maps.event.addListener(marker, 'click', () => onSelect?.(onsen))
       return marker
     })
+
+    // 클러스터러가 지도에 붙인다 — marker.setMap()을 직접 부르면 클러스터가 안 먹는다.
+    clusterer.addMarkers(markersRef.current)
 
     // 결과 전체에 범위를 맞추지 않는다 — MAP-03이 보이는 영역 기준이라 서로 싸운다.
   }, [onsens, ready, onSelect])

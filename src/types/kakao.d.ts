@@ -20,6 +20,7 @@ declare namespace kakao.maps {
     constructor(container: HTMLElement, options: { center: LatLng; level?: number })
     getCenter(): LatLng
     setCenter(latlng: LatLng): void
+    getLevel(): number
     setLevel(level: number): void
     getBounds(): LatLngBounds
     setBounds(bounds: LatLngBounds): void
@@ -29,10 +30,33 @@ declare namespace kakao.maps {
   class Marker {
     constructor(options: { position: LatLng; title?: string })
     setMap(map: Map | null): void
+    getPosition(): LatLng
+  }
+
+  /** libraries=clusterer 로 받아온다 (loadKakaoMap 참고). */
+  class MarkerClusterer {
+    constructor(options: {
+      map: Map
+      averageCenter?: boolean
+      /** 이 레벨보다 확대하면 클러스터를 풀고 개별 마커를 보여준다. */
+      minLevel?: number
+      disableClickZoom?: boolean
+    })
+    addMarkers(markers: Marker[]): void
+    clear(): void
+  }
+
+  class Cluster {
+    getCenter(): LatLng
   }
 
   namespace event {
     function addListener(target: unknown, type: string, handler: () => void): void
+    function addListener(
+      target: MarkerClusterer,
+      type: 'clusterclick',
+      handler: (cluster: Cluster) => void,
+    ): void
     function removeListener(target: unknown, type: string, handler: () => void): void
   }
 
