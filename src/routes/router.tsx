@@ -6,6 +6,7 @@ import HomePage from '@/pages/HomePage'
 import MagazineArchivePage from '@/pages/MagazineArchivePage'
 import MagazineDetailPage from '@/pages/MagazineDetailPage'
 import MagazinePage from '@/pages/MagazinePage'
+import MapPage from '@/pages/MapPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 import LoginPage from '@/pages/auth/LoginPage'
 import SignupDonePage from '@/pages/auth/SignupDonePage'
@@ -21,6 +22,8 @@ export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/signup', element: <SignupPage /> },
   { path: '/signup/done', element: <SignupDonePage /> },
+  // 지도는 화면을 꽉 채우는 레이아웃이라 RootLayout 밖에 둔다 (헤더는 페이지가 직접 렌더).
+  { path: '/map', element: <MapPage /> },
   {
     path: '/',
     element: <RootLayout />,

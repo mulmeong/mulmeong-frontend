@@ -1,0 +1,166 @@
+import { useEffect, useRef, useState } from 'react'
+
+import { loadKakaoMap } from '@/features/map/utils/loadKakaoMap'
+
+import { NATIONAL_VIEW } from '@/types/onsen'
+
+import type { MapBounds, MapView, Onsen } from '@/types/onsen'
+
+type MapCanvasProps = {
+  onsens: Onsen[]
+  selectedId?: number
+  onSelect?: (onsen: Onsen) => void
+  /** MAP-03 이 지역 재검색 — 팬·줌이 멎으면 보이는 영역을 알린다. */
+  onBoundsChange?: (bounds: MapBounds) => void
+  /** 지역을 고르거나 검색하면 그쪽으로 지도를 옮긴다. 없으면 전국 뷰 그대로. */
+  focus?: MapView
+}
+
+/** idle이 연달아 오는 걸 묶는다 — 쿼터 방어 (CLAUDE.md 비기능 요구사항). */
+const BOUNDS_DEBOUNCE_MS = 600
+
+export default function MapCanvas({
+  onsens,
+  selectedId,
+  onSelect,
+  onBoundsChange,
+  focus,
+}: MapCanvasProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const mapRef = useRef<kakao.maps.Map | null>(null)
+  const markersRef = useRef<kakao.maps.Marker[]>([])
+
+  const [error, setError] = useState<string>()
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    loadKakaoMap()
+      .then((maps) => {
+        if (cancelled || !containerRef.current) return
+        mapRef.current = new maps.Map(containerRef.current, {
+          center: new maps.LatLng(NATIONAL_VIEW.lat, NATIONAL_VIEW.lng),
+          level: NATIONAL_VIEW.level,
+        })
+        setReady(true)
+      })
+      .catch((err: Error) => {
+        if (!cancelled) setError(err.message)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // 목록이 바뀌면 마커를 다시 그린다.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!ready || !map) return
+
+    const maps = window.kakao.maps
+    markersRef.current.forEach((marker) => marker.setMap(null))
+
+    markersRef.current = onsens.map((onsen) => {
+      const marker = new maps.Marker({
+        position: new maps.LatLng(onsen.lat, onsen.lng),
+        title: onsen.name,
+      })
+      marker.setMap(map)
+      maps.event.addListener(marker, 'click', () => onSelect?.(onsen))
+      return marker
+    })
+
+    // 결과 전체에 범위를 맞추지 않는다 — MAP-03이 보이는 영역 기준이라 서로 싸운다.
+  }, [onsens, ready, onSelect])
+
+  // MAP-03: 팬·줌이 멎으면(idle) 보이는 영역을 알린다.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!ready || !map || !onBoundsChange) return
+
+    let timer: ReturnType<typeof setTimeout> | undefined
+
+    const handleIdle = () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => {
+        const bounds = map.getBounds()
+        const sw = bounds.getSouthWest()
+        const ne = bounds.getNorthEast()
+        onBoundsChange({
+          swLat: sw.getLat(),
+          swLng: sw.getLng(),
+          neLat: ne.getLat(),
+          neLng: ne.getLng(),
+        })
+      }, BOUNDS_DEBOUNCE_MS)
+    }
+
+    window.kakao.maps.event.addListener(map, 'idle', handleIdle)
+    handleIdle()
+
+    return () => {
+      clearTimeout(timer)
+      window.kakao.maps.event.removeListener(map, 'idle', handleIdle)
+    }
+  }, [ready, onBoundsChange])
+
+  // 지역 선택·검색이 지도를 옮긴다. 사용자가 그 뒤 팬·줌한 건 건드리지 않는다.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!ready || !map || !focus) return
+
+    const maps = window.kakao.maps
+
+    if ('bounds' in focus) {
+      const { swLat, swLng, neLat, neLng } = focus.bounds
+      const area = new maps.LatLngBounds()
+      area.extend(new maps.LatLng(swLat, swLng))
+      area.extend(new maps.LatLng(neLat, neLng))
+      if (!area.isEmpty()) map.setBounds(area)
+      return
+    }
+
+    map.setLevel(focus.level)
+    map.setCenter(new maps.LatLng(focus.lat, focus.lng))
+  }, [focus, ready])
+
+  // 상세패널이 열리고 닫히면 지도 컨테이너 폭이 바뀐다 — relayout 없이는 타일이 잘린다.
+  useEffect(() => {
+    const container = containerRef.current
+    const map = mapRef.current
+    if (!ready || !map || !container) return
+
+    const observer = new ResizeObserver(() => {
+      // relayout은 중심을 흔들 수 있어 직전 중심을 되돌린다.
+      const center = map.getCenter()
+      map.relayout()
+      map.setCenter(center)
+    })
+    observer.observe(container)
+
+    return () => observer.disconnect()
+  }, [ready])
+
+  // 목록에서 고르면 지도를 그 위치로 옮긴다.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!ready || !map || selectedId === undefined) return
+    const target = onsens.find((onsen) => onsen.id === selectedId)
+    if (!target) return
+    map.setCenter(new window.kakao.maps.LatLng(target.lat, target.lng))
+  }, [selectedId, onsens, ready])
+
+  if (error) {
+    return (
+      <div className="bg-surface-dim flex h-full items-center justify-center p-8">
+        <p className="text-text-secondary max-w-[320px] text-center text-[13px] leading-[1.7]">
+          {error}
+        </p>
+      </div>
+    )
+  }
+
+  return <div ref={containerRef} className="size-full" />
+}
