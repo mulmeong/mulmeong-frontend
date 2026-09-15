@@ -44,8 +44,7 @@ export default function MagazinePage() {
         </section>
       )}
 
-      {/* .scrollbar-thin은 feat/map의 index.css에 있다 — 머지되면 여기에도 붙인다. */}
-      <nav className="mt-8 flex gap-7 overflow-x-auto pb-1">
+      <nav className="scrollbar-thin mt-8 flex gap-7 overflow-x-auto pb-1">
         {[ALL, ...MAGAZINE_CATEGORIES].map((item) => (
           <button
             key={item}
@@ -77,7 +76,7 @@ export default function MagazinePage() {
       )}
 
       {!loading && !error && magazines.length > 0 && (
-        <ul className="mt-10 flex gap-9 overflow-x-auto pb-4">
+        <ul className="scrollbar-thin mt-10 flex gap-9 overflow-x-auto pb-4">
           {magazines.map((magazine, index) => (
             <li key={magazine.id}>
               <MagazineCard magazine={magazine} index={index} />

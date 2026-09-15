@@ -1,20 +1,4 @@
-/**
- * 지역 필터 단위 — 포도알 지도(MY-02)·사우나 지도와 같은 시·도 8단위.
- * 원본은 feat/map의 `types/onsen.ts`에 있는데 아직 develop에 없어서 값만 맞춰 둔다.
- * feat/map이 머지되면 이 상수를 지우고 `import type { Region } from '@/types/onsen'`로 바꾼다.
- */
-export const MAGAZINE_REGIONS = [
-  '서울',
-  '경기',
-  '인천',
-  '강원',
-  '충청',
-  '경상',
-  '전라',
-  '제주',
-] as const
-
-export type Region = (typeof MAGAZINE_REGIONS)[number]
+import type { Region } from '@/types/onsen'
 
 /**
  * 매거진 카테고리 — 시안·상세 데모 기준.

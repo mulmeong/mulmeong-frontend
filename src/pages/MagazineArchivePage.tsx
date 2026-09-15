@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 
 import { useMagazines } from '@/features/magazine/hooks/useMagazines'
 import { cn } from '@/lib/cn'
-import { MAGAZINE_CATEGORIES, MAGAZINE_REGIONS } from '@/types/magazine'
+import { MAGAZINE_CATEGORIES } from '@/types/magazine'
+import { REGIONS } from '@/types/onsen'
 
 import type { Magazine } from '@/types/magazine'
 
@@ -68,7 +69,7 @@ export default function MagazineArchivePage() {
               onChange={(e) => setRegion(e.target.value)}
               className="bg-inverse text-text-inverse rounded-full px-3.5 py-[7px] text-[12px] font-bold outline-none"
             >
-              {[ALL_REGION, ...MAGAZINE_REGIONS].map((item) => (
+              {[ALL_REGION, ...REGIONS].map((item) => (
                 <option key={item} value={item}>
                   {item}
                 </option>
