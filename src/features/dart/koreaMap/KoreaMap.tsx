@@ -67,13 +67,30 @@ const JEJU_TRANSFORM = [
 export default function KoreaMap({ marker, markerLabel, className }: KoreaMapProps) {
   const visible = marker != null && isInBounds(marker.lng, marker.lat)
 
-  // 숨은 동안에도 마지막 좌표를 들고 있는다. 가운데로 되돌리면
-  // 다시 나타날 때 엉뚱한 곳에서 날아오는 것처럼 보인다.
-  const lastPoint = useRef<Point>(CENTER)
-  if (visible && marker) {
-    lastPoint.current = projectToView(marker.lng, marker.lat)
-  }
-  const { x, y } = lastPoint.current
+  /**
+   * 마커 위치는 style prop이 아니라 DOM에 직접 쓴다.
+   *
+   * 숨을 때 좌표를 잃으면 사라지는 0.3초 사이에 마커가 기본 위치로 미끄러진다.
+   * 그렇다고 마지막 좌표를 state에 들면 렌더가 한 번 더 도는 대가를 치른다.
+   * 요소의 style 자체가 마지막 값을 들고 있으므로 그걸 저장소로 쓴다 —
+   * 좌표가 없는 동안에는 아무것도 건드리지 않아 그 자리에 그대로 머문다.
+   */
+  const markerRef = useRef<SVGGElement>(null)
+  useEffect(() => {
+    const element = markerRef.current
+    if (!element) return
+
+    if (visible && marker) {
+      const { x, y } = projectToView(marker.lng, marker.lat)
+      element.style.transform = `translate(${x}px, ${y}px)`
+      return
+    }
+
+    // 첫 좌표가 오기 전에는 가운데에 둔다. 구석에서 날아오는 것처럼 보이지 않게.
+    if (!element.style.transform) {
+      element.style.transform = `translate(${CENTER.x}px, ${CENTER.y}px)`
+    }
+  }, [visible, marker])
 
   // 경고는 렌더 중이 아니라 커밋 후에 남긴다.
   // 렌더 본문에서 부르면 StrictMode의 이중 렌더로 두 번 찍힌다.
@@ -132,11 +149,13 @@ export default function KoreaMap({ marker, markerLabel, className }: KoreaMapPro
       </g>
 
       <g
+        ref={markerRef}
         className={cn(
           '[transition:transform_.55s_cubic-bezier(.2,1.5,.4,1),opacity_.3s]',
           'motion-reduce:[transition:none]',
         )}
-        style={{ transform: `translate(${x}px, ${y}px)`, opacity: visible ? 1 : 0 }}
+        // transform은 위 effect가 DOM에 직접 쓴다. 여기 두면 서로 덮어쓴다.
+        style={{ opacity: visible ? 1 : 0 }}
       >
         <circle r={MARKER_RADIUS} fill="#0E1513" />
         <circle r={MARKER_INNER_RADIUS} fill="#FFFFFF" />
