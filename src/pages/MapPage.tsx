@@ -5,12 +5,15 @@ import Header from '@/components/ui/Header'
 import MapCanvas from '@/features/map/components/MapCanvas'
 import MapSidebar from '@/features/map/components/MapSidebar'
 import OnsenDetailPanel from '@/features/map/components/OnsenDetailPanel'
+import PoiFilter from '@/features/map/components/PoiFilter'
 import { useOnsens } from '@/features/map/hooks/useOnsens'
+import { usePois } from '@/features/map/hooks/usePois'
 import { cn } from '@/lib/cn'
 
 import { REGION_VIEWS } from '@/types/onsen'
 
 import type { MapBounds, MapView, Onsen, Region } from '@/types/onsen'
+import type { PoiCategory } from '@/types/poi'
 
 /** 검색 결과가 하나뿐일 때 지도를 얼마나 당길지. */
 const SINGLE_RESULT_LEVEL = 5
@@ -82,6 +85,22 @@ export default function MapPage() {
    */
   const [collapsed, setCollapsed] = useState(false)
 
+  // MAP-04 카테고리 POI — 켜진 것만 지도 중심 기준으로 불러온다.
+  const [categories, setCategories] = useState<PoiCategory[]>([])
+  const [center, setCenter] = useState<{ lat: number; lng: number }>()
+  const { pois } = usePois(categories, center)
+
+  const handleCenterChange = useCallback(
+    (next: { lat: number; lng: number }) => setCenter(next),
+    [],
+  )
+
+  const handleToggleCategory = useCallback((category: PoiCategory) => {
+    setCategories((prev) =>
+      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category],
+    )
+  }, [])
+
   return (
     // 지도는 화면을 꽉 채워야 해서 RootLayout(max-w-5xl 본문) 밖에 두고 헤더만 직접 쓴다.
     <div className="flex h-dvh flex-col overflow-hidden">
@@ -137,14 +156,24 @@ export default function MapPage() {
           </aside>
         )}
 
-        <main className="min-h-0 flex-1">
+        <main className="relative min-h-0 flex-1">
           <MapCanvas
             onsens={onsens}
             selectedId={selectedId}
             onSelect={handleSelect}
             onBoundsChange={handleBoundsChange}
+            pois={pois}
+            onCenterChange={handleCenterChange}
             focus={focus}
           />
+
+          {/*
+            지도 위에 띄운다 — 컨테이너는 클릭을 통과시켜 팬·줌을 막지 않는다.
+            카카오맵이 타일·컨트롤에 자체 z-index를 써서, 값을 넉넉히 올려야 가려지지 않는다.
+          */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-[100]">
+            <PoiFilter selected={categories} onToggle={handleToggleCategory} />
+          </div>
         </main>
       </div>
     </div>
