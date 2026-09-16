@@ -282,36 +282,39 @@ export default function MapSidebar({
               </div>
             </section>
 
-            <section className="pt-8">
-              <div className="flex items-baseline justify-between gap-3">
-                <SectionLabel>지금 이런 곳은 어때요</SectionLabel>
-                <button
-                  type="button"
-                  className="text-text-secondary shrink-0 text-[11px] outline-none hover:underline"
-                >
-                  전체보기
-                </button>
-              </div>
+            {/* 첫 화면에만 둔다 — 지역을 고르면 그 지역 매거진이 이 자리를 대신한다. */}
+            {!region && (
+              <section className="pt-8">
+                <div className="flex items-baseline justify-between gap-3">
+                  <SectionLabel>지금 이런 곳은 어때요</SectionLabel>
+                  <button
+                    type="button"
+                    className="text-text-secondary shrink-0 text-[11px] outline-none hover:underline"
+                  >
+                    전체보기
+                  </button>
+                </div>
 
-              {/* 가로 스크롤 — 추천이 세로 공간을 먹어 목록을 밀어내지 않게 한다. */}
-              <ul className="scrollbar-thin mt-3 flex snap-x gap-2.5 overflow-x-auto pb-1">
-                {SUGGESTIONS.map((label, index) => (
-                  <li key={label} className="w-[132px] shrink-0 snap-start">
-                    {env.useMock ? (
-                      <img
-                        src={MOCK_SUGGESTION_IMAGES[index]}
-                        alt=""
-                        loading="lazy"
-                        className="bg-surface-dim aspect-[132/74] w-full rounded-sm object-cover"
-                      />
-                    ) : (
-                      <div className="bg-surface-dim aspect-[132/74] w-full rounded-sm" />
-                    )}
-                    <p className="text-text-primary mt-1.5 truncate text-[12px]">{label}</p>
-                  </li>
-                ))}
-              </ul>
-            </section>
+                {/* 가로 스크롤 — 추천이 세로 공간을 먹어 목록을 밀어내지 않게 한다. */}
+                <ul className="scrollbar-thin mt-3 flex snap-x gap-2.5 overflow-x-auto pb-1">
+                  {SUGGESTIONS.map((label, index) => (
+                    <li key={label} className="w-[132px] shrink-0 snap-start">
+                      {env.useMock ? (
+                        <img
+                          src={MOCK_SUGGESTION_IMAGES[index]}
+                          alt=""
+                          loading="lazy"
+                          className="bg-surface-dim aspect-[132/74] w-full rounded-sm object-cover"
+                        />
+                      ) : (
+                        <div className="bg-surface-dim aspect-[132/74] w-full rounded-sm" />
+                      )}
+                      <p className="text-text-primary mt-1.5 truncate text-[12px]">{label}</p>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
           </>
         )}
 
@@ -365,8 +368,13 @@ export default function MapSidebar({
         )}
 
         {/* 목록과 매거진 사이 최소 간격. mt-auto와 겹치지 않게 빈 칸으로 벌린다. */}
-        <div aria-hidden className="h-8 shrink-0" />
-        <SidebarMagazine />
+        {/* 첫 화면은 '지금 이런 곳은 어때요'가 맡는다 — 매거진은 지역을 고른 뒤에 나온다. */}
+        {region && (
+          <>
+            <div aria-hidden className="h-8 shrink-0" />
+            <SidebarMagazine region={region} />
+          </>
+        )}
       </div>
     </div>
   )

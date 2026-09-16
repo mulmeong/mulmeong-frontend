@@ -5,10 +5,11 @@ import { useMagazines } from '@/features/magazine/hooks/useMagazines'
 /** 시안 30:2224 — 사이드바 하단에 붙는 매거진 묶음. 카드는 2개만 보여준다. */
 const VISIBLE_COUNT = 2
 
-export default function SidebarMagazine() {
-  const { magazines, loading, error } = useMagazines()
+export default function SidebarMagazine({ region }: { region?: string }) {
+  const { magazines, loading, error } = useMagazines(undefined, region)
 
   // 보조 영역이라 실패하면 조용히 감춘다 — 지도 탐색을 막지 않는다.
+  // 고른 지역에 글이 없을 때도 마찬가지다 (전체 글로 대체하지 않는다).
   if (loading || error || magazines.length === 0) return null
 
   return (
@@ -21,7 +22,7 @@ export default function SidebarMagazine() {
 
       <div className="mt-2 flex items-baseline justify-between gap-3">
         <h2 className="text-text-primary min-w-0 truncate text-[15px] font-semibold">
-          이번 주말, 이런 온천은 어때요?
+          {region ? `${region}의 온천 이야기` : '이번 주말, 이런 온천은 어때요?'}
         </h2>
         <Link
           to="/magazine"
