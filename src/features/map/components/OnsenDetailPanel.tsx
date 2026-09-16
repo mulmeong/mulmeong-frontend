@@ -17,13 +17,14 @@ type DetailTab = (typeof TABS)[number]
 type OnsenDetailPanelProps = {
   onsen: OnsenListItem
   onClose: () => void
+  onDirections: () => void
 }
 
 /**
  * MAP-02 상세패널. 한눈에·정보 탭은 명세에 있는 온천 스펙(수온·수질·효능·시설·요금·뚜벅이)으로
  * 채운다. 리뷰(REV-*)는 목 모드에서 화면 검토용 목록을 보여준다.
  */
-export default function OnsenDetailPanel({ onsen, onClose }: OnsenDetailPanelProps) {
+export default function OnsenDetailPanel({ onsen, onClose, onDirections }: OnsenDetailPanelProps) {
   const [tab, setTab] = useState<DetailTab>('한눈에')
 
   // 목록 데이터로 먼저 그리고 상세가 도착하면 덮는다 — 로딩 중에도 화면이 비지 않는다.
@@ -77,13 +78,20 @@ export default function OnsenDetailPanel({ onsen, onClose }: OnsenDetailPanelPro
         <div className="bg-surface-dim mt-1 h-[206px] w-full shrink-0 rounded-sm" />
       )}
 
-      {/* 시안 Place Action Row. 저장(PAM-07)·공유·길찾기는 아직 범위 밖이라 동작은 비운다. */}
+      {/* 저장·공유는 후속 범위. 길찾기는 이 온천을 도착지로 채운다. */}
       <div className="mt-[10px] flex items-center gap-4">
-        {['저장', '공유', '길찾기'].map((action) => (
+        {['저장', '공유'].map((action) => (
           <span key={action} className="text-text-secondary text-[12px]">
             {action}
           </span>
         ))}
+        <button
+          type="button"
+          onClick={onDirections}
+          className="text-text-primary text-[12px] underline underline-offset-4"
+        >
+          길찾기
+        </button>
       </div>
 
       {rating !== undefined && (

@@ -20,6 +20,7 @@ type MapSidebarProps = {
   selectedId?: number
   onSelect: (onsen: Onsen) => void
   onSearch: (filters: { keyword?: string; region?: string }) => void
+  onDirections: () => void
 }
 
 /** 시안의 '지금 이런 곳은 어때요' 추천 묶음. 실제 링크는 매거진 연동 후 채운다. */
@@ -78,6 +79,7 @@ export default function MapSidebar({
   selectedId,
   onSelect,
   onSearch,
+  onDirections,
 }: MapSidebarProps) {
   const [keyword, setKeyword] = useState('')
   const [region, setRegion] = useState<string>()
@@ -171,10 +173,7 @@ export default function MapSidebar({
       <div className="scrollbar-thin flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain px-5 pb-6">
         <div role="tablist" className="flex gap-5 pt-6">
           <Tab selected>장소 검색</Tab>
-          {/* 길찾기(MAP-08)는 ① 범위다 — 모드 전환·경로 API가 아직 없어 비활성일 뿐이다. */}
-          <Tab disabled className="cursor-not-allowed">
-            길찾기
-          </Tab>
+          <Tab onClick={onDirections}>길찾기</Tab>
         </div>
 
         <form onSubmit={handleSubmit} className="relative pt-3">

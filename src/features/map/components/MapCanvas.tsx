@@ -12,6 +12,7 @@ import { getNationalMapView } from '@/features/map/utils/nationalMapView'
 import { NATIONAL_VIEW } from '@/types/onsen'
 
 import type { MapViewportLimits } from '@/features/map/utils/mapViewportLimits'
+import type { DirectionsResult, RouteOption } from '@/features/map/types/directions'
 import type { MapBounds, MapView, Onsen } from '@/types/onsen'
 import type { Poi } from '@/types/poi'
 
@@ -27,6 +28,8 @@ type MapCanvasProps = {
   onCenterChange?: (center: { lat: number; lng: number }) => void
   /** 지역을 고르거나 검색하면 그쪽으로 지도를 옮긴다. 없으면 전국 뷰 그대로. */
   focus?: MapView
+  directions?: DirectionsResult
+  route?: RouteOption
 }
 
 /** SVG를 data URI로 만든다 — '#'을 미리 이스케이프하면 이중 인코딩돼 색이 깨진다. */
@@ -122,6 +125,8 @@ export default function MapCanvas({
   pois,
   onCenterChange,
   focus,
+  directions,
+  route,
 }: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<kakao.maps.Map | null>(null)
@@ -403,6 +408,55 @@ export default function MapCanvas({
 
     return () => observer.disconnect()
   }, [ready])
+
+  // 경로 선택이 바뀔 때만 다시 맞춘다. 팬·줌·idle은 경로를 재조회하지 않는다.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!ready || !map || !directions || !route) return
+    const maps = window.kakao.maps
+    const bounds = new maps.LatLngBounds()
+    const path = route.path.map((point) => new maps.LatLng(point.lat, point.lng))
+    path.forEach((point) => bounds.extend(point))
+    const lines =
+      path.length >= 2
+        ? [
+            new maps.Polyline({
+              map,
+              path,
+              strokeColor: '#FFFFFF',
+              strokeWeight: 7,
+              strokeOpacity: 0.9,
+              zIndex: 6,
+            }),
+            new maps.Polyline({
+              map,
+              path,
+              strokeColor: directions.mode === 'walk' ? '#79766E' : '#292823',
+              strokeWeight: 3,
+              strokeOpacity: 0.95,
+              strokeStyle: directions.preview || directions.mode === 'walk' ? 'dashed' : 'solid',
+              zIndex: 7,
+            }),
+          ]
+        : []
+    const endpoints = [directions.origin, directions.destination].map((place, index) => {
+      const content = document.createElement('div')
+      content.textContent = index === 0 ? '출발' : '도착'
+      content.title = place.name
+      content.style.cssText = `padding:6px 10px;border-radius:16px;border:1px solid #292823;background:${index === 0 ? '#FFFFFF' : '#292823'};color:${index === 0 ? '#292823' : '#FFFFFF'};font:600 11px system-ui;box-shadow:0 1px 4px #0002;`
+      const position = new maps.LatLng(place.lat, place.lng)
+      bounds.extend(position)
+      const overlay = new maps.CustomOverlay({ position, content, zIndex: 8, yAnchor: 0.5 })
+      overlay.setMap(map)
+      return overlay
+    })
+    map.relayout()
+    if (!bounds.isEmpty()) map.setBounds(bounds)
+    return () => {
+      lines.forEach((line) => line.setMap(null))
+      endpoints.forEach((overlay) => overlay.setMap(null))
+    }
+  }, [ready, directions, route])
 
   const selectedOnsen = onsens.find((onsen) => onsen.id === selectedId)
   const selectedLat = selectedOnsen?.lat

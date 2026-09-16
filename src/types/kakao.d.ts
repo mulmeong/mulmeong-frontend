@@ -49,6 +49,19 @@ declare namespace kakao.maps {
     constructor(src: string, size: Size, options?: { offset?: Point })
   }
 
+  class Polyline {
+    constructor(options: {
+      map?: Map
+      path: LatLng[]
+      strokeWeight?: number
+      strokeColor?: string
+      strokeOpacity?: number
+      strokeStyle?: 'solid' | 'dashed'
+      zIndex?: number
+    })
+    setMap(map: Map | null): void
+  }
+
   class Marker {
     constructor(options: { position: LatLng; title?: string; image?: MarkerImage; zIndex?: number })
     setMap(map: Map | null): void
