@@ -1,4 +1,4 @@
-import { REVIEW_REGIONS } from '@/types/review'
+import { matchesRegionGroup } from '@/types/region'
 
 import type { MyReview, MyReviewsPage, ReviewRegion, ReviewSort } from '@/types/review'
 
@@ -123,13 +123,6 @@ function delay<T>(value: T): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(value), MOCK_DELAY_MS))
 }
 
-function matchesRegion(review: MyReview, region: ReviewRegion): boolean {
-  const group = REVIEW_REGIONS.find((item) => item.id === region)
-  // '전국'은 prefixes가 비어 있다 — 거르지 않는다.
-  if (!group || group.prefixes.length === 0) return true
-  return group.prefixes.some((prefix) => review.onsenAddress.startsWith(prefix))
-}
-
 function sortReviews(reviews: MyReview[], sort: ReviewSort): MyReview[] {
   const sorted = [...reviews]
   if (sort === 'rating') return sorted.sort((a, b) => b.rating - a.rating)
@@ -143,7 +136,7 @@ export function mockGetMyReviews(
   region: ReviewRegion,
 ): Promise<MyReviewsPage> {
   const filtered = sortReviews(
-    MOCK_REVIEWS.filter((review) => matchesRegion(review, region)),
+    MOCK_REVIEWS.filter((review) => matchesRegionGroup(review.onsenAddress, region)),
     sort,
   )
 

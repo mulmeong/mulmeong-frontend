@@ -9,13 +9,8 @@ import Pagination from '@/features/mypage/components/Pagination'
 import ReviewItem from '@/features/mypage/components/ReviewItem'
 import { useMyReviews } from '@/features/mypage/hooks/useMyReviews'
 
-import {
-  REVIEW_REGIONS,
-  REVIEW_SORTS,
-  type MyReview,
-  type ReviewRegion,
-  type ReviewSort,
-} from '@/types/review'
+import { REGION_GROUPS } from '@/types/region'
+import { REVIEW_SORTS, type MyReview, type ReviewRegion, type ReviewSort } from '@/types/review'
 
 /** 내 리뷰 · 담당: 예린 */
 export default function MyReviewsPage() {
@@ -95,7 +90,7 @@ export default function MyReviewsPage() {
       */}
       {sort === 'region' && (
         <div className="border-border-default mt-3 flex flex-wrap gap-2 border-t pt-3">
-          {REVIEW_REGIONS.map((option) => (
+          {REGION_GROUPS.map((option) => (
             <Chip
               key={option.id}
               selected={option.id === region}
