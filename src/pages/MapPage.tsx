@@ -76,6 +76,12 @@ export default function MapPage() {
   // 목록·마커가 같은 선택 상태를 쓰므로 객체는 id로 되찾는다 (사본을 따로 들지 않는다).
   const selected = onsens.find((onsen) => onsen.id === selectedId)
 
+  /**
+   * MAP-07 리스트 뷰 토글. 시안에 버튼이 없어 형태는 우리가 정했다 —
+   * 패널 경계의 손잡이로 접고 편다. 모바일은 45dvh 스트립이라 접는 의미가 없어 데스크탑만.
+   */
+  const [collapsed, setCollapsed] = useState(false)
+
   return (
     // 지도는 화면을 꽉 채워야 해서 RootLayout(max-w-5xl 본문) 밖에 두고 헤더만 직접 쓴다.
     <div className="flex h-dvh flex-col overflow-hidden">
@@ -86,7 +92,8 @@ export default function MapPage() {
         <aside
           className={cn(
             'border-border-default h-[45dvh] w-full min-w-0 shrink-0 flex-col border-b',
-            'lg:flex lg:h-auto lg:w-[380px] lg:border-r lg:border-b-0',
+            'lg:h-auto lg:border-r lg:border-b-0',
+            collapsed ? 'lg:w-0 lg:overflow-hidden lg:border-r-0' : 'lg:flex lg:w-[380px]',
             selected ? 'hidden' : 'flex',
           )}
         >
@@ -99,6 +106,29 @@ export default function MapPage() {
             onSearch={handleSearch}
           />
         </aside>
+
+        {/* 접기 손잡이 — 패널 경계에 붙여 지도를 최대한 넓게 쓸 수 있게 한다. */}
+        <div
+          className={cn(
+            'pointer-events-none relative z-10 hidden w-0 shrink-0',
+            selected ? 'lg:hidden' : 'lg:block',
+          )}
+        >
+          <button
+            type="button"
+            onClick={() => setCollapsed((prev) => !prev)}
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? '검색 패널 펼치기' : '검색 패널 접기'}
+            className={cn(
+              'border-border-default bg-surface text-text-secondary hover:text-text-primary',
+              'pointer-events-auto absolute top-1/2 left-0 -translate-y-1/2',
+              'flex h-[51px] w-[23px] items-center justify-center',
+              'rounded-r-md border border-l-0 text-[11px] transition-colors outline-none',
+            )}
+          >
+            {collapsed ? '›' : '‹'}
+          </button>
+        </div>
 
         {/* 검색 패널을 교체하지 않고 그 오른쪽에 더한다 — 지도는 남은 폭을 쓴다. */}
         {selected && (
