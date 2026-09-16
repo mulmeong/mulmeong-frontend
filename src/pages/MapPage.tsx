@@ -35,7 +35,14 @@ export default function MapPage() {
       filtersRef.current = filters
       setHasFilter(Boolean(filters.keyword || filters.region))
 
+      if (!filters.keyword && !filters.region) {
+        setSelectedId(undefined)
+        setFocus({ initial: true })
+      }
+
       const results = await load(filters)
+      // 초기 화면으로 돌아간 뒤 늦게 도착한 검색이 지도를 다시 이동시키지 않는다.
+      if (filtersRef.current !== filters) return
 
       if (filters.region) {
         // 지역은 결과와 무관하게 그 지역이 보이게 한다.

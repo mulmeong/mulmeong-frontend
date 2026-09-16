@@ -52,7 +52,7 @@ function EmptyResult({ onReset }: { onReset: () => void }) {
         onClick={onReset}
         className="text-text-primary mt-2 text-[11px] underline underline-offset-2 outline-none"
       >
-        조건 초기화
+        전체 지도 보기
       </button>
     </div>
   )
@@ -159,6 +159,9 @@ export default function MapSidebar({
     setKeyword('')
     setRegion(undefined)
     setSearchedKeyword('')
+    setFocused(false)
+    setActiveIndex(-1)
+    clear()
     onSearch({})
   }
 
@@ -211,10 +214,21 @@ export default function MapSidebar({
               <h2 className="text-text-primary min-w-0 truncate text-[15px] font-semibold">
                 “{searchedKeyword}” 검색 결과
               </h2>
-              {/* 0은 바로 아래 '검색 결과가 없어요'와 겹쳐 굳이 띄우지 않는다. */}
-              {!loading && !error && onsens.length > 0 && (
-                <span className="text-text-secondary shrink-0 text-[12px]">{onsens.length}</span>
-              )}
+              <div className="flex shrink-0 items-baseline gap-2.5">
+                {/* 0은 바로 아래 '검색 결과가 없어요'와 겹쳐 굳이 띄우지 않는다. */}
+                {!loading && !error && onsens.length > 0 && (
+                  <span className="text-text-secondary text-[12px]">{onsens.length}</span>
+                )}
+                {/* 검색 조건과 장소 선택을 풀고 처음 지도 범위로 돌아간다. */}
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  title="검색 조건을 지우고 처음 지도 화면으로 돌아가기"
+                  className="text-text-secondary hover:text-text-primary text-[11px] transition-colors outline-none focus-visible:underline focus-visible:underline-offset-2"
+                >
+                  전체 지도 보기
+                </button>
+              </div>
             </div>
 
             {loading && <p className="text-text-secondary mt-3 text-[13px]">불러오는 중…</p>}
@@ -225,7 +239,12 @@ export default function MapSidebar({
               </p>
             )}
 
-            {!loading && !error && onsens.length === 0 && <EmptyResult onReset={handleReset} />}
+            {/* 헤더에서 전체 지도로 돌아갈 수 있으므로 안내 문구만 보여준다. */}
+            {!loading && !error && onsens.length === 0 && (
+              <p className="text-text-secondary mt-3 text-[12px] leading-[1.6]">
+                검색 결과가 없어요. 다른 지역이나 검색어로 찾아보세요.
+              </p>
+            )}
 
             {!loading && !error && onsens.length > 0 && (
               <ul className="mt-2 flex flex-col">

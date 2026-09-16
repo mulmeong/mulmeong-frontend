@@ -359,6 +359,19 @@ export default function MapCanvas({
 
     const maps = window.kakao.maps
 
+    if ('initial' in focus) {
+      const limits = viewportLimitsRef.current
+      const container = containerRef.current
+      if (!limits || !container) return
+      // 상세 패널을 닫으며 넓어진 실제 지도 크기를 먼저 반영한다.
+      map.relayout()
+      const maxLevel = getViewportMaxLevel(limits, container)
+      map.setMaxLevel(maxLevel)
+      map.setLevel(maxLevel)
+      map.setCenter(limitMapViewport(map, container, limits, limits.center))
+      return
+    }
+
     if ('bounds' in focus) {
       const { swLat, swLng, neLat, neLng } = focus.bounds
       const area = new maps.LatLngBounds()

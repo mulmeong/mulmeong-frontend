@@ -41,6 +41,8 @@ export function useOnsens() {
    */
   const load = useCallback(async (filters: Filters = {}): Promise<OnsenListItem[]> => {
     const key = `${filters.keyword ?? ''}|${filters.region ?? ''}|${boundsKey(filters.bounds)}`
+    // 캐시로 전체 목록을 복원하는 경우에도 진행 중인 이전 검색을 무효화한다.
+    const id = ++requestId.current
 
     const cached = cache.current.get(key)
     if (cached) {
@@ -50,7 +52,6 @@ export function useOnsens() {
       return cached
     }
 
-    const id = ++requestId.current
     setLoading(true)
     setError(undefined)
     try {

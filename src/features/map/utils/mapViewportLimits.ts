@@ -1,4 +1,5 @@
 export type MapViewportLimits = {
+  center: kakao.maps.LatLng
   northWest: kakao.maps.LatLng
   southEast: kakao.maps.LatLng
   initialLevel: number
@@ -11,6 +12,7 @@ export function captureMapViewport(map: kakao.maps.Map, container: HTMLElement):
   const projection = map.getProjection()
   const { clientWidth: width, clientHeight: height } = container
   return {
+    center: map.getCenter(),
     northWest: projection.coordsFromContainerPoint(new window.kakao.maps.Point(0, 0)),
     southEast: projection.coordsFromContainerPoint(new window.kakao.maps.Point(width, height)),
     initialLevel: map.getLevel(),
