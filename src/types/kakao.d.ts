@@ -27,10 +27,36 @@ declare namespace kakao.maps {
     relayout(): void
   }
 
+  class Size {
+    constructor(width: number, height: number)
+  }
+
+  class Point {
+    constructor(x: number, y: number)
+  }
+
+  class MarkerImage {
+    constructor(src: string, size: Size, options?: { offset?: Point })
+  }
+
   class Marker {
-    constructor(options: { position: LatLng; title?: string })
+    constructor(options: { position: LatLng; title?: string; image?: MarkerImage; zIndex?: number })
     setMap(map: Map | null): void
     getPosition(): LatLng
+  }
+
+  /** 마커 위에 이름표를 얹는다 — Marker로는 텍스트를 못 그린다. */
+  class CustomOverlay {
+    constructor(options: {
+      position: LatLng
+      content: string | HTMLElement
+      /** 0=가운데, 1=아래. 마커 위에 띄우려면 1을 쓴다. */
+      yAnchor?: number
+      xAnchor?: number
+      zIndex?: number
+      clickable?: boolean
+    })
+    setMap(map: Map | null): void
   }
 
   /** libraries=clusterer 로 받아온다 (loadKakaoMap 참고). */
