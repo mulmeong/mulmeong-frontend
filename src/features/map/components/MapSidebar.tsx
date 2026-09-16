@@ -44,13 +44,13 @@ const MOCK_SUGGESTION_IMAGES = [
 function EmptyResult({ onReset }: { onReset: () => void }) {
   return (
     <div className="mt-3">
-      <p className="text-text-secondary text-[13px] leading-[1.6]">
+      <p className="text-text-secondary text-[12px] leading-[1.6]">
         검색 결과가 없어요. 다른 지역이나 검색어로 찾아보세요.
       </p>
       <button
         type="button"
         onClick={onReset}
-        className="text-text-primary mt-2 text-[12px] underline underline-offset-2 outline-none"
+        className="text-text-primary mt-2 text-[11px] underline underline-offset-2 outline-none"
       >
         조건 초기화
       </button>
