@@ -26,32 +26,51 @@ function svgMarker(svg: string) {
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)
 }
 
-/** 온천 기호(♨)를 핀에 새긴다 — 지도에서 온천을 뜻하는 표준 기호라 설명이 필요 없다. */
-const onsenPin = (fill: string) =>
-  `<svg xmlns="http://www.w3.org/2000/svg" width="34" height="44" viewBox="0 0 26 34">
-    <path d="M13 33C13 33 24.5 20.8 24.5 13A11.5 11.5 0 1 0 1.5 13C1.5 20.8 13 33 13 33Z"
-      fill="${fill}" stroke="#FFFFFF" stroke-width="1.5"/>
-    <path d="M8.2 16.4h9.6" stroke="#FFFFFF" stroke-width="1.7" stroke-linecap="round"/>
-    <path d="M9.6 12.6c0-1.6 1.6-1.9 1.6-3.4 0-.8-.5-1.4-1-1.8"
-      stroke="#FFFFFF" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-    <path d="M13 12.6c0-1.6 1.6-1.9 1.6-3.4 0-.8-.5-1.4-1-1.8"
-      stroke="#FFFFFF" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-    <path d="M16.4 12.6c0-1.6 1.6-1.9 1.6-3.4 0-.8-.5-1.4-1-1.8"
-      stroke="#FFFFFF" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+/** 점은 작게 보이되 클릭 영역은 유지한다. 선택은 크기와 얇은 링으로만 구분한다. */
+const onsenDot = (selected = false) =>
+  `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
+    <defs>
+      <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+        <feDropShadow dx="0" dy="1" stdDeviation="1.25" flood-color="#1C1B18" flood-opacity=".16"/>
+      </filter>
+    </defs>
+    ${selected ? '<circle cx="18" cy="18" r="14" fill="none" stroke="#1C1B18" stroke-opacity=".45"/>' : ''}
+    <circle cx="18" cy="18" r="${selected ? 11 : 8}" fill="#1C1B18" fill-opacity=".92"
+      stroke="#FFFFFF" stroke-opacity=".85" stroke-width="1" filter="url(#shadow)"/>
   </svg>`
 
-/** 온천 마커. 카카오 기본 핀 대신 서비스 톤(먹색)을 쓴다. */
-const ONSEN_MARKER = svgMarker(onsenPin('#1A1A1A'))
-const ONSEN_MARKER_SIZE = { w: 34, h: 44 }
+const ONSEN_MARKER = svgMarker(onsenDot())
+const ONSEN_MARKER_SELECTED = svgMarker(onsenDot(true))
+const ONSEN_MARKER_SIZE = 36
 
-/** 선택된 온천. 같은 핀을 키우고 색을 바꿔 눈에 띄게 한다. */
-const ONSEN_MARKER_SELECTED = svgMarker(onsenPin('#C2603F'))
-const ONSEN_SELECTED_SIZE = { w: 42, h: 54 }
+/** 개수 구간은 시각 크기만 결정한다. 지도 격자와 클러스터 묶음 기준은 그대로 둔다. */
+const CLUSTER_STYLES = [34, 38, 42].map((size) => ({
+  width: `${size}px`,
+  height: `${size}px`,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  boxSizing: 'border-box',
+  borderRadius: '50%',
+  background: 'rgba(28, 27, 24, .9)',
+  border: '1px solid rgba(255, 255, 255, .2)',
+  boxShadow: '0 2px 5px rgba(28, 27, 24, .14)',
+  color: '#FFFFFF',
+  fontFamily: 'var(--font-sans)',
+  fontSize: '12px',
+  fontWeight: '600',
+  fontVariantNumeric: 'tabular-nums',
+  lineHeight: '1',
+  textAlign: 'center',
+  userSelect: 'none',
+  cursor: 'pointer',
+}))
 
-/** POI 마커. 온천 핀과 구분되게 점으로 그린다. */
+/** 주변 장소는 같은 무채색 계열의 빈 원으로 온천과 구분한다. */
 const POI_MARKER = svgMarker(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20">
-    <circle cx="10" cy="10" r="7" fill="#FFFFFF" stroke="#1A1A1A" stroke-width="2.5"/>
+  `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
+    <circle cx="10" cy="10" r="5.5" fill="#FFFFFF" fill-opacity=".94"
+      stroke="#1C1B18" stroke-opacity=".75" stroke-width="1.5"/>
   </svg>`,
 )
 const POI_MARKER_SIZE = 20
@@ -134,6 +153,8 @@ export default function MapCanvas({
       map,
       averageCenter: true,
       minLevel: CLUSTER_MIN_LEVEL,
+      calculator: [10, 50],
+      styles: CLUSTER_STYLES,
       // 기본 클릭 확대는 한 번에 많이 당겨서 직접 단계를 정한다.
       disableClickZoom: true,
     })
@@ -157,12 +178,11 @@ export default function MapCanvas({
 
     markersRef.current = onsens.map((onsen) => {
       const chosen = onsen.id === selectedId
-      const { w, h } = chosen ? ONSEN_SELECTED_SIZE : ONSEN_MARKER_SIZE
-      // 핀 끝이 좌표를 가리켜야 해서 offset을 바닥 중앙에 둔다.
+      // 원의 중심이 장소 좌표를 가리키도록 이미지 중앙에 고정한다.
       const image = new maps.MarkerImage(
         chosen ? ONSEN_MARKER_SELECTED : ONSEN_MARKER,
-        new maps.Size(w, h),
-        { offset: new maps.Point(w / 2, h) },
+        new maps.Size(ONSEN_MARKER_SIZE, ONSEN_MARKER_SIZE),
+        { offset: new maps.Point(ONSEN_MARKER_SIZE / 2, ONSEN_MARKER_SIZE / 2) },
       )
 
       const marker = new maps.Marker({
@@ -225,7 +245,7 @@ export default function MapCanvas({
         position: new maps.LatLng(lat, lng),
         content: labelHtml(text, tone),
         // 마커 위쪽에 띄운다.
-        yAnchor: tone === 'onsen' ? 2.3 : 1.9,
+        yAnchor: 1.9,
         zIndex,
         clickable: false,
       })

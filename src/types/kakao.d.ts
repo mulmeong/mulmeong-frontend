@@ -67,6 +67,9 @@ declare namespace kakao.maps {
       /** 이 레벨보다 확대하면 클러스터를 풀고 개별 마커를 보여준다. */
       minLevel?: number
       disableClickZoom?: boolean
+      /** 묶음 개수에 따라 마커 스타일을 고르는 구간값. */
+      calculator?: number[]
+      styles?: Record<string, string>[]
     })
     addMarkers(markers: Marker[]): void
     clear(): void
