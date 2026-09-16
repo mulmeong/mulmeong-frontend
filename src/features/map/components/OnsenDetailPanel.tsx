@@ -44,10 +44,18 @@ export default function OnsenDetailPanel({ onsen, onClose }: OnsenDetailPanelPro
           <p className="text-text-secondary mt-[5px] text-[13px]">{address}</p>
         </div>
         {/* 찜은 PAM-07·로그인 필요 범위라 A-1에서는 자리만 잡는다. */}
-        <div
+        <svg
           aria-hidden
-          className="border-border-default mt-1 size-[18px] shrink-0 rounded-full border"
-        />
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="text-border-default mt-1 size-[18px] shrink-0"
+        >
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z" />
+        </svg>
       </div>
 
       {imageUrl ? (
