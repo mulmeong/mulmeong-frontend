@@ -20,9 +20,12 @@ declare namespace kakao.maps {
     constructor(container: HTMLElement, options: { center: LatLng; level?: number })
     getCenter(): LatLng
     setCenter(latlng: LatLng): void
+    panTo(latlng: LatLng): void
     getLevel(): number
     setLevel(level: number): void
+    setMaxLevel(level: number): void
     getBounds(): LatLngBounds
+    getProjection(): MapProjection
     setBounds(bounds: LatLngBounds): void
     relayout(): void
   }
@@ -33,6 +36,13 @@ declare namespace kakao.maps {
 
   class Point {
     constructor(x: number, y: number)
+    x: number
+    y: number
+  }
+
+  class MapProjection {
+    containerPointFromCoords(latlng: LatLng): Point
+    coordsFromContainerPoint(point: Point): LatLng
   }
 
   class MarkerImage {

@@ -1,9 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 
+import { animateMapCenter } from '@/features/map/utils/animateMapCenter'
 import { loadKakaoMap } from '@/features/map/utils/loadKakaoMap'
+import {
+  captureMapViewport,
+  getViewportMaxLevel,
+  limitMapViewport,
+} from '@/features/map/utils/mapViewportLimits'
+import { getNationalMapView } from '@/features/map/utils/nationalMapView'
 
 import { NATIONAL_VIEW } from '@/types/onsen'
 
+import type { MapViewportLimits } from '@/features/map/utils/mapViewportLimits'
 import type { MapBounds, MapView, Onsen } from '@/types/onsen'
 import type { Poi } from '@/types/poi'
 
@@ -26,22 +34,28 @@ function svgMarker(svg: string) {
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)
 }
 
-/** 점은 작게 보이되 클릭 영역은 유지한다. 선택은 크기와 얇은 링으로만 구분한다. */
-const onsenDot = (selected = false) =>
+/** 온천 기호는 SVG 선으로 그려 기기별 글꼴·이모지 차이 없이 알아볼 수 있게 한다. */
+const onsenMarker = (selected = false) =>
   `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
     <defs>
       <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
         <feDropShadow dx="0" dy="1" stdDeviation="1.25" flood-color="#1C1B18" flood-opacity=".16"/>
       </filter>
     </defs>
-    ${selected ? '<circle cx="18" cy="18" r="14" fill="none" stroke="#1C1B18" stroke-opacity=".45"/>' : ''}
-    <circle cx="18" cy="18" r="${selected ? 11 : 8}" fill="#1C1B18" fill-opacity=".92"
-      stroke="#FFFFFF" stroke-opacity=".85" stroke-width="1" filter="url(#shadow)"/>
+    ${selected ? '<circle cx="18" cy="18" r="16.5" fill="none" stroke="#1C1B18" stroke-opacity=".7"/>' : ''}
+    <circle cx="18" cy="18" r="${selected ? 14 : 12}" fill="${selected ? '#F7F7F5' : '#1C1B18'}" fill-opacity="${selected ? 1 : 0.92}"
+      stroke="${selected ? '#1C1B18' : '#FFFFFF'}" stroke-opacity=".85" stroke-width="${selected ? 1.5 : 1}" filter="url(#shadow)"/>
+    <g transform="translate(4.5 4) scale(.75)" fill="none" stroke="${selected ? '#1C1B18' : '#FFFFFF'}" stroke-width="1.6"
+      stroke-linecap="round" stroke-linejoin="round">
+      <path d="M13 18c-2-2 2-3.5 0-5.5M18 18c-2-2 2-3.5 0-5.5M23 18c-2-2 2-3.5 0-5.5"/>
+      <path d="M12 20.5c-1.3.4-2 1-2 1.7 0 1.4 3.6 2.5 8 2.5s8-1.1 8-2.5c0-.7-.7-1.3-2-1.7"/>
+    </g>
   </svg>`
 
-const ONSEN_MARKER = svgMarker(onsenDot())
-const ONSEN_MARKER_SELECTED = svgMarker(onsenDot(true))
+const ONSEN_MARKER = svgMarker(onsenMarker())
+const ONSEN_MARKER_SELECTED = svgMarker(onsenMarker(true))
 const ONSEN_MARKER_SIZE = 36
+const ONSEN_SELECTED_SIZE = 48
 
 /** 개수 구간은 시각 크기만 결정한다. 지도 격자와 클러스터 묶음 기준은 그대로 둔다. */
 const CLUSTER_STYLES = [34, 38, 42].map((size) => ({
@@ -111,6 +125,7 @@ export default function MapCanvas({
 }: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<kakao.maps.Map | null>(null)
+  const viewportLimitsRef = useRef<MapViewportLimits | null>(null)
   const markersRef = useRef<kakao.maps.Marker[]>([])
   const clustererRef = useRef<kakao.maps.MarkerClusterer | null>(null)
   const poiMarkersRef = useRef<kakao.maps.Marker[]>([])
@@ -132,6 +147,12 @@ export default function MapCanvas({
           center: new maps.LatLng(NATIONAL_VIEW.lat, NATIONAL_VIEW.lng),
           level: NATIONAL_VIEW.level,
         })
+        const map = mapRef.current
+        const view = getNationalMapView(map, containerRef.current)
+        map.setLevel(view.level)
+        map.setCenter(view.center)
+        map.setMaxLevel(view.level)
+        viewportLimitsRef.current = captureMapViewport(map, containerRef.current)
         setReady(true)
       })
       .catch((err: Error) => {
@@ -142,6 +163,32 @@ export default function MapCanvas({
       cancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    const map = mapRef.current
+    const container = containerRef.current
+    if (!ready || !map || !container) return
+
+    let adjusting = false
+    const constrainViewport = () => {
+      const limits = viewportLimitsRef.current
+      if (adjusting || !limits) return
+      const center = map.getCenter()
+      const limited = limitMapViewport(map, container, limits, center)
+      if (limited === center) return
+      adjusting = true
+      try {
+        map.setCenter(limited)
+      } finally {
+        adjusting = false
+      }
+    }
+
+    // 드래그 도중·관성 이동·휠 확대/축소 모두 같은 첫 화면 경계를 쓴다.
+    window.kakao.maps.event.addListener(map, 'bounds_changed', constrainViewport)
+    constrainViewport()
+    return () => window.kakao.maps.event.removeListener(map, 'bounds_changed', constrainViewport)
+  }, [ready])
 
   // MAP-01 클러스터링 — 전국 뷰에서 마커 수백 개가 겹치는 걸 막는다.
   useEffect(() => {
@@ -178,11 +225,12 @@ export default function MapCanvas({
 
     markersRef.current = onsens.map((onsen) => {
       const chosen = onsen.id === selectedId
+      const size = chosen ? ONSEN_SELECTED_SIZE : ONSEN_MARKER_SIZE
       // 원의 중심이 장소 좌표를 가리키도록 이미지 중앙에 고정한다.
       const image = new maps.MarkerImage(
         chosen ? ONSEN_MARKER_SELECTED : ONSEN_MARKER,
-        new maps.Size(ONSEN_MARKER_SIZE, ONSEN_MARKER_SIZE),
-        { offset: new maps.Point(ONSEN_MARKER_SIZE / 2, ONSEN_MARKER_SIZE / 2) },
+        new maps.Size(size, size),
+        { offset: new maps.Point(size / 2, size / 2) },
       )
 
       const marker = new maps.Marker({
@@ -240,18 +288,27 @@ export default function MapCanvas({
     // 넓게 보면 글자가 서로 겹쳐 지도를 덮는다 — 일정 이상 확대했을 때만 보여준다.
     if (level > LABEL_MAX_LEVEL) return
 
-    const make = (lat: number, lng: number, text: string, tone: 'onsen' | 'poi', zIndex: number) =>
+    const make = (
+      lat: number,
+      lng: number,
+      text: string,
+      tone: 'onsen' | 'poi',
+      zIndex: number,
+      selected = false,
+    ) =>
       new maps.CustomOverlay({
         position: new maps.LatLng(lat, lng),
         content: labelHtml(text, tone),
         // 마커 위쪽에 띄운다.
-        yAnchor: 1.9,
+        yAnchor: selected ? 2.35 : 1.9,
         zIndex,
         clickable: false,
       })
 
     const overlays = [
-      ...onsens.map((o) => make(o.lat, o.lng, o.name, 'onsen', o.id === selectedId ? 5 : 4)),
+      ...onsens.map((o) =>
+        make(o.lat, o.lng, o.name, 'onsen', o.id === selectedId ? 5 : 4, o.id === selectedId),
+      ),
       ...(pois ?? []).map((p) => make(p.lat, p.lng, p.name, 'poi', 3)),
     ]
 
@@ -319,27 +376,47 @@ export default function MapCanvas({
   useEffect(() => {
     const container = containerRef.current
     const map = mapRef.current
-    if (!ready || !map || !container) return
+    const limits = viewportLimitsRef.current
+    if (!ready || !map || !container || !limits) return
 
     const observer = new ResizeObserver(() => {
       // relayout은 중심을 흔들 수 있어 직전 중심을 되돌린다.
       const center = map.getCenter()
       map.relayout()
-      map.setCenter(center)
+      map.setMaxLevel(getViewportMaxLevel(limits, container))
+      map.setCenter(limitMapViewport(map, container, limits, center))
     })
     observer.observe(container)
 
     return () => observer.disconnect()
   }, [ready])
 
-  // 목록에서 고르면 지도를 그 위치로 옮긴다.
+  const selectedOnsen = onsens.find((onsen) => onsen.id === selectedId)
+  const selectedLat = selectedOnsen?.lat
+  const selectedLng = selectedOnsen?.lng
+
+  // 목록 재조회는 이동을 반복하지 않는다. 새 장소를 고르면 이전 애니메이션을 취소한다.
   useEffect(() => {
     const map = mapRef.current
-    if (!ready || !map || selectedId === undefined) return
-    const target = onsens.find((onsen) => onsen.id === selectedId)
-    if (!target) return
-    map.setCenter(new window.kakao.maps.LatLng(target.lat, target.lng))
-  }, [selectedId, onsens, ready])
+    const container = containerRef.current
+    const limits = viewportLimitsRef.current
+    if (
+      !ready ||
+      !map ||
+      !container ||
+      !limits ||
+      selectedLat === undefined ||
+      selectedLng === undefined
+    )
+      return
+    const target = limitMapViewport(
+      map,
+      container,
+      limits,
+      new window.kakao.maps.LatLng(selectedLat, selectedLng),
+    )
+    return animateMapCenter(map, target)
+  }, [selectedId, selectedLat, selectedLng, ready])
 
   if (error) {
     return (
