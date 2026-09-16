@@ -171,7 +171,7 @@ export default function MapPage() {
             지도 위에 띄운다 — 컨테이너는 클릭을 통과시켜 팬·줌을 막지 않는다.
             카카오맵이 타일·컨트롤에 자체 z-index를 써서, 값을 넉넉히 올려야 가려지지 않는다.
           */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-[100]">
+          <div className="pointer-events-none absolute inset-x-0 top-1.5 z-[100]">
             <PoiFilter selected={categories} onToggle={handleToggleCategory} />
           </div>
         </main>
