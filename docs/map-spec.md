@@ -13,21 +13,21 @@
 - **지도 엔진**: 카카오맵 JS SDK v2 + clusterer 라이브러리, `autoload=false`로 지연 로드
 - **상태**: 서버 상태 라이브러리 없음. 도메인 훅(`useOnsens` / `usePois` / `useSuggestions` / `useNearby`)이 각자 `useRef(Map)` 캐시와 요청 경합 가드를 직접 들고 있다
 - **데이터**: `VITE_USE_MOCK`이 켜져 있으면 각 API 모듈이 `*Mock.ts`로 분기한다. 백엔드 미구현 구간은 전부 목으로 돌아간다
-- **현재 범위**: MAP-01·02·03·04·05·07은 동작함. **MAP-08 길찾기는 탭만 있고 비활성**
+- **현재 범위**: MAP-01·02·03·04·05·07은 동작함. **MAP-08 길찾기 UI·API 계약 반영 완료, 실서버 통합 확인 대기**
 
 ---
 
 ## 1. 명세 ID 대응표
 
-| ID      | 내용                                 | 상태                    | 구현 위치                                                                                                                                        |
-| ------- | ------------------------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| MAP-01① | 카카오맵 기반 줌·팬·클러스터링       | 구현됨                  | [MapCanvas.tsx](../src/features/map/components/MapCanvas.tsx)                                                                                    |
-| MAP-02① | 마커 → 상세 카드                     | 구현됨                  | [OnsenDetailPanel.tsx](../src/features/map/components/OnsenDetailPanel.tsx)                                                                      |
-| MAP-03① | 이 지역 재검색                       | 구현됨 (자동 갱신 방식) | `MapCanvas` idle → `MapPage.handleBoundsChange`                                                                                                  |
-| MAP-04① | 카테고리 POI 토글                    | 구현됨                  | [PoiFilter.tsx](../src/features/map/components/PoiFilter.tsx) · [usePois.ts](../src/features/map/hooks/usePois.ts)                               |
-| MAP-05① | 온천명·지역명 자동완성               | 구현됨                  | [SearchSuggestions.tsx](../src/features/map/components/SearchSuggestions.tsx) · [useSuggestions.ts](../src/features/map/hooks/useSuggestions.ts) |
-| MAP-07① | 리스트 뷰 토글 + 상단 매거진         | 구현됨                  | [MapSidebar.tsx](../src/features/map/components/MapSidebar.tsx) · [SidebarMagazine.tsx](../src/features/map/components/SidebarMagazine.tsx)      |
-| MAP-08① | 카카오 길찾기 (대중교통·자동차·도보) | **미구현**              | `MapSidebar`의 `<Tab disabled>` 자리만 있음                                                                                                      |
+| ID      | 내용                                        | 상태                    | 구현 위치                                                                                                                                        |
+| ------- | ------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| MAP-01① | 카카오맵 기반 줌·팬·클러스터링              | 구현됨                  | [MapCanvas.tsx](../src/features/map/components/MapCanvas.tsx)                                                                                    |
+| MAP-02① | 마커 → 상세 카드                            | 구현됨                  | [OnsenDetailPanel.tsx](../src/features/map/components/OnsenDetailPanel.tsx)                                                                      |
+| MAP-03① | 이 지역 재검색                              | 구현됨 (자동 갱신 방식) | `MapCanvas` idle → `MapPage.handleBoundsChange`                                                                                                  |
+| MAP-04① | 카테고리 POI 토글                           | 구현됨                  | [PoiFilter.tsx](../src/features/map/components/PoiFilter.tsx) · [usePois.ts](../src/features/map/hooks/usePois.ts)                               |
+| MAP-05① | 온천명·지역명 자동완성                      | 구현됨                  | [SearchSuggestions.tsx](../src/features/map/components/SearchSuggestions.tsx) · [useSuggestions.ts](../src/features/map/hooks/useSuggestions.ts) |
+| MAP-07① | 리스트 뷰 토글 + 상단 매거진                | 구현됨                  | [MapSidebar.tsx](../src/features/map/components/MapSidebar.tsx) · [SidebarMagazine.tsx](../src/features/map/components/SidebarMagazine.tsx)      |
+| MAP-08① | 카카오 길찾기 (대중교통·자동차·도보·자전거) | **UI·API 연결 구현**    | 비인증 `/external/directions`, 총 시간·요금·단계·경로선, 오류 안내. 실서버 통합 확인 대기                                                        |
 
 > MAP-06은 기능명세서에 없다(결번). 없는 ID를 새로 만들지 말 것.
 
@@ -243,7 +243,7 @@ BOUNDS_DEBOUNCE_MS = 600 // idle 디바운스 (쿼터 방어)
 ### 6-1. 자리만 잡아둔 것들
 
 - **찜(하트) 아이콘** — PAM-07·로그인 필요 범위. 지금은 `PAM-07`을 위한 자리만 있고 동작 없음
-- **Place Action Row (저장·공유·길찾기)** — 텍스트만 있고 동작 없음
+- **Place Action Row** — 저장·공유는 텍스트만 표시. 길찾기는 해당 온천을 도착지로 채우고 길찾기 패널을 연다
 - `NearbyList`의 '전체 보기' — `hasMore`가 true여도 `disabled`. PAM-06 명세가 아직 없다
 
 ### 6-2. 선택 상태 관리
@@ -295,12 +295,17 @@ const pois = fetched && fetched.key === queryKey ? fetched.places : []
 
 모든 호출은 `skipAuth: true` — **비로그인도 지도를 볼 수 있다 (AUTH-02).**
 
-| 함수            | 엔드포인트                                                   | 응답              |
-| --------------- | ------------------------------------------------------------ | ----------------- |
-| `searchOnsens`  | `GET /onsens?keyword&region&swLat&swLng&neLat&neLng`         | `OnsenListItem[]` |
-| `suggestPlaces` | `GET /onsens/suggest?keyword`                                | `Suggestion[]`    |
-| `fetchPoi`      | `GET /external/places/category?category&lat&lng&radius&size` | `PoiResult`       |
-| `fetchNearby`   | `GET /onsens/{id}/nearby?radius&limit`                       | `NearbyResult`    |
+| 함수              | 엔드포인트                                                                           | 응답                                  |
+| ----------------- | ------------------------------------------------------------------------------------ | ------------------------------------- |
+| `searchOnsens`    | `GET /onsens?keyword&region&swLat&swLng&neLat&neLng`                                 | `OnsenListItem[]`                     |
+| `suggestPlaces`   | `GET /onsens/suggest?keyword`                                                        | `Suggestion[]`                        |
+| `fetchPoi`        | `GET /external/places/category?category&lat&lng&radius&size`                         | `PoiResult`                           |
+| `fetchNearby`     | `GET /onsens/{id}/nearby?radius&limit`                                               | `NearbyResult`                        |
+| `fetchDirections` | `GET /external/directions?originLat&originLng&destLat&destLng&mode&includePath=true` | 서버 응답을 `DirectionsResult`로 변환 |
+
+길찾기는 `CAR` / `TRANSIT` / `WALK` / `BIKE`를 보내며 지도는 항상 `includePath=true`로 요청한다. 화면 시간은 **`totalDurationMin`** 기준이다. 대중교통의 도보 보정은 서버에서 수행하므로 프론트가 WALK를 추가 호출하지 않는다. `walkDurationMin: null`이면 **도보 시간 제외**를 표시한다. `summary`·`fare`·`steps`를 렌더링하고, `path`의 `[위도, 경도]`를 그대로 폴리라인으로 변환한다. 구간별 좌표를 임의로 만들지 않는다.
+
+`api/directions.ts`에서 좌표 소수점 3자리 + mode를 키로 **1시간 메모리 캐시**와 진행 중 요청 공유를 적용한다. 캐시 조회는 TTL을 연장하지 않으며 실패 응답은 저장하지 않는다(경로 없음 결과는 캐시). `ROUTE_NOT_FOUND`(404)는 결과 없음과 [공식 카카오맵 길찾기 링크](https://apis.map.kakao.com/web/guide/#routeurl)를 제공한다. 사용자가 클릭할 때만 외부로 이동한다. 400·429·502·네트워크 실패는 안내 후 직접 재시도하도록 하고 자동 재요청하지 않는다.
 
 ### 8-1. 미확정 사항
 
@@ -316,7 +321,7 @@ const pois = fetched && fetched.key === queryKey ? fetched.places : []
 
 ### 8-3. 목 모드
 
-`env.useMock`(`VITE_USE_MOCK`)이 켜지면 각 API 함수가 `*Mock.ts`로 분기한다. 목 파일: `mapMock` · `poiMock` · `nearbyMock` · `reviewMock`.
+`env.useMock`(`VITE_USE_MOCK`)이 켜지면 각 API 함수가 `*Mock.ts`로 분기한다. 목 파일: `mapMock` · `poiMock` · `nearbyMock` · `reviewMock` · `directionsMock`.
 
 목 모드에서만 보이는 것: 사이드바 추천 썸네일, `MockReviewList`.
 
@@ -324,15 +329,17 @@ const pois = fetched && fetched.key === queryKey ? fetched.places : []
 
 ## 9. 남은 작업
 
-### 9-1. MAP-08 길찾기 (① 범위, 미착수)
+### 9-1. MAP-08 길찾기 (① 범위, UI·API 계약 반영)
 
-`MapSidebar`에 `<Tab disabled>길찾기</Tab>`로 자리만 있다. 필요한 것:
+- `DirectionsPanel`로 사이드바를 전환한다. 장소 검색 패널은 숨겨서 기존 검색어·지역을 보존한다
+- `RoutePlaceInput`은 출발·도착 자동완성(200ms 디바운스, 키보드 선택, 캐시)을 제공한다. **실제 모드는 기존 `/onsens` 검색과 현재 위치를 사용한다(확정)**. 목 검색은 기존 온천과 서울역·강남역·수서역·부산역·제주공항을 지원한다
+- 현재 위치 출발, 출발·도착 교환, 입력 초기화, 대중교통·자동차·도보·자전거 선택을 지원한다. 상세의 길찾기 또는 길찾기 모드의 지도 온천 클릭으로 도착지를 채운다
+- `useDirections`가 명시적 조회·이동 수단 변경만 요청하고 API 계층에서 1시간 캐싱한다. 지도 팬·줌은 경로를 재조회하지 않는다. 입력 수정·초기화·탭 이탈은 진행 중 요청과 위치 조회의 UI 반영을 무효화한다
+- 결과에 소요 시간·거리·대안 경로·이동 순서를 표시하고 `MapCanvas`에서 선택 경로의 `Polyline`과 출발·도착 표식을 그린다. 경로 교체·입력 수정·탭 이탈 시 지도 객체를 제거한다. 기존 초기 뷰포트 제한은 유지한다
+- `directionsMock.ts`의 경로와 소요 시간은 **도로를 따르지 않는 화면 검토용 예시**다. 지도에 점선, 패널에 미리보기 안내를 표시한다. 본토↔제주 및 장거리 도보·자전거는 결과 없음 상태를 확인할 수 있다
+- `types/directions.ts`는 화면용 모델이며 `api/directions.ts`에서 확정된 BE 응답을 검증·변환한다. 실제 응답은 단일 경로다. 실서버 오류 시 목 경로를 대신 표시하지 않는다
 
-- 탭 전환 시 사이드바를 **출발지/도착지 입력 모드**로 바꾸기
-- 카카오 길찾기 API — 자동차는 **카카오모빌리티**, 대중교통·도보·자전거는 **카카오맵**. 대중교통은 도보 API를 한 번 더 붙여 조합해야 한다 (명세 §4)
-- 응답의 경로 좌표 배열을 `Polyline`으로 지도에 그리기
-- **사이트 내에서 처리** — 카카오맵으로 이탈시키지 않는다 (명세 MAP-08 명시)
-- 키는 백엔드 보관이므로 **BE 경유 API가 먼저 필요**하다
+**남은 확인**: `VITE_USE_MOCK=false`와 실제 BE 주소로 4가지 수단의 통합 동작 확인. 계약 응답을 주입한 브라우저 검증은 완료(요청 형식·비인증·총 시간·도보 누락·요금·좌표 순서·오류·캐시 만료·모바일). REST 키는 서버에만 보관한다.
 
 ### 9-2. 그 외
 
