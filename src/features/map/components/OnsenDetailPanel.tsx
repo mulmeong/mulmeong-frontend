@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import OnsenSpecSummary from '@/components/OnsenSpecSummary'
+import NearbyList from '@/features/map/components/NearbyList'
 import { cn } from '@/lib/cn'
 
 import type { OnsenListItem } from '@/features/map/api/map'
@@ -93,10 +94,11 @@ export default function OnsenDetailPanel({ onsen, onClose }: OnsenDetailPanelPro
       <div className="pt-5">
         {tab === '한눈에' && <OnsenSpecSummary onsen={onsen} />}
         {tab === '정보' && <Details onsen={onsen} />}
-        {/* 리뷰는 REV-*, 주변은 PAM-04 — 각 기능이 붙어야 채울 수 있다. */}
-        {(tab === '리뷰' || tab === '주변') && (
+        {tab === '주변' && <NearbyList onsenId={onsen.id} active />}
+        {/* 리뷰는 REV-*가 붙어야 채울 수 있다. */}
+        {tab === '리뷰' && (
           <p className="text-text-secondary text-[13px] leading-[1.6]">
-            {tab} 정보는 준비 중입니다.
+            리뷰 정보는 준비 중입니다.
           </p>
         )}
       </div>
