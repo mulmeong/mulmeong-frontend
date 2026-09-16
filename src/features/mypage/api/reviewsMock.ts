@@ -12,8 +12,8 @@ import type {
 
 const MOCK_DELAY_MS = 300
 
-/** 한 페이지 최대 10건. */
-const PAGE_SIZE = 10
+/** 한 페이지 최대 5건. */
+const PAGE_SIZE = 5
 
 /**
  * 백엔드 연동 전까지 쓰는 표본.
