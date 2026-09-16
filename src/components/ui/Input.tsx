@@ -76,7 +76,7 @@ export default function Input({
     return (
       <div
         className={cn(
-          'bg-surface border-border-default flex items-center gap-2 rounded-md border px-4 py-3',
+          'bg-surface border-border-default flex items-center gap-2 rounded-md border px-3.5 py-2',
           error && 'border-danger',
           className,
         )}

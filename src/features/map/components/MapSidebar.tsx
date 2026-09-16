@@ -37,6 +37,27 @@ const MOCK_SUGGESTION_IMAGES = [
   '/images/hero.jpg',
 ]
 
+/**
+ * 결과 없음 안내. 가운데 정렬로 좁게 두면 줄마다 길이가 달라져 역삼각형으로 보인다 —
+ * 왼쪽 정렬로 폭을 채우고 버튼은 한 줄에 붙인다.
+ */
+function EmptyResult({ onReset }: { onReset: () => void }) {
+  return (
+    <div className="mt-3">
+      <p className="text-text-secondary text-[13px] leading-[1.6]">
+        검색 결과가 없어요. 다른 지역이나 검색어로 찾아보세요.
+      </p>
+      <button
+        type="button"
+        onClick={onReset}
+        className="text-text-primary mt-2 text-[12px] underline underline-offset-2 outline-none"
+      >
+        조건 초기화
+      </button>
+    </div>
+  )
+}
+
 function SectionLabel({ children }: { children: string }) {
   return <h2 className="text-text-secondary text-[11px] tracking-[0.04em]">{children}</h2>
 }
@@ -143,7 +164,8 @@ export default function MapSidebar({
 
   return (
     <div className="bg-surface flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
-      <div className="scrollbar-thin min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-5 pb-6">
+      {/* flex-col이라야 내용이 짧을 때 매거진을 mt-auto로 바닥에 붙일 수 있다. */}
+      <div className="scrollbar-thin flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain px-5 pb-6">
         <div role="tablist" className="flex gap-5 pt-6">
           <Tab selected>장소 검색</Tab>
           {/* 길찾기(MAP-08)는 ① 범위다 — 모드 전환·경로 API가 아직 없어 비활성일 뿐이다. */}
@@ -152,7 +174,7 @@ export default function MapSidebar({
           </Tab>
         </div>
 
-        <form onSubmit={handleSubmit} className="relative pt-5">
+        <form onSubmit={handleSubmit} className="relative pt-3">
           <Input
             variant="search"
             placeholder="온천·사우나 검색"
@@ -189,7 +211,8 @@ export default function MapSidebar({
               <h2 className="text-text-primary min-w-0 truncate text-[15px] font-semibold">
                 “{searchedKeyword}” 검색 결과
               </h2>
-              {!loading && !error && (
+              {/* 0은 바로 아래 '검색 결과가 없어요'와 겹쳐 굳이 띄우지 않는다. */}
+              {!loading && !error && onsens.length > 0 && (
                 <span className="text-text-secondary shrink-0 text-[12px]">{onsens.length}</span>
               )}
             </div>
@@ -202,20 +225,7 @@ export default function MapSidebar({
               </p>
             )}
 
-            {!loading && !error && onsens.length === 0 && (
-              <div className="mt-3 flex flex-col items-center">
-                <p className="text-text-secondary max-w-[194px] text-center text-[13px] leading-[1.6]">
-                  검색 결과가 없어요. 다른 지역이나 검색어로 찾아보세요.
-                </p>
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  className="text-text-primary mt-3 text-[12px] underline underline-offset-2 outline-none"
-                >
-                  조건 초기화
-                </button>
-              </div>
-            )}
+            {!loading && !error && onsens.length === 0 && <EmptyResult onReset={handleReset} />}
 
             {!loading && !error && onsens.length > 0 && (
               <ul className="mt-2 flex flex-col">
@@ -317,20 +327,7 @@ export default function MapSidebar({
               </p>
             )}
 
-            {!loading && !error && onsens.length === 0 && (
-              <div className="mt-3 flex flex-col items-center">
-                <p className="text-text-secondary max-w-[194px] text-center text-[13px] leading-[1.6]">
-                  검색 결과가 없어요. 다른 지역이나 검색어로 찾아보세요.
-                </p>
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  className="text-text-primary mt-3 text-[12px] underline underline-offset-2 outline-none"
-                >
-                  조건 초기화
-                </button>
-              </div>
-            )}
+            {!loading && !error && onsens.length === 0 && <EmptyResult onReset={handleReset} />}
 
             {!loading && !error && onsens.length > 0 && (
               <ul className="mt-2 flex flex-col">
@@ -366,10 +363,11 @@ export default function MapSidebar({
             )}
           </section>
         )}
-      </div>
 
-      {/* 검색 영역만 스크롤하고 매거진은 패널 하단에 남긴다. */}
-      <SidebarMagazine />
+        {/* 목록과 매거진 사이 최소 간격. mt-auto와 겹치지 않게 빈 칸으로 벌린다. */}
+        <div aria-hidden className="h-8 shrink-0" />
+        <SidebarMagazine />
+      </div>
     </div>
   )
 }
