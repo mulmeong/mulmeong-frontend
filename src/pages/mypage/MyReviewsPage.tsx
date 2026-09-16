@@ -6,6 +6,7 @@ import Chip from '@/components/ui/Chip'
 import Modal from '@/components/ui/Modal'
 import { deleteReview } from '@/features/mypage/api/reviews'
 import Pagination from '@/features/mypage/components/Pagination'
+import ReviewFormPanel from '@/features/mypage/components/ReviewFormPanel'
 import ReviewItem from '@/features/mypage/components/ReviewItem'
 import { useMyReviews } from '@/features/mypage/hooks/useMyReviews'
 
@@ -26,10 +27,32 @@ export default function MyReviewsPage() {
   const [deleteDone, setDeleteDone] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
+  /** 수정 패널이 열려 있는 리뷰. null이면 닫힌 상태. */
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editDone, setEditDone] = useState(false)
+
+  /**
+   * 아래로 펼친 리뷰. 하나만 연다 — 숫자 하나로 두면 다른 걸 여는 순간
+   * 이전 것이 저절로 닫힌다.
+   */
+  const [expandedId, setExpandedId] = useState<number | null>(null)
+
+  /**
+   * 수정 후 펼쳐둔 상세를 다시 받아오게 하는 값.
+   * 상세는 펼칠 때 한 번만 받아오므로, 항목을 새로 그려야 바뀐 내용이 보인다.
+   */
+  const [detailVersion, setDetailVersion] = useState(0)
+
+  const toggleExpanded = (review: MyReview) => {
+    setExpandedId((current) => (current === review.id ? null : review.id))
+  }
+
   const handleSort = (next: ReviewSort) => {
     setSort(next)
     // 정렬이 바뀌면 3페이지에 있던 항목이 1페이지로 올 수 있어 처음으로 돌린다.
     setPage(1)
+    // 목록이 새로 그려지므로 펼친 것도 닫는다.
+    setExpandedId(null)
     // 지역별에서 벗어나면 골라둔 지역도 푼다 — 칩이 사라져 되돌릴 방법이 없어진다.
     if (next !== 'region') setRegion('all')
   }
@@ -37,6 +60,12 @@ export default function MyReviewsPage() {
   const handleRegion = (next: ReviewRegion) => {
     setRegion(next)
     setPage(1)
+    setExpandedId(null)
+  }
+
+  const handlePage = (next: number) => {
+    setPage(next)
+    setExpandedId(null)
   }
 
   const confirmDelete = async () => {
@@ -56,6 +85,13 @@ export default function MyReviewsPage() {
     } finally {
       setDeleting(false)
     }
+  }
+
+  const handleSaved = async () => {
+    setEditingId(null)
+    setEditDone(true)
+    setDetailVersion((current) => current + 1)
+    await reload()
   }
 
   const message = error ?? actionError
@@ -114,10 +150,12 @@ export default function MyReviewsPage() {
           <div className="divide-border-default mt-2 flex flex-col divide-y">
             {data.items.map((review) => (
               <ReviewItem
-                key={review.id}
+                // 수정 후 version이 바뀌면 새로 그려져 펼친 상세도 다시 받아온다.
+                key={`${review.id}-${detailVersion}`}
                 review={review}
-                // TODO: 리뷰 수정 화면(REV-*)이 아직 없다.
-                onEdit={() => {}}
+                expanded={expandedId === review.id}
+                onToggle={toggleExpanded}
+                onEdit={(target) => setEditingId(target.id)}
                 onDelete={setPendingDelete}
               />
             ))}
@@ -131,12 +169,32 @@ export default function MyReviewsPage() {
 
       {data && (
         <div className="mt-6 flex flex-col items-center gap-3">
-          <Pagination page={data.page} totalPages={data.totalPages} onChange={setPage} />
+          <Pagination page={data.page} totalPages={data.totalPages} onChange={handlePage} />
           <p className="text-text-secondary text-[12px]">
             리뷰를 쓰면 내 지도의 해당 시·도가 한단계 진해집니다
           </p>
         </div>
       )}
+
+      <ReviewFormPanel
+        reviewId={editingId}
+        onClose={() => setEditingId(null)}
+        onSaved={() => void handleSaved()}
+      />
+
+      <Modal
+        open={editDone}
+        onClose={() => setEditDone(false)}
+        kicker="수정 완료"
+        title={
+          <>
+            <span className="block">리뷰가</span>
+            <span className="block">수정되었습니다</span>
+          </>
+        }
+        description="바뀐 내용이 목록에 반영되었습니다."
+        primaryAction={{ label: '확인', onClick: () => setEditDone(false) }}
+      />
 
       <Modal
         open={pendingDelete !== null}
