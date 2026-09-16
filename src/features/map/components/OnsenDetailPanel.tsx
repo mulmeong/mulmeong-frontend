@@ -1,12 +1,13 @@
 import { useState } from 'react'
 
 import OnsenSpecSummary from '@/components/OnsenSpecSummary'
-import MockReviewList from '@/features/map/components/MockReviewList'
 import NearbyList from '@/features/map/components/NearbyList'
+import ReviewSection from '@/features/map/components/ReviewSection'
+import { useOnsenDetail } from '@/features/map/hooks/useOnsenDetail'
 import { cn } from '@/lib/cn'
-import { env } from '@/lib/env'
 
 import type { OnsenListItem } from '@/features/map/api/map'
+import type { OnsenDetail } from '@/types/onsenDetail'
 
 /** 시안 기준 탭 순서. 일반장소는 '한눈에'가 없지만 ①은 온천만 다룬다. */
 const TABS = ['한눈에', '리뷰', '주변', '정보'] as const
@@ -25,7 +26,13 @@ type OnsenDetailPanelProps = {
 export default function OnsenDetailPanel({ onsen, onClose }: OnsenDetailPanelProps) {
   const [tab, setTab] = useState<DetailTab>('한눈에')
 
-  const { name, address, imageUrl, rating, reviewCount } = onsen
+  // 목록 데이터로 먼저 그리고 상세가 도착하면 덮는다 — 로딩 중에도 화면이 비지 않는다.
+  const { detail } = useOnsenDetail(onsen.id)
+
+  const { name, imageUrl } = onsen
+  const address = detail?.address ?? onsen.address
+  const rating = detail?.reviewSummary?.avgRating ?? onsen.rating
+  const reviewCount = detail?.reviewSummary?.count ?? onsen.reviewCount
 
   return (
     <div className="bg-surface scrollbar-thin flex h-full min-w-0 flex-col overflow-y-auto px-[13px] pb-8">
@@ -106,17 +113,10 @@ export default function OnsenDetailPanel({ onsen, onClose }: OnsenDetailPanelPro
       </div>
 
       <div className="pt-5">
-        {tab === '한눈에' && <OnsenSpecSummary onsen={onsen} />}
-        {tab === '정보' && <Details onsen={onsen} />}
+        {tab === '한눈에' && <OnsenSpecSummary onsen={onsen} detail={detail} />}
+        {tab === '정보' && <Details onsen={onsen} detail={detail} />}
         {tab === '주변' && <NearbyList onsenId={onsen.id} active />}
-        {tab === '리뷰' &&
-          (env.useMock ? (
-            <MockReviewList onsen={onsen} />
-          ) : (
-            <p className="text-text-secondary text-[13px] leading-[1.6]">
-              리뷰 정보는 준비 중입니다.
-            </p>
-          ))}
+        {tab === '리뷰' && <ReviewSection onsen={onsen} />}
       </div>
     </div>
   )
@@ -146,24 +146,26 @@ function Section({ title, rows }: { title: string; rows: [string, string][] }) {
   )
 }
 
-function rowsOf(entries: [string, string | undefined][]) {
+/** 상세 응답은 값이 없을 때 null로 오므로 undefined와 함께 걸러낸다. */
+function rowsOf(entries: [string, string | undefined | null][]) {
   return entries.filter((entry): entry is [string, string] => Boolean(entry[1]))
 }
 
-/** 시안 '상세패널 - 정보'(1:915) — 기본 정보 / 이용 안내 / 참고사항. */
-function Details({ onsen }: { onsen: OnsenListItem }) {
-  const {
-    address,
-    openingHours,
-    phone,
-    homepage,
-    feeNote,
-    admissionFee,
-    closedDays,
-    parking,
-    facilities,
-    notice,
-  } = onsen
+/**
+ * 시안 '상세패널 - 정보'(1:915) — 기본 정보 / 이용 안내 / 가는 법 / 참고사항.
+ * 상세 응답(PAM-03)이 오면 그 값을 쓰고, 오기 전에는 목록 데이터로 먼저 그린다.
+ */
+function Details({ onsen, detail }: { onsen: OnsenListItem; detail?: OnsenDetail }) {
+  const { feeNote, facilities } = onsen
+
+  const address = detail?.address ?? onsen.address
+  const openingHours = detail?.hours ?? onsen.openingHours
+  const phone = detail?.phone ?? onsen.phone
+  const homepage = detail?.homepageUrl ?? onsen.homepage
+  const closedDays = detail?.holiday ?? onsen.closedDays
+  const parking = detail?.parkingInfo ?? onsen.parking
+  const priceMin = detail?.priceMin ?? onsen.admissionFee
+  const notice = detail?.notes ?? onsen.notice
 
   const basic = rowsOf([
     ['주소', address],
@@ -176,14 +178,24 @@ function Details({ onsen }: { onsen: OnsenListItem }) {
     [
       '이용요금',
       feeNote ??
-        (admissionFee !== undefined ? `성인 ${admissionFee.toLocaleString('ko-KR')}원` : undefined),
+        (priceMin !== undefined && priceMin !== null
+          ? `성인 ${priceMin.toLocaleString('ko-KR')}원`
+          : undefined),
     ],
     ['휴무일', closedDays],
     ['주차', parking],
     ['편의시설', facilities?.length ? facilities.join(' · ') : undefined],
   ])
 
-  if (basic.length === 0 && usage.length === 0 && !notice) {
+  // 거점역 유무와 접근성 등급은 별개다 — 거점역이 없어도 '자차 필수'는 알려줄 값이다.
+  const station = detail?.access?.nearestStation
+  const access = rowsOf([
+    ['접근성', detail?.access?.accessLevelLabel],
+    ['거점역', station?.name],
+    ['가는 법', station?.stationToPlaceDesc],
+  ])
+
+  if (basic.length === 0 && usage.length === 0 && access.length === 0 && !notice) {
     return <p className="text-text-secondary text-[13px] leading-[1.6]">등록된 정보가 없습니다.</p>
   }
 
@@ -191,6 +203,8 @@ function Details({ onsen }: { onsen: OnsenListItem }) {
     <div className="flex flex-col gap-6">
       <Section title="기본 정보" rows={basic} />
       <Section title="이용 안내" rows={usage} />
+      {/* 거점역까지는 카카오, 거점역→온천은 팀 수기 (PAM-02). 거점역이 없으면 접근성만 남는다. */}
+      <Section title="교통" rows={access} />
       {notice && (
         <section>
           <h3 className="text-text-secondary text-[12px]">참고사항</h3>

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { ApiError } from '@/api/ApiError'
 import Button from '@/components/ui/Button'
@@ -17,6 +17,10 @@ type Errors = {
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+
+  /** 로그인이 필요해 밀려난 화면. 없으면 홈으로 보낸다. */
+  const from = (location.state as { from?: string } | null)?.from
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -41,7 +45,7 @@ export default function LoginPage() {
     setSubmitting(true)
     try {
       await login({ email, password })
-      navigate('/')
+      navigate(from ?? '/', { replace: true })
     } catch (error) {
       setSubmitError(
         error instanceof ApiError
