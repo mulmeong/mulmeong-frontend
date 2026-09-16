@@ -1,8 +1,10 @@
 import { useState } from 'react'
 
 import OnsenSpecSummary from '@/components/OnsenSpecSummary'
+import MockReviewList from '@/features/map/components/MockReviewList'
 import NearbyList from '@/features/map/components/NearbyList'
 import { cn } from '@/lib/cn'
+import { env } from '@/lib/env'
 
 import type { OnsenListItem } from '@/features/map/api/map'
 
@@ -18,7 +20,7 @@ type OnsenDetailPanelProps = {
 
 /**
  * MAP-02 상세패널. 한눈에·정보 탭은 명세에 있는 온천 스펙(수온·수질·효능·시설·요금·뚜벅이)으로
- * 채우고, 리뷰(REV-*)·주변(PAM-04)은 해당 기능이 붙어야 한다.
+ * 채운다. 리뷰(REV-*)는 목 모드에서 화면 검토용 목록을 보여준다.
  */
 export default function OnsenDetailPanel({ onsen, onClose }: OnsenDetailPanelProps) {
   const [tab, setTab] = useState<DetailTab>('한눈에')
@@ -59,9 +61,13 @@ export default function OnsenDetailPanel({ onsen, onClose }: OnsenDetailPanelPro
       </div>
 
       {imageUrl ? (
-        <img src={imageUrl} alt="" className="mt-1 h-[206px] w-full rounded-sm object-cover" />
+        <img
+          src={imageUrl}
+          alt=""
+          className="mt-1 h-[206px] w-full shrink-0 rounded-sm object-cover"
+        />
       ) : (
-        <div className="bg-surface-dim mt-1 h-[206px] w-full rounded-sm" />
+        <div className="bg-surface-dim mt-1 h-[206px] w-full shrink-0 rounded-sm" />
       )}
 
       {/* 시안 Place Action Row. 저장(PAM-07)·공유·길찾기는 아직 범위 밖이라 동작은 비운다. */}
@@ -103,12 +109,14 @@ export default function OnsenDetailPanel({ onsen, onClose }: OnsenDetailPanelPro
         {tab === '한눈에' && <OnsenSpecSummary onsen={onsen} />}
         {tab === '정보' && <Details onsen={onsen} />}
         {tab === '주변' && <NearbyList onsenId={onsen.id} active />}
-        {/* 리뷰는 REV-*가 붙어야 채울 수 있다. */}
-        {tab === '리뷰' && (
-          <p className="text-text-secondary text-[13px] leading-[1.6]">
-            리뷰 정보는 준비 중입니다.
-          </p>
-        )}
+        {tab === '리뷰' &&
+          (env.useMock ? (
+            <MockReviewList onsen={onsen} />
+          ) : (
+            <p className="text-text-secondary text-[13px] leading-[1.6]">
+              리뷰 정보는 준비 중입니다.
+            </p>
+          ))}
       </div>
     </div>
   )
