@@ -6,6 +6,7 @@ import type { AuthUser, MyProfile } from '@/types/user'
 
 import {
   mockCheckEmail,
+  mockCheckNickname,
   mockGetMe,
   mockLogin,
   mockLogout,
@@ -21,7 +22,7 @@ export type LoginResponse = {
   user: AuthUser
 }
 
-/** AUTH-07 회원가입 응답. 자동 로그인은 하지 않는다 — 닉네임은 서버가 만든다. */
+/** AUTH-07 회원가입 응답. 자동 로그인은 하지 않는다 — 로그인은 사용자가 다시 한다. */
 export type SignupResponse = {
   userId: number
   email: string
@@ -42,13 +43,31 @@ export function signup(body: SignupRequest): Promise<SignupResponse> {
   return api.post<SignupResponse>('/auth/signup', body, { skipAuth: true })
 }
 
-/** 가입 폼 blur 시점 중복 확인. 중복이어도 200 + available:false로 온다. */
-export function checkEmail(email: string): Promise<{ email: string; available: boolean }> {
-  if (env.useMock) return mockCheckEmail(email)
-  return api.get<{ email: string; available: boolean }>('/auth/email/check', {
-    params: { email },
+export type Availability = { available: boolean }
+
+/**
+ * 가입 폼 blur 시점 닉네임 중복 확인. 중복이어도 200 + available:false로 온다.
+ * 서버 제약과 같은 2~10자를 통과한 값만 넘길 것 — 길이가 어긋나면 400이다.
+ */
+export function checkNickname(nickname: string): Promise<Availability> {
+  if (env.useMock) return mockCheckNickname(nickname)
+  return api.get<Availability>('/auth/nickname/check', {
+    params: { nickname },
     skipAuth: true,
   })
+}
+
+/**
+ * 이메일 중복 확인.
+ *
+ * ⚠️ 서버의 `/auth/email/check`는 **주석 처리되어 있어 404다** (UserController). 그래서
+ * 실서버에서는 확인을 건너뛰고 `undefined`(미확인)를 돌려준다 — 최종 판정은 가입 API의
+ * 409(DUPLICATE_EMAIL)가 한다. 서버에서 주석이 풀리면 아래 주석을 살리면 된다.
+ */
+export async function checkEmail(email: string): Promise<Availability | undefined> {
+  if (env.useMock) return mockCheckEmail(email)
+  // return api.get<Availability>('/auth/email/check', { params: { email }, skipAuth: true })
+  return undefined
 }
 
 /** 서버 Refresh Token까지 폐기한다. 이미 로그아웃 상태여도 204(멱등). */

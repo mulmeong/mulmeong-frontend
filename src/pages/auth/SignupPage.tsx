@@ -5,15 +5,18 @@ import { ApiError } from '@/api/ApiError'
 import Button from '@/components/ui/Button'
 import Checkbox from '@/components/ui/Checkbox'
 import Input from '@/components/ui/Input'
-import { checkEmail, signup } from '@/features/auth/api/auth'
+import { checkEmail, checkNickname, signup } from '@/features/auth/api/auth'
 import AuthLayout from '@/features/auth/components/AuthLayout'
 import { AUTH_IMAGES } from '@/features/auth/constants'
 import {
   formatPhone,
+  NICKNAME_MAX_LENGTH,
+  NICKNAME_MIN_LENGTH,
   PASSWORD_MIN_LENGTH,
   validateBirthDate,
   validateEmail,
   validateName,
+  validateNickname,
   validatePassword,
   validatePasswordConfirm,
   validatePhone,
@@ -24,6 +27,7 @@ type Form = {
   password: string
   passwordConfirm: string
   name: string
+  nickname: string
   birthDate: string
   phone: string
 }
@@ -35,11 +39,16 @@ const INITIAL_FORM: Form = {
   password: '',
   passwordConfirm: '',
   name: '',
+  nickname: '',
   birthDate: '',
   phone: '',
 }
 
-/** 이용약관·개인정보는 필수, 매거진 수신은 선택. */
+/**
+ * 이용약관·개인정보는 필수, 매거진 수신은 선택.
+ * 셋 다 서버로 보내지 않는다 — 가입 API(SignupRequest)에 해당 필드가 없다.
+ * 수신 동의를 저장해야 하면 BE에 필드 추가 요청이 필요하다.
+ */
 type Agreements = {
   terms: boolean
   privacy: boolean
@@ -61,32 +70,43 @@ export default function SignupPage() {
   const [submitError, setSubmitError] = useState<string>()
   const [submitting, setSubmitting] = useState(false)
 
-  /** null=미확인. 이메일을 고치면 null로 돌아간다. */
-  const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null)
+  /** null=미확인. 값을 고치면 null로 돌아간다. */
+  const [available, setAvailable] = useState<{ email: boolean | null; nickname: boolean | null }>({
+    email: null,
+    nickname: null,
+  })
 
   function update<K extends keyof Form>(key: K, value: Form[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
     setErrors((prev) => ({ ...prev, [key]: undefined }))
-    if (key === 'email') setEmailAvailable(null)
+    if (key === 'email' || key === 'nickname') {
+      setAvailable((prev) => ({ ...prev, [key]: null }))
+    }
   }
 
   /**
-   * AUTH-07 이메일 중복 확인. 명세대로 blur 시점에 부른다.
-   * UX 보조일 뿐이라 실패해도 막지 않는다 — 최종 검증은 가입 API가 한다.
+   * AUTH-07 중복 확인. 명세대로 blur 시점에 부른다.
+   * UX 보조일 뿐이라 실패하거나 서버에 없으면 조용히 넘어간다 — 최종 판정은 가입 API의 409다.
+   *
+   * 이메일은 서버 엔드포인트가 아직 없어 실서버에서는 undefined가 온다 (auth.ts 주석 참고).
    */
-  async function handleEmailBlur() {
-    const value = form.email.trim()
-    if (!value || validateEmail(value)) return
+  async function checkAvailability(field: 'email' | 'nickname') {
+    const value = form[field].trim()
+    const invalid = field === 'email' ? validateEmail(value) : validateNickname(value)
+    if (!value || invalid) return
 
     try {
-      const { available } = await checkEmail(value)
-      setEmailAvailable(available)
-      if (!available) {
-        setErrors((prev) => ({ ...prev, email: '이미 가입된 이메일입니다.' }))
+      const result = field === 'email' ? await checkEmail(value) : await checkNickname(value)
+      if (!result) return
+      setAvailable((prev) => ({ ...prev, [field]: result.available }))
+      if (!result.available) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: field === 'email' ? '이미 가입된 이메일입니다.' : '이미 사용 중인 닉네임입니다.',
+        }))
       }
     } catch {
-      // 조회 실패는 조용히 넘어간다. 가입 시 서버가 409로 잡는다.
-      setEmailAvailable(null)
+      setAvailable((prev) => ({ ...prev, [field]: null }))
     }
   }
 
@@ -98,13 +118,17 @@ export default function SignupPage() {
       password: validatePassword(form.password),
       passwordConfirm: validatePasswordConfirm(form.passwordConfirm, form.password),
       name: validateName(form.name),
+      nickname: validateNickname(form.nickname),
       birthDate: validateBirthDate(form.birthDate),
       phone: validatePhone(form.phone),
     }
 
-    // 중복이 확인된 이메일이면 제출 전에 잡는다 (미확인은 서버가 판단).
-    if (!nextErrors.email && emailAvailable === false) {
+    // 중복이 확인된 값이면 제출 전에 잡는다 (미확인은 서버가 판단).
+    if (!nextErrors.email && available.email === false) {
       nextErrors.email = '이미 가입된 이메일입니다.'
+    }
+    if (!nextErrors.nickname && available.nickname === false) {
+      nextErrors.nickname = '이미 사용 중인 닉네임입니다.'
     }
 
     const nextAgreementError =
@@ -118,15 +142,15 @@ export default function SignupPage() {
 
     setSubmitting(true)
     try {
-      // 닉네임은 서버가 만들어 응답으로 준다. 자동 로그인은 하지 않는다.
+      // 자동 로그인은 하지 않는다 — 가입 후 사용자가 직접 로그인한다 (AUTH-07).
       const { nickname } = await signup({
         email: form.email.trim().toLowerCase(),
         password: form.password,
         passwordConfirm: form.passwordConfirm,
         name: form.name.trim(),
+        nickname: form.nickname.trim(),
         birthDate: form.birthDate,
         phone: formatPhone(form.phone),
-        marketingAgreed: agreements.marketing,
       })
       navigate('/signup/done', { replace: true, state: { nickname } })
     } catch (error) {
@@ -160,9 +184,9 @@ export default function SignupPage() {
           placeholder="you@example.com"
           value={form.email}
           onChange={(e) => update('email', e.target.value)}
-          onBlur={handleEmailBlur}
+          onBlur={() => checkAvailability('email')}
           error={errors.email}
-          hint={emailAvailable ? '사용할 수 있는 이메일입니다.' : undefined}
+          hint={available.email ? '사용할 수 있는 이메일입니다.' : undefined}
         />
 
         <div className="grid gap-5 sm:grid-cols-2">
@@ -206,6 +230,17 @@ export default function SignupPage() {
         </div>
 
         <Input
+          label="닉네임"
+          autoComplete="nickname"
+          placeholder={`${NICKNAME_MIN_LENGTH}~${NICKNAME_MAX_LENGTH}자`}
+          value={form.nickname}
+          onChange={(e) => update('nickname', e.target.value)}
+          onBlur={() => checkAvailability('nickname')}
+          error={errors.nickname}
+          hint={available.nickname ? '사용할 수 있는 닉네임입니다.' : undefined}
+        />
+
+        <Input
           label="전화번호"
           type="tel"
           inputMode="numeric"
@@ -215,8 +250,6 @@ export default function SignupPage() {
           onChange={(e) => update('phone', formatPhone(e.target.value))}
           error={errors.phone}
         />
-
-        {/* 닉네임은 서버가 자동 생성한다 (AUTH-07) — 가입 후 마이페이지에서 바꾼다. */}
 
         <div className="flex flex-col gap-2.5">
           <AgreementRow

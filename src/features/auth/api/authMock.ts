@@ -4,7 +4,7 @@ import { tokenStorage } from '@/api/token'
 import type { LoginRequest, SignupRequest } from '@/features/auth/schemas'
 import type { AuthUser, MyProfile } from '@/types/user'
 
-import type { LoginResponse, SignupResponse } from './auth'
+import type { Availability, LoginResponse, SignupResponse } from './auth'
 
 const MOCK_DELAY_MS = 400
 
@@ -41,6 +41,9 @@ let refreshSession = false
 
 /** 이미 가입된 이메일을 흉내 내 409·중복 확인 화면을 검토한다. */
 const TAKEN_EMAILS = [MOCK_ACCOUNT.email, 'taken@mulmeong.kr']
+
+/** 닉네임 중복(409 DUPLICATE_NICKNAME) 화면을 확인하려고 둔다. */
+const TAKEN_NICKNAMES = [MOCK_USER.nickname, '물멍러']
 
 function delay<T>(value: T): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(value), MOCK_DELAY_MS))
@@ -81,16 +84,22 @@ export function mockLogout() {
   refreshSession = false
 }
 
-export async function mockSignup({ email }: SignupRequest): Promise<SignupResponse> {
+export async function mockSignup({ email, nickname }: SignupRequest): Promise<SignupResponse> {
   await delay(null)
+  // 서버도 이메일을 먼저 본다 (UserService.signup).
   if (TAKEN_EMAILS.includes(email)) {
     throw new ApiError(409, '이미 가입된 이메일입니다.', { code: 'DUPLICATE_EMAIL' })
   }
-  // 닉네임은 서버가 만든다 — '물멍러' + 랜덤 4자리.
-  const suffix = String(Math.floor(1000 + Math.random() * 9000))
-  return { userId: 2, email, nickname: `물멍러${suffix}` }
+  if (TAKEN_NICKNAMES.includes(nickname)) {
+    throw new ApiError(409, '이미 사용 중인 닉네임입니다.', { code: 'DUPLICATE_NICKNAME' })
+  }
+  return { userId: 2, email, nickname }
 }
 
-export function mockCheckEmail(email: string): Promise<{ email: string; available: boolean }> {
-  return delay({ email, available: !TAKEN_EMAILS.includes(email) })
+export function mockCheckEmail(email: string): Promise<Availability> {
+  return delay({ available: !TAKEN_EMAILS.includes(email) })
+}
+
+export function mockCheckNickname(nickname: string): Promise<Availability> {
+  return delay({ available: !TAKEN_NICKNAMES.includes(nickname) })
 }

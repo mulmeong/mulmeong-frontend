@@ -48,9 +48,24 @@ export const phone = z
   )
   .transform((digits) => `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`)
 
+/** 서버 제약과 동일하게 2~10자 (SignupRequest.nickname). */
+export const NICKNAME_MIN_LENGTH = 2
+export const NICKNAME_MAX_LENGTH = 10
+
+export const nickname = z
+  .string()
+  .trim()
+  .min(1, '닉네임을 입력해주세요.')
+  .min(NICKNAME_MIN_LENGTH, `${NICKNAME_MIN_LENGTH}~${NICKNAME_MAX_LENGTH}자로 입력해주세요.`)
+  .max(NICKNAME_MAX_LENGTH, `${NICKNAME_MIN_LENGTH}~${NICKNAME_MAX_LENGTH}자로 입력해주세요.`)
+
 export const loginSchema = z.object({ email, password })
 
-/** 닉네임은 서버가 가입 시 자동 생성한다 (AUTH-07) — 폼에서 받지 않는다. */
+/**
+ * 닉네임은 사용자가 직접 정한다 — 서버가 필수로 받는다(SignupRequest).
+ * 기능명세서 AUTH-07에는 "서버 자동 생성"으로 적혀 있으나 구현이 더 최신이라 이쪽을 따른다.
+ * `marketingAgreed`는 서버 DTO에 없어 보내지 않는다 (동의 여부는 화면에서만 받는다).
+ */
 export const signupSchema = z
   .object({
     email,
@@ -59,7 +74,7 @@ export const signupSchema = z
     name,
     birthDate,
     phone,
-    marketingAgreed: z.boolean(),
+    nickname,
   })
   .refine((data) => data.passwordConfirm === data.password, {
     path: ['passwordConfirm'],
