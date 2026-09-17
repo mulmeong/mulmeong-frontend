@@ -1,6 +1,6 @@
-import { REGIONS } from '@/types/onsen'
+import { REGIONS, regionOf } from '@/types/onsen'
 
-import type { Suggestion } from '@/features/map/api/map'
+import type { SearchOnsensParams, Suggestion } from '@/features/map/api/map'
 import type { MapBounds, Onsen, OnsenWithDistance } from '@/types/onsen'
 
 const MOCK_DELAY_MS = 300
@@ -44,7 +44,8 @@ function isInside(onsen: Onsen, bounds: MapBounds): boolean {
 
 /**
  * 백엔드 연동 전까지 쓰는 표본.
- * address는 REGIONS(시·도 8단위)로 시작해야 한다 — 지역 필터가 startsWith로 걸러서다.
+ * address·sido는 실제 데이터 형식을 따른다 — address는 약칭('경북 울진군'), sido는 정식
+ * 명칭('경상북도')이다. 지역 필터가 regionOf()로 권역을 찾으므로 형식이 어긋나면 안 걸린다.
  * 이름·사진·요금·수질은 화면 확인용 예시이며 실제 업소 정보가 아니다.
  */
 const ONSEN_SEEDS: Onsen[] = [
@@ -52,6 +53,8 @@ const ONSEN_SEEDS: Onsen[] = [
     id: 1,
     name: '학가산 온천',
     address: '서울 강남구',
+    sido: '서울특별시',
+    sigungu: '강남구',
     lat: 37.5172,
     lng: 127.0286,
     rating: 4.4,
@@ -81,6 +84,8 @@ const ONSEN_SEEDS: Onsen[] = [
     id: 2,
     name: '양재 온유스파',
     address: '서울 서초구',
+    sido: '서울특별시',
+    sigungu: '서초구',
     lat: 37.5045,
     lng: 127.0248,
     rating: 4.1,
@@ -91,6 +96,8 @@ const ONSEN_SEEDS: Onsen[] = [
     id: 3,
     name: '잠실 온담사우나',
     address: '서울 송파구',
+    sido: '서울특별시',
+    sigungu: '송파구',
     lat: 37.5145,
     lng: 127.1059,
     rating: 3.9,
@@ -101,6 +108,8 @@ const ONSEN_SEEDS: Onsen[] = [
     id: 4,
     name: '도산 온천',
     address: '서울 강남구',
+    sido: '서울특별시',
+    sigungu: '강남구',
     lat: 37.5243,
     lng: 127.0364,
     rating: 4.6,
@@ -111,6 +120,8 @@ const ONSEN_SEEDS: Onsen[] = [
     id: 5,
     name: '선정릉 스파',
     address: '서울 강남구',
+    sido: '서울특별시',
+    sigungu: '강남구',
     lat: 37.5107,
     lng: 127.0435,
     rating: 4.2,
@@ -121,6 +132,8 @@ const ONSEN_SEEDS: Onsen[] = [
     id: 6,
     name: '이천 숲결온천',
     address: '경기 이천시',
+    sido: '경기도',
+    sigungu: '이천시',
     lat: 37.2721,
     lng: 127.435,
     rating: 4.3,
@@ -131,6 +144,8 @@ const ONSEN_SEEDS: Onsen[] = [
     id: 7,
     name: '포천 솔담스파랜드',
     address: '경기 포천시',
+    sido: '경기도',
+    sigungu: '포천시',
     lat: 37.8949,
     lng: 127.2002,
     rating: 4.0,
@@ -141,6 +156,8 @@ const ONSEN_SEEDS: Onsen[] = [
     id: 8,
     name: '수원 하루사우나',
     address: '경기 수원시',
+    sido: '경기도',
+    sigungu: '수원시',
     lat: 37.2636,
     lng: 127.0286,
     rating: 3.7,
@@ -151,6 +168,8 @@ const ONSEN_SEEDS: Onsen[] = [
     id: 9,
     name: '강화 해담해수탕',
     address: '인천 강화군',
+    sido: '인천광역시',
+    sigungu: '강화군',
     lat: 37.7469,
     lng: 126.4878,
     rating: 4.5,
@@ -161,6 +180,8 @@ const ONSEN_SEEDS: Onsen[] = [
     id: 10,
     name: '인천 느린스파',
     address: '인천 미추홀구',
+    sido: '인천광역시',
+    sigungu: '미추홀구',
     lat: 37.4634,
     lng: 126.6503,
     rating: 3.8,
@@ -171,6 +192,8 @@ const ONSEN_SEEDS: Onsen[] = [
     id: 11,
     name: '속초 바다온천',
     address: '강원 속초시',
+    sido: '강원특별자치도',
+    sigungu: '속초시',
     lat: 38.207,
     lng: 128.5918,
     rating: 4.7,
@@ -196,6 +219,8 @@ const ONSEN_SEEDS: Onsen[] = [
     id: 12,
     name: '평창 솔숲온천호텔',
     address: '강원 평창군',
+    sido: '강원특별자치도',
+    sigungu: '평창군',
     lat: 37.3705,
     lng: 128.3903,
     rating: 4.4,
@@ -206,6 +231,8 @@ const ONSEN_SEEDS: Onsen[] = [
     id: 13,
     name: '원주 온유사우나',
     address: '강원 원주시',
+    sido: '강원특별자치도',
+    sigungu: '원주시',
     lat: 37.3422,
     lng: 127.9202,
     rating: 4.0,
@@ -215,7 +242,9 @@ const ONSEN_SEEDS: Onsen[] = [
   {
     id: 14,
     name: '아산 온담온천',
-    address: '충청 아산시',
+    address: '충남 아산시',
+    sido: '충청남도',
+    sigungu: '아산시',
     lat: 36.7836,
     lng: 127.0041,
     rating: 4.5,
@@ -225,7 +254,9 @@ const ONSEN_SEEDS: Onsen[] = [
   {
     id: 15,
     name: '청주 여유스파',
-    address: '충청 청주시',
+    address: '충북 청주시',
+    sido: '충청북도',
+    sigungu: '청주시',
     lat: 36.6424,
     lng: 127.489,
     rating: 3.9,
@@ -235,7 +266,9 @@ const ONSEN_SEEDS: Onsen[] = [
   {
     id: 16,
     name: '예산 숲마루온천단지',
-    address: '충청 예산군',
+    address: '충남 예산군',
+    sido: '충청남도',
+    sigungu: '예산군',
     lat: 36.6806,
     lng: 126.8451,
     rating: 4.2,
@@ -245,7 +278,9 @@ const ONSEN_SEEDS: Onsen[] = [
   {
     id: 17,
     name: '울진 산들온천',
-    address: '경상 울진군',
+    address: '경북 울진군',
+    sido: '경상북도',
+    sigungu: '울진군',
     lat: 36.9931,
     lng: 129.4003,
     rating: 4.6,
@@ -255,7 +290,9 @@ const ONSEN_SEEDS: Onsen[] = [
   {
     id: 18,
     name: '동래 온유스파',
-    address: '경상 부산 동래구',
+    address: '부산 동래구',
+    sido: '부산광역시',
+    sigungu: '동래구',
     lat: 35.2054,
     lng: 129.0784,
     rating: 4.1,
@@ -265,7 +302,9 @@ const ONSEN_SEEDS: Onsen[] = [
   {
     id: 19,
     name: '경주 고요사우나',
-    address: '경상 경주시',
+    address: '경북 경주시',
+    sido: '경상북도',
+    sigungu: '경주시',
     lat: 35.8562,
     lng: 129.2247,
     rating: 3.6,
@@ -275,7 +314,9 @@ const ONSEN_SEEDS: Onsen[] = [
   {
     id: 20,
     name: '화순 숲결온천',
-    address: '전라 화순군',
+    address: '전남 화순군',
+    sido: '전라남도',
+    sigungu: '화순군',
     lat: 35.0645,
     lng: 126.9862,
     rating: 4.3,
@@ -285,7 +326,9 @@ const ONSEN_SEEDS: Onsen[] = [
   {
     id: 21,
     name: '전주 느린스파',
-    address: '전라 전주시',
+    address: '전북 전주시',
+    sido: '전북특별자치도',
+    sigungu: '전주시',
     lat: 35.8242,
     lng: 127.148,
     rating: 3.8,
@@ -296,6 +339,8 @@ const ONSEN_SEEDS: Onsen[] = [
     id: 22,
     name: '서귀포 물빛해수탕',
     address: '제주 서귀포시',
+    sido: '제주특별자치도',
+    sigungu: '서귀포시',
     lat: 33.2541,
     lng: 126.5601,
     rating: 4.8,
@@ -321,6 +366,8 @@ const ONSEN_SEEDS: Onsen[] = [
     id: 23,
     name: '제주 온담스파',
     address: '제주 제주시',
+    sido: '제주특별자치도',
+    sigungu: '제주시',
     lat: 33.4996,
     lng: 126.5312,
     rating: 4.2,
@@ -401,16 +448,18 @@ export function mockSuggest(keyword: string): Promise<Suggestion[]> {
   return delay([...regions, ...onsens].slice(0, MAX_SUGGESTIONS))
 }
 
-export function mockSearchOnsens(
-  keyword?: string,
-  region?: string,
-  bounds?: MapBounds,
-): Promise<OnsenWithDistance[]> {
+export function mockSearchOnsens({
+  keyword,
+  region,
+  bounds,
+  limit,
+}: SearchOnsensParams = {}): Promise<OnsenWithDistance[]> {
   const origin = originOf(bounds)
 
   const filtered = MOCK_ONSENS.filter((onsen) => {
     const matchesKeyword = !keyword || onsen.name.includes(keyword)
-    const matchesRegion = !region || onsen.address.startsWith(region)
+    // 주소 앞 토큰이 아니라 권역 매핑으로 거른다 — '경북 울진군'은 '경상'으로 시작하지 않는다.
+    const matchesRegion = !region || regionOf(onsen) === region
     // 지역·검색어를 직접 고른 경우엔 영역 밖도 보여준다 (고른 결과가 사라지면 혼란스럽다).
     const matchesBounds = !bounds || keyword || region || isInside(onsen, bounds)
     return matchesKeyword && matchesRegion && matchesBounds
@@ -421,5 +470,6 @@ export function mockSearchOnsens(
     }))
     .sort((a, b) => a.distanceKm - b.distanceKm)
 
-  return delay(filtered)
+  // 서버가 자르는 걸 흉내낸다 — 목에서도 505곳 상황을 재현할 수 있어야 한다.
+  return delay(limit === undefined ? filtered : filtered.slice(0, limit))
 }
