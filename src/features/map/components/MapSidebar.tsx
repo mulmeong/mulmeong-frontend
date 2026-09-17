@@ -4,8 +4,10 @@ import Input from '@/components/ui/Input'
 import Tab from '@/components/ui/Tab'
 import SearchResultItem from '@/features/map/components/SearchResultItem'
 import SearchSuggestions from '@/features/map/components/SearchSuggestions'
+import SidebarMagazine from '@/features/map/components/SidebarMagazine'
 import { useSuggestions } from '@/features/map/hooks/useSuggestions'
 import { cn } from '@/lib/cn'
+import { env } from '@/lib/env'
 import { REGIONS } from '@/types/onsen'
 
 import type { OnsenListItem, Suggestion } from '@/features/map/api/map'
@@ -18,6 +20,7 @@ type MapSidebarProps = {
   selectedId?: number
   onSelect: (onsen: Onsen) => void
   onSearch: (filters: { keyword?: string; region?: string }) => void
+  onDirections: () => void
 }
 
 /** 시안의 '지금 이런 곳은 어때요' 추천 묶음. 실제 링크는 매거진 연동 후 채운다. */
@@ -27,6 +30,34 @@ const SUGGESTIONS = [
   '노천탕이 있는 곳',
   '조용히 혼자 쉬기 좋은 곳',
 ]
+
+const MOCK_SUGGESTION_IMAGES = [
+  '/images/panel05.jpg',
+  '/images/panel03.jpg',
+  '/images/panel01.jpg',
+  '/images/hero.jpg',
+]
+
+/**
+ * 결과 없음 안내. 가운데 정렬로 좁게 두면 줄마다 길이가 달라져 역삼각형으로 보인다 —
+ * 왼쪽 정렬로 폭을 채우고 버튼은 한 줄에 붙인다.
+ */
+function EmptyResult({ onReset }: { onReset: () => void }) {
+  return (
+    <div className="mt-3">
+      <p className="text-text-secondary text-[12px] leading-[1.6]">
+        검색 결과가 없어요. 다른 지역이나 검색어로 찾아보세요.
+      </p>
+      <button
+        type="button"
+        onClick={onReset}
+        className="text-text-primary mt-2 text-[11px] underline underline-offset-2 outline-none"
+      >
+        전체 지도 보기
+      </button>
+    </div>
+  )
+}
 
 function SectionLabel({ children }: { children: string }) {
   return <h2 className="text-text-secondary text-[11px] tracking-[0.04em]">{children}</h2>
@@ -48,6 +79,7 @@ export default function MapSidebar({
   selectedId,
   onSelect,
   onSearch,
+  onDirections,
 }: MapSidebarProps) {
   const [keyword, setKeyword] = useState('')
   const [region, setRegion] = useState<string>()
@@ -118,213 +150,261 @@ export default function MapSidebar({
     onSearch({ keyword: keyword.trim() || undefined, region: value })
   }
 
+  /** '전체'는 지역만 푼다 — 검색어는 건드리지 않는다. */
+  function handleResetRegion() {
+    if (!region) return
+    setRegion(undefined)
+    onSearch({ keyword: keyword.trim() || undefined })
+  }
+
   function handleReset() {
     setKeyword('')
     setRegion(undefined)
     setSearchedKeyword('')
+    setFocused(false)
+    setActiveIndex(-1)
+    clear()
     onSearch({})
   }
 
   return (
-    <div className="bg-surface scrollbar-thin flex h-full min-w-0 flex-col overflow-x-hidden overflow-y-auto px-5 pb-10">
-      <div role="tablist" className="flex gap-5 pt-6">
-        <Tab selected>장소 검색</Tab>
-        {/* 길찾기(MAP-08)는 ① 범위다 — 모드 전환·경로 API가 아직 없어 비활성일 뿐이다. */}
-        <Tab disabled className="cursor-not-allowed">
-          길찾기
-        </Tab>
-      </div>
+    <div className="bg-surface flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
+      {/* flex-col이라야 내용이 짧을 때 매거진을 mt-auto로 바닥에 붙일 수 있다. */}
+      <div className="scrollbar-thin flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain px-5 pb-6">
+        <div role="tablist" className="flex gap-5 pt-6">
+          <Tab selected>장소 검색</Tab>
+          <Tab onClick={onDirections}>길찾기</Tab>
+        </div>
 
-      <form onSubmit={handleSubmit} className="relative pt-5">
-        <Input
-          variant="search"
-          placeholder="온천·사우나 검색"
-          value={keyword}
-          onChange={(e) => {
-            setKeyword(e.target.value)
-            setActiveIndex(-1)
-          }}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          onKeyDown={handleKeyDown}
-          aria-label="온천·사우나 검색"
-          role="combobox"
-          aria-expanded={isOpen}
-          aria-controls={isOpen ? listboxId : undefined}
-          aria-activedescendant={activeIndex >= 0 ? optionId(activeIndex) : undefined}
-          aria-autocomplete="list"
-        />
-        {isOpen && (
-          <SearchSuggestions
-            suggestions={suggestions}
-            activeIndex={activeIndex}
-            listboxId={listboxId}
-            optionId={optionId}
-            onPick={handlePick}
-            keyword={keyword.trim()}
+        <form onSubmit={handleSubmit} className="relative pt-3">
+          <Input
+            variant="search"
+            placeholder="온천·사우나 검색"
+            value={keyword}
+            onChange={(e) => {
+              setKeyword(e.target.value)
+              setActiveIndex(-1)
+            }}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            onKeyDown={handleKeyDown}
+            aria-label="온천·사우나 검색"
+            role="combobox"
+            aria-expanded={isOpen}
+            aria-controls={isOpen ? listboxId : undefined}
+            aria-activedescendant={activeIndex >= 0 ? optionId(activeIndex) : undefined}
+            aria-autocomplete="list"
           />
-        )}
-      </form>
-
-      {isSearching && (
-        <section className="pt-8">
-          <div className="flex items-baseline justify-between gap-3">
-            <h2 className="text-text-primary min-w-0 truncate text-[15px] font-semibold">
-              “{searchedKeyword}” 검색 결과
-            </h2>
-            {!loading && !error && (
-              <span className="text-text-secondary shrink-0 text-[12px]">{onsens.length}</span>
-            )}
-          </div>
-
-          {loading && <p className="text-text-secondary mt-3 text-[13px]">불러오는 중…</p>}
-
-          {error && (
-            <p role="alert" className="text-danger mt-3 text-[13px]">
-              {error}
-            </p>
+          {isOpen && (
+            <SearchSuggestions
+              suggestions={suggestions}
+              activeIndex={activeIndex}
+              listboxId={listboxId}
+              optionId={optionId}
+              onPick={handlePick}
+              keyword={keyword.trim()}
+            />
           )}
+        </form>
 
-          {!loading && !error && onsens.length === 0 && (
-            <div className="mt-3 flex flex-col items-center">
-              <p className="text-text-secondary max-w-[194px] text-center text-[13px] leading-[1.6]">
+        {isSearching && (
+          <section className="pt-8">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className="text-text-primary min-w-0 truncate text-[15px] font-semibold">
+                “{searchedKeyword}” 검색 결과
+              </h2>
+              <div className="flex shrink-0 items-baseline gap-2.5">
+                {/* 0은 바로 아래 '검색 결과가 없어요'와 겹쳐 굳이 띄우지 않는다. */}
+                {!loading && !error && onsens.length > 0 && (
+                  <span className="text-text-secondary text-[12px]">{onsens.length}</span>
+                )}
+                {/* 검색 조건과 장소 선택을 풀고 처음 지도 범위로 돌아간다. */}
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  title="검색 조건을 지우고 처음 지도 화면으로 돌아가기"
+                  className="text-text-secondary hover:text-text-primary text-[11px] transition-colors outline-none focus-visible:underline focus-visible:underline-offset-2"
+                >
+                  전체 지도 보기
+                </button>
+              </div>
+            </div>
+
+            {loading && <p className="text-text-secondary mt-3 text-[13px]">불러오는 중…</p>}
+
+            {error && (
+              <p role="alert" className="text-danger mt-3 text-[13px]">
+                {error}
+              </p>
+            )}
+
+            {/* 헤더에서 전체 지도로 돌아갈 수 있으므로 안내 문구만 보여준다. */}
+            {!loading && !error && onsens.length === 0 && (
+              <p className="text-text-secondary mt-3 text-[12px] leading-[1.6]">
                 검색 결과가 없어요. 다른 지역이나 검색어로 찾아보세요.
               </p>
-              <button
-                type="button"
-                onClick={handleReset}
-                className="text-text-primary mt-3 text-[12px] underline underline-offset-2 outline-none"
-              >
-                조건 초기화
-              </button>
-            </div>
-          )}
+            )}
 
-          {!loading && !error && onsens.length > 0 && (
-            <ul className="mt-2 flex flex-col">
-              {onsens.map((onsen) => (
-                <li key={onsen.id}>
-                  <SearchResultItem
-                    onsen={onsen}
-                    selected={onsen.id === selectedId}
-                    onClick={() => onSelect(onsen)}
-                  />
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
+            {!loading && !error && onsens.length > 0 && (
+              <ul className="mt-2 flex flex-col">
+                {onsens.map((onsen) => (
+                  <li key={onsen.id}>
+                    <SearchResultItem
+                      onsen={onsen}
+                      selected={onsen.id === selectedId}
+                      onClick={() => onSelect(onsen)}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
 
-      {!isSearching && (
-        <>
-          <section className="pt-8">
-            <SectionLabel>지역으로 둘러보기</SectionLabel>
-            <div className="mt-3 flex flex-wrap gap-x-1.5 gap-y-2">
-              {REGIONS.map((item) => (
+        {!isSearching && (
+          <>
+            <section className="pt-8">
+              <SectionLabel>지역으로 둘러보기</SectionLabel>
+              <div className="mt-3 flex flex-wrap gap-x-1.5 gap-y-2">
+                {/* 지역을 고른 뒤 전국으로 돌아올 길 — 칩을 다시 누르는 건 알아채기 어렵다. */}
                 <button
-                  key={item}
                   type="button"
-                  aria-pressed={region === item}
-                  onClick={() => handleRegion(item)}
+                  aria-pressed={!region}
+                  onClick={handleResetRegion}
                   className={cn(
                     'rounded-full px-3 py-1.5 text-[13px] transition-colors outline-none',
-                    region === item
+                    !region
                       ? 'bg-inverse text-text-inverse font-medium'
                       : 'text-text-primary hover:bg-surface-dim',
                   )}
                 >
-                  {item}
+                  전체
                 </button>
-              ))}
-            </div>
-          </section>
 
-          <section className="pt-8">
-            <div className="flex items-baseline justify-between gap-3">
-              <SectionLabel>지금 이런 곳은 어때요</SectionLabel>
-              <button
-                type="button"
-                className="text-text-secondary shrink-0 text-[11px] outline-none hover:underline"
-              >
-                전체보기
-              </button>
-            </div>
-
-            {/* 가로 스크롤 — 추천이 세로 공간을 먹어 목록을 밀어내지 않게 한다. */}
-            <ul className="scrollbar-thin mt-3 flex snap-x gap-2.5 overflow-x-auto pb-1">
-              {SUGGESTIONS.map((label) => (
-                <li key={label} className="w-[132px] shrink-0 snap-start">
-                  <div className="bg-surface-dim aspect-[132/74] w-full rounded-sm" />
-                  <p className="text-text-primary mt-1.5 truncate text-[12px]">{label}</p>
-                </li>
-              ))}
-            </ul>
-          </section>
-        </>
-      )}
-
-      {!isSearching && hasFilter && (
-        <section className="pt-8">
-          <SectionLabel>현재 지도에서</SectionLabel>
-
-          {loading && <p className="text-text-secondary mt-3 text-[13px]">불러오는 중…</p>}
-
-          {error && (
-            <p role="alert" className="text-danger mt-3 text-[13px]">
-              {error}
-            </p>
-          )}
-
-          {!loading && !error && onsens.length === 0 && (
-            <div className="mt-3 flex flex-col items-center">
-              <p className="text-text-secondary max-w-[194px] text-center text-[13px] leading-[1.6]">
-                검색 결과가 없어요. 다른 지역이나 검색어로 찾아보세요.
-              </p>
-              <button
-                type="button"
-                onClick={handleReset}
-                className="text-text-primary mt-3 text-[12px] underline underline-offset-2 outline-none"
-              >
-                조건 초기화
-              </button>
-            </div>
-          )}
-
-          {!loading && !error && onsens.length > 0 && (
-            <ul className="mt-2 flex flex-col">
-              {onsens.map((onsen) => (
-                <li key={onsen.id}>
+                {REGIONS.map((item) => (
                   <button
+                    key={item}
                     type="button"
-                    onClick={() => onSelect(onsen)}
-                    aria-current={onsen.id === selectedId || undefined}
+                    aria-pressed={region === item}
+                    onClick={() => handleRegion(item)}
                     className={cn(
-                      '-mx-2 flex w-[calc(100%+1rem)] items-baseline justify-between gap-3 rounded-sm px-2 py-2.5 text-left',
-                      'transition-colors outline-none focus-visible:underline focus-visible:underline-offset-2',
-                      onsen.id === selectedId ? 'bg-surface-dim' : 'hover:bg-surface-dim',
+                      'rounded-full px-3 py-1.5 text-[13px] transition-colors outline-none',
+                      region === item
+                        ? 'bg-inverse text-text-inverse font-medium'
+                        : 'text-text-primary hover:bg-surface-dim',
                     )}
                   >
-                    <span
+                    {item}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {/* 첫 화면에만 둔다 — 지역을 고르면 그 지역 매거진이 이 자리를 대신한다. */}
+            {!region && (
+              <>
+                {/* 위 내용과의 최소 간격. mt-auto와 margin이 겹치지 않게 빈 칸으로 벌린다. */}
+                <div aria-hidden className="h-8 shrink-0" />
+                <section className="mt-auto shrink-0">
+                  <div className="flex items-baseline justify-between gap-3">
+                    {/* 카드가 커진 만큼 제목도 키워 위계를 맞춘다 (다른 섹션 라벨은 11px 유지). */}
+                    <h2 className="text-text-primary text-[13px] font-medium">
+                      지금 이런 곳은 어때요
+                    </h2>
+                    <button
+                      type="button"
+                      className="text-text-secondary shrink-0 text-[11px] outline-none hover:underline"
+                    >
+                      전체보기
+                    </button>
+                  </div>
+
+                  {/*
+                    가로 스크롤 — 추천이 세로 공간을 먹어 목록을 밀어내지 않게 한다.
+                    사이드바 px-5를 상쇄하되(-mx-5) 같은 요소에 px-5를 다시 줘서
+                    첫·끝 카드가 가장자리에 잘리지 않게 한다.
+                  */}
+                  <ul className="scrollbar-thin -mx-5 mt-3 flex snap-x scroll-pl-5 gap-2.5 overflow-x-auto px-5 pb-1">
+                    {SUGGESTIONS.map((label, index) => (
+                      <li key={label} className="w-[168px] shrink-0 snap-start">
+                        {env.useMock ? (
+                          <img
+                            src={MOCK_SUGGESTION_IMAGES[index]}
+                            alt=""
+                            loading="lazy"
+                            className="bg-surface-dim aspect-[168/104] w-full rounded-sm object-cover"
+                          />
+                        ) : (
+                          <div className="bg-surface-dim aspect-[168/104] w-full rounded-sm" />
+                        )}
+                        <p className="text-text-primary mt-2 truncate text-[13px]">{label}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              </>
+            )}
+          </>
+        )}
+
+        {!isSearching && hasFilter && (
+          <section className="pt-8">
+            <SectionLabel>현재 지도에서</SectionLabel>
+
+            {loading && <p className="text-text-secondary mt-3 text-[13px]">불러오는 중…</p>}
+
+            {error && (
+              <p role="alert" className="text-danger mt-3 text-[13px]">
+                {error}
+              </p>
+            )}
+
+            {!loading && !error && onsens.length === 0 && <EmptyResult onReset={handleReset} />}
+
+            {!loading && !error && onsens.length > 0 && (
+              <ul className="mt-2 flex flex-col">
+                {onsens.map((onsen) => (
+                  <li key={onsen.id}>
+                    <button
+                      type="button"
+                      onClick={() => onSelect(onsen)}
+                      aria-current={onsen.id === selectedId || undefined}
                       className={cn(
-                        'text-text-primary min-w-0 truncate text-[14px]',
-                        onsen.id === selectedId ? 'font-semibold' : 'font-medium',
+                        '-mx-2 flex w-[calc(100%+1rem)] items-baseline justify-between gap-3 rounded-sm px-2 py-2.5 text-left',
+                        'transition-colors outline-none focus-visible:underline focus-visible:underline-offset-2',
+                        onsen.id === selectedId ? 'bg-surface-dim' : 'hover:bg-surface-dim',
                       )}
                     >
-                      {onsen.name}
-                    </span>
-                    {onsen.distanceKm !== undefined && (
-                      <span className="text-text-secondary shrink-0 text-[12px]">
-                        {formatDistance(onsen.distanceKm)}
+                      <span
+                        className={cn(
+                          'text-text-primary min-w-0 truncate text-[14px]',
+                          onsen.id === selectedId ? 'font-semibold' : 'font-medium',
+                        )}
+                      >
+                        {onsen.name}
                       </span>
-                    )}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
+                      {onsen.distanceKm !== undefined && (
+                        <span className="text-text-secondary shrink-0 text-[12px]">
+                          {formatDistance(onsen.distanceKm)}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+
+        {/* 목록과 매거진 사이 최소 간격. mt-auto와 겹치지 않게 빈 칸으로 벌린다. */}
+        {/* 첫 화면은 '지금 이런 곳은 어때요'가 맡는다 — 매거진은 지역을 고른 뒤에 나온다. */}
+        {region && (
+          <>
+            <div aria-hidden className="h-8 shrink-0" />
+            <SidebarMagazine region={region} />
+          </>
+        )}
+      </div>
     </div>
   )
 }

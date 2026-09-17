@@ -2,15 +2,20 @@ import { useCallback, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import Header from '@/components/ui/Header'
+import DirectionsPanel from '@/features/map/components/DirectionsPanel'
 import MapCanvas from '@/features/map/components/MapCanvas'
 import MapSidebar from '@/features/map/components/MapSidebar'
 import OnsenDetailPanel from '@/features/map/components/OnsenDetailPanel'
+import PoiFilter from '@/features/map/components/PoiFilter'
 import { useOnsens } from '@/features/map/hooks/useOnsens'
+import { useDirections } from '@/features/map/hooks/useDirections'
+import { usePois } from '@/features/map/hooks/usePois'
 import { cn } from '@/lib/cn'
 
 import { REGION_VIEWS } from '@/types/onsen'
 
 import type { MapBounds, MapView, Onsen, Region } from '@/types/onsen'
+import type { PoiCategory } from '@/types/poi'
 
 /** 검색 결과가 하나뿐일 때 지도를 얼마나 당길지. */
 const SINGLE_RESULT_LEVEL = 5
@@ -20,7 +25,46 @@ export default function MapPage() {
   const { onsens, loading, error, load } = useOnsens()
   const [selectedId, setSelectedId] = useState<number>()
 
-  const handleSelect = useCallback((onsen: Onsen) => setSelectedId(onsen.id), [])
+  const [mode, setMode] = useState<'search' | 'directions'>('search')
+  const modeRef = useRef(mode)
+  const directions = useDirections()
+  const { updateField, invalidate } = directions
+  const setDestination = useCallback(
+    (onsen: Onsen) => {
+      updateField('destination', {
+        text: onsen.name,
+        place: {
+          id: `onsen-${onsen.id}`,
+          name: onsen.name,
+          address: onsen.address,
+          lat: onsen.lat,
+          lng: onsen.lng,
+        },
+      })
+    },
+    [updateField],
+  )
+  const handleSelect = useCallback(
+    (onsen: Onsen) => {
+      if (modeRef.current === 'directions') setDestination(onsen)
+      else setSelectedId(onsen.id)
+    },
+    [setDestination],
+  )
+
+  function openDirections(onsen?: Onsen) {
+    modeRef.current = 'directions'
+    setMode('directions')
+    setSelectedId(undefined)
+    setCollapsed(false)
+    if (onsen) setDestination(onsen)
+  }
+
+  function openSearch() {
+    invalidate()
+    modeRef.current = 'search'
+    setMode('search')
+  }
 
   // 검색어·지역은 MapSidebar가 들고 있다 — 지도를 움직여도 그 조건을 잃지 않게 기억한다.
   const filtersRef = useRef<{ keyword?: string; region?: string }>({})
@@ -32,7 +76,14 @@ export default function MapPage() {
       filtersRef.current = filters
       setHasFilter(Boolean(filters.keyword || filters.region))
 
+      if (!filters.keyword && !filters.region) {
+        setSelectedId(undefined)
+        setFocus({ initial: true })
+      }
+
       const results = await load(filters)
+      // 초기 화면으로 돌아간 뒤 늦게 도착한 검색이 지도를 다시 이동시키지 않는다.
+      if (filtersRef.current !== filters || modeRef.current !== 'search') return
 
       if (filters.region) {
         // 지역은 결과와 무관하게 그 지역이 보이게 한다.
@@ -67,7 +118,7 @@ export default function MapPage() {
    */
   const handleBoundsChange = useCallback(
     (bounds: MapBounds) => {
-      if (!hasFilter) return
+      if (!hasFilter || modeRef.current !== 'search') return
       void load({ ...filtersRef.current, bounds })
     },
     [load, hasFilter],
@@ -75,6 +126,28 @@ export default function MapPage() {
 
   // 목록·마커가 같은 선택 상태를 쓰므로 객체는 id로 되찾는다 (사본을 따로 들지 않는다).
   const selected = onsens.find((onsen) => onsen.id === selectedId)
+
+  /**
+   * MAP-07 리스트 뷰 토글. 시안에 버튼이 없어 형태는 우리가 정했다 —
+   * 패널 경계의 손잡이로 접고 편다. 모바일은 45dvh 스트립이라 접는 의미가 없어 데스크탑만.
+   */
+  const [collapsed, setCollapsed] = useState(false)
+
+  // MAP-04 카테고리 POI — 켜진 것만 지도 중심 기준으로 불러온다.
+  const [categories, setCategories] = useState<PoiCategory[]>([])
+  const [center, setCenter] = useState<{ lat: number; lng: number }>()
+  const { pois } = usePois(mode === 'search' ? categories : [], center)
+
+  const handleCenterChange = useCallback(
+    (next: { lat: number; lng: number }) => setCenter(next),
+    [],
+  )
+
+  const handleToggleCategory = useCallback((category: PoiCategory) => {
+    setCategories((prev) =>
+      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category],
+    )
+  }, [])
 
   return (
     // 지도는 화면을 꽉 채워야 해서 RootLayout(max-w-5xl 본문) 밖에 두고 헤더만 직접 쓴다.
@@ -86,35 +159,83 @@ export default function MapPage() {
         <aside
           className={cn(
             'border-border-default h-[45dvh] w-full min-w-0 shrink-0 flex-col border-b',
-            'lg:flex lg:h-auto lg:w-[380px] lg:border-r lg:border-b-0',
+            'lg:h-auto lg:border-r lg:border-b-0',
+            collapsed ? 'lg:w-0 lg:overflow-hidden lg:border-r-0' : 'lg:flex lg:w-[380px]',
             selected ? 'hidden' : 'flex',
           )}
         >
-          <MapSidebar
-            onsens={onsens}
-            loading={loading}
-            error={error}
-            selectedId={selectedId}
-            onSelect={handleSelect}
-            onSearch={handleSearch}
-          />
+          <div className={cn('h-full min-h-0', mode !== 'search' && 'hidden')}>
+            <MapSidebar
+              onsens={onsens}
+              loading={loading}
+              error={error}
+              selectedId={selectedId}
+              onSelect={handleSelect}
+              onSearch={handleSearch}
+              onDirections={() => openDirections()}
+            />
+          </div>
+          {mode === 'directions' && (
+            <DirectionsPanel directions={directions} onSearchTab={openSearch} />
+          )}
         </aside>
+
+        {/* 접기 손잡이 — 패널 경계에 붙여 지도를 최대한 넓게 쓸 수 있게 한다. */}
+        <div
+          className={cn(
+            'pointer-events-none relative z-10 hidden w-0 shrink-0',
+            selected ? 'lg:hidden' : 'lg:block',
+          )}
+        >
+          <button
+            type="button"
+            onClick={() => setCollapsed((prev) => !prev)}
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? '검색 패널 펼치기' : '검색 패널 접기'}
+            className={cn(
+              'border-border-default bg-surface text-text-secondary hover:text-text-primary',
+              'pointer-events-auto absolute top-1/2 left-0 -translate-y-1/2',
+              'flex h-[51px] w-[23px] items-center justify-center',
+              'rounded-r-md border border-l-0 text-[11px] transition-colors outline-none',
+            )}
+          >
+            {collapsed ? '›' : '‹'}
+          </button>
+        </div>
 
         {/* 검색 패널을 교체하지 않고 그 오른쪽에 더한다 — 지도는 남은 폭을 쓴다. */}
         {selected && (
           <aside className="border-border-default flex h-[45dvh] w-full min-w-0 shrink-0 flex-col border-b lg:h-auto lg:w-[347px] lg:border-r lg:border-b-0">
-            <OnsenDetailPanel onsen={selected} onClose={() => setSelectedId(undefined)} />
+            <OnsenDetailPanel
+              onsen={selected}
+              onClose={() => setSelectedId(undefined)}
+              onDirections={() => openDirections(selected)}
+            />
           </aside>
         )}
 
-        <main className="min-h-0 flex-1">
+        <main className="relative min-h-0 flex-1">
           <MapCanvas
             onsens={onsens}
             selectedId={selectedId}
             onSelect={handleSelect}
             onBoundsChange={handleBoundsChange}
+            pois={pois}
+            onCenterChange={handleCenterChange}
             focus={focus}
+            directions={mode === 'directions' ? directions.result : undefined}
+            route={mode === 'directions' ? directions.selectedRoute : undefined}
           />
+
+          {/*
+            지도 위에 띄운다 — 컨테이너는 클릭을 통과시켜 팬·줌을 막지 않는다.
+            카카오맵이 타일·컨트롤에 자체 z-index를 써서, 값을 넉넉히 올려야 가려지지 않는다.
+          */}
+          {mode === 'search' && (
+            <div className="pointer-events-none absolute inset-x-0 top-1.5 z-[100]">
+              <PoiFilter selected={categories} onToggle={handleToggleCategory} />
+            </div>
+          )}
         </main>
       </div>
     </div>

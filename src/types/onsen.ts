@@ -70,11 +70,12 @@ export type MapBounds = {
 /** 지역 필터 단위 — 포도알 지도(MY-02)와 같은 시·도 17단위. */
 export const REGIONS = ['서울', '경기', '인천', '강원', '충청', '경상', '전라', '제주'] as const
 
-/** 지도를 옮길 목표 — 한 곳으로(point) 또는 여러 결과가 다 보이게(bounds). */
-export type MapView = { lat: number; lng: number; level: number } | { bounds: MapBounds }
+/** 지도를 옮길 목표 — 한 곳, 여러 결과의 범위, 또는 처음 화면. */
+export type MapView =
+  { lat: number; lng: number; level: number } | { bounds: MapBounds } | { initial: true }
 
-/** 지도를 처음 열었을 때 보여주는 전국 뷰. */
-export const NATIONAL_VIEW = { lat: 36.5, lng: 127.8, level: 13 } as const
+/** SDK 생성용 기본값. 실제 전국 범위와 축소 한도는 지도 컨테이너 크기에 맞춰 계산한다. */
+export const NATIONAL_VIEW = { lat: 35.8, lng: 127.8, level: 13 } as const
 
 /**
  * 지역을 고르면 지도를 옮길 위치.

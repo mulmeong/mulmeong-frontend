@@ -15,6 +15,7 @@ const MOCK_MAGAZINES: Magazine[] = [
   {
     id: 1,
     title: '30년 세신사의 손',
+    coverImageUrl: '/images/panel05.jpg',
     subtitle: '때를 미는 일에도 결이 있다',
     category: '인터뷰',
     readMinutes: 8,
@@ -25,6 +26,7 @@ const MOCK_MAGAZINES: Magazine[] = [
   {
     id: 2,
     title: '탄산천과 유황천의 차이',
+    coverImageUrl: '/images/hero.jpg',
     subtitle: '물이 몸에 닿는 방식',
     category: '수질·효능',
     readMinutes: 5,
@@ -34,6 +36,7 @@ const MOCK_MAGAZINES: Magazine[] = [
   {
     id: 3,
     title: '안동의 찜닭거리',
+    coverImageUrl: '/images/panel01.jpg',
     subtitle: '온천 다녀와서 뭘 먹을까',
     category: '주변 관광',
     readMinutes: 9,
@@ -44,6 +47,7 @@ const MOCK_MAGAZINES: Magazine[] = [
   {
     id: 4,
     title: '유황 냄새를 따라 걸었다',
+    coverImageUrl: '/images/panel02.jpg',
     subtitle: '덕구에서 백암까지, 겨울 물길을 사흘 걸었다',
     category: '온천 기행',
     readMinutes: 12,
@@ -63,6 +67,7 @@ const MOCK_MAGAZINES: Magazine[] = [
   {
     id: 5,
     title: '100년 된 목욕탕의 하루',
+    coverImageUrl: '/images/panel05.jpg',
     subtitle: '문 여는 새벽 다섯 시부터',
     category: '사우나 문화',
     readMinutes: 9,
