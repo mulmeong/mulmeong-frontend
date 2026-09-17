@@ -6,11 +6,17 @@ import { useMagazines } from '@/features/magazine/hooks/useMagazines'
 const VISIBLE_COUNT = 2
 
 export default function SidebarMagazine({ region }: { region?: string }) {
-  const { magazines, loading, error } = useMagazines(undefined, region)
+  // 매거진은 sidoCode(행안부 2자리)로 거르는데 지도는 8개 권역이라 코드가 1:1로 안 맞는다.
+  // 목록을 받아 regionName으로 좁힌다 — 권역명이 지역명에 포함되는지로 판단한다.
+  const { magazines, loading, error } = useMagazines({ size: 12 })
+
+  const visible = region
+    ? magazines.filter((magazine) => magazine.regionName.includes(region))
+    : magazines
 
   // 보조 영역이라 실패하면 조용히 감춘다 — 지도 탐색을 막지 않는다.
   // 고른 지역에 글이 없을 때도 마찬가지다 (전체 글로 대체하지 않는다).
-  if (loading || error || magazines.length === 0) return null
+  if (loading || error || visible.length === 0) return null
 
   return (
     <section
@@ -33,12 +39,12 @@ export default function SidebarMagazine({ region }: { region?: string }) {
       </div>
 
       <ul className="mt-3 grid grid-cols-2 gap-3">
-        {magazines.slice(0, VISIBLE_COUNT).map((magazine) => (
-          <li key={magazine.id} className="min-w-0">
-            <Link to={`/magazine/${magazine.id}`} className="group block outline-none">
-              {magazine.coverImageUrl ? (
+        {visible.slice(0, VISIBLE_COUNT).map((magazine) => (
+          <li key={magazine.magazineId} className="min-w-0">
+            <Link to={`/magazine/${magazine.magazineId}`} className="group block outline-none">
+              {magazine.thumbnailUrl ? (
                 <img
-                  src={magazine.coverImageUrl}
+                  src={magazine.thumbnailUrl}
                   alt=""
                   loading="lazy"
                   className="bg-surface-dim aspect-[174/115] w-full rounded-sm object-cover"

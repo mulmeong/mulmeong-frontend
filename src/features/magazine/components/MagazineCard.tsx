@@ -1,40 +1,31 @@
-import { Link } from 'react-router-dom'
-
+﻿import { Link } from 'react-router-dom'
+import MagazineImage from './MagazineImage'
 import type { Magazine } from '@/types/magazine'
-
-type MagazineCardProps = {
+export default function MagazineCard({
+  magazine,
+  index = 0,
+}: {
   magazine: Magazine
-  /** 시안 카드에 붙는 01·02 번호. */
-  index: number
-}
-
-/** 시안 '매거진 카드' — 세로 사진 + 번호·제목 + 카테고리·분량. */
-export default function MagazineCard({ magazine, index }: MagazineCardProps) {
-  const { id, title, category, readMinutes, coverImageUrl } = magazine
-
+  index?: number
+}) {
   return (
-    <Link to={`/magazine/${id}`} className="group block w-[279px] shrink-0 outline-none">
-      {coverImageUrl ? (
-        <img
-          src={coverImageUrl}
-          alt=""
-          className="bg-surface-dim aspect-[279/340] w-full rounded-sm object-cover"
-        />
-      ) : (
-        <div className="bg-surface-dim aspect-[279/340] w-full rounded-sm" />
-      )}
-
-      <div className="mt-[14px] flex items-baseline gap-[6px]">
-        <span className="text-text-secondary shrink-0 text-[13px] tabular-nums">
-          {String(index + 1).padStart(2, '0')}
-        </span>
-        <h3 className="text-text-primary min-w-0 text-[17px] leading-[1.3] group-hover:underline">
-          {title}
-        </h3>
+    <Link to={`/magazine/${magazine.magazineId}`} className="group block min-w-0">
+      <MagazineImage src={magazine.thumbnailUrl} className="aspect-[4/3] rounded-sm" />
+      <div className="text-text-secondary mt-4 flex items-center justify-between gap-2 text-[11px]">
+        <span>{magazine.categoryLabel}</span>
+        <span className="tabular-nums">{String(index + 1).padStart(2, '0')}</span>
       </div>
-
-      <p className="text-text-secondary mt-[10px] text-[13px]">
-        {category} · {readMinutes}분
+      <h3 className="mt-2 text-[18px] leading-snug font-medium tracking-tight group-hover:underline group-hover:underline-offset-4">
+        {magazine.title}
+      </h3>
+      {magazine.subtitle && (
+        <p className="text-text-secondary mt-2 line-clamp-2 text-[12px] leading-5">
+          {magazine.subtitle}
+        </p>
+      )}
+      <p className="text-text-secondary mt-3 text-[11px]">
+        {magazine.regionName} · {magazine.readMinutes}분{' '}
+        <span className="ml-2">♡ {magazine.likeCount.toLocaleString('ko-KR')}</span>
       </p>
     </Link>
   )

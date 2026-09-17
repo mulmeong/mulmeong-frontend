@@ -13,13 +13,14 @@ import { NATIONAL_VIEW } from '@/types/onsen'
 
 import type { MapViewportLimits } from '@/features/map/utils/mapViewportLimits'
 import type { DirectionsResult, RouteOption } from '@/features/map/types/directions'
-import type { MapBounds, MapView, Onsen } from '@/types/onsen'
+import type { OnsenMapPoint } from '@/features/map/types/mapPoint'
+import type { MapBounds, MapView } from '@/types/onsen'
 import type { Poi } from '@/types/poi'
 
 type MapCanvasProps = {
-  onsens: Onsen[]
+  onsens: OnsenMapPoint[]
   selectedId?: number
-  onSelect?: (onsen: Onsen) => void
+  onSelect?: (onsen: OnsenMapPoint) => void
   /** MAP-03 이 지역 재검색 — 팬·줌이 멎으면 보이는 영역을 알린다. */
   onBoundsChange?: (bounds: MapBounds) => void
   /** MAP-04 카테고리 POI — 온천과 섞이지 않게 다른 마커로 그린다. */

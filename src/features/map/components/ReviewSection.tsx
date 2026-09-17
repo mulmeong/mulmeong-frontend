@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
-import { tokenStorage } from '@/api'
+import { useAuth } from '@/features/auth/hooks/authContext'
 import MockReviewList from '@/features/map/components/MockReviewList'
 import ReviewForm from '@/features/map/components/ReviewForm'
 import { env } from '@/lib/env'
@@ -36,7 +36,9 @@ export default function ReviewSection({ onsen }: { onsen: OnsenListItem }) {
   const [writing, setWriting] = useState(false)
   const [created, setCreated] = useState<CreateReviewResult>()
 
-  const loggedIn = Boolean(tokenStorage.get())
+  // 토큰 존재 여부가 아니라 세션이 살아 있는지로 판단한다 (만료 토큰 배제).
+  const { user } = useAuth()
+  const loggedIn = Boolean(user)
 
   function handleWriteClick() {
     if (!loggedIn) {

@@ -4,9 +4,11 @@ import OnsenSpecSummary from '@/components/OnsenSpecSummary'
 import NearbyList from '@/features/map/components/NearbyList'
 import ReviewSection from '@/features/map/components/ReviewSection'
 import { useOnsenDetail } from '@/features/map/hooks/useOnsenDetail'
+import { onsenFromDetail } from '@/features/map/utils/onsenFromDetail'
 import { cn } from '@/lib/cn'
 
 import type { OnsenListItem } from '@/features/map/api/map'
+import type { OnsenMapPoint } from '@/features/map/types/mapPoint'
 import type { OnsenDetail } from '@/types/onsenDetail'
 
 /** 시안 기준 탭 순서. 일반장소는 '한눈에'가 없지만 ①은 온천만 다룬다. */
@@ -15,7 +17,7 @@ const TABS = ['한눈에', '리뷰', '주변', '정보'] as const
 type DetailTab = (typeof TABS)[number]
 
 type OnsenDetailPanelProps = {
-  onsen: OnsenListItem
+  onsen: OnsenListItem | OnsenMapPoint
   onClose: () => void
   onDirections: () => void
 }
@@ -25,12 +27,73 @@ type OnsenDetailPanelProps = {
  * 채운다. 리뷰(REV-*)는 목 모드에서 화면 검토용 목록을 보여준다.
  */
 export default function OnsenDetailPanel({ onsen, onClose, onDirections }: OnsenDetailPanelProps) {
+  const { detail, loading, error, retry } = useOnsenDetail(onsen.id)
+  const summary = 'tags' in onsen ? onsen : detail ? onsenFromDetail(detail) : undefined
+
+  if (!summary) {
+    return (
+      <div className="bg-surface scrollbar-thin h-full overflow-y-auto px-[13px] pb-8">
+        <div className="flex justify-end pt-[30px]">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="상세 닫기"
+            className="text-text-primary size-[34px] text-[18px] outline-none focus-visible:underline"
+          >
+            ✕
+          </button>
+        </div>
+        <h2 className="text-text-primary pt-[17px] text-[20px] font-bold">{onsen.name}</h2>
+        {loading && (
+          <p role="status" className="text-text-secondary mt-5 text-[13px]">
+            장소 정보를 불러오는 중…
+          </p>
+        )}
+        {error && (
+          <div className="mt-5">
+            <p role="alert" className="text-text-secondary text-[13px]">
+              장소 정보를 불러오지 못했어요.
+            </p>
+            <button
+              type="button"
+              onClick={retry}
+              className="text-text-primary mt-2 min-h-9 text-[12px] underline underline-offset-4"
+            >
+              다시 시도
+            </button>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <OnsenDetailContent
+      key={onsen.id}
+      onsen={summary}
+      detail={detail}
+      onClose={onClose}
+      onDirections={onDirections}
+    />
+  )
+}
+
+function OnsenDetailContent({
+  onsen,
+  detail,
+  onClose,
+  onDirections,
+}: {
+  onsen: OnsenListItem
+  detail?: OnsenDetail
+  onClose: () => void
+  onDirections: () => void
+}) {
   const [tab, setTab] = useState<DetailTab>('한눈에')
 
   // 목록 데이터로 먼저 그리고 상세가 도착하면 덮는다 — 로딩 중에도 화면이 비지 않는다.
-  const { detail } = useOnsenDetail(onsen.id)
-
-  const { name, imageUrl } = onsen
+  const name = detail?.name ?? onsen.name
+  const imageUrl = detail?.images?.[0] ?? onsen.imageUrl
   const address = detail?.address ?? onsen.address
   const rating = detail?.reviewSummary?.avgRating ?? onsen.rating
   const reviewCount = detail?.reviewSummary?.count ?? onsen.reviewCount
