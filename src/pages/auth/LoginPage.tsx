@@ -5,8 +5,8 @@ import { ApiError } from '@/api/ApiError'
 import Button from '@/components/ui/Button'
 import Checkbox from '@/components/ui/Checkbox'
 import Input from '@/components/ui/Input'
-import { login } from '@/features/auth/api/auth'
 import AuthLayout from '@/features/auth/components/AuthLayout'
+import { useAuth } from '@/features/auth/hooks/authContext'
 import { AUTH_IMAGES } from '@/features/auth/constants'
 import { validateEmail, validatePassword } from '@/features/auth/utils/validation'
 
@@ -18,6 +18,7 @@ type Errors = {
 export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { login } = useAuth()
 
   /** 로그인이 필요해 밀려난 화면. 없으면 홈으로 보낸다. */
   const from = (location.state as { from?: string } | null)?.from

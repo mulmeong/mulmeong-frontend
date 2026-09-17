@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import Header from '@/components/ui/Header'
+import AuthHeader from '@/features/auth/components/AuthHeader'
 import ConditionPanel from '@/features/dart/components/ConditionPanel'
 import ResultCard from '@/features/dart/components/ResultCard'
 import SaveCompleteModal from '@/features/dart/components/SaveCompleteModal'
@@ -31,7 +31,7 @@ export default function DartPage() {
     // 지도가 화면을 채워야 해서 RootLayout(max-w-5xl 본문) 밖에 두고 헤더만 직접 쓴다.
     // 시안 기본 자간 -2.2%를 페이지 전체에 건다.
     <div className="flex h-dvh flex-col overflow-hidden tracking-[-0.022em]">
-      <Header onAuthClick={() => navigate('/login')} />
+      <AuthHeader />
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         {/*

@@ -1,19 +1,18 @@
 import { NavLink, Outlet } from 'react-router-dom'
 
 import Badge from '@/components/ui/Badge'
+import { useAuth } from '@/features/auth/hooks/authContext'
 import { cn } from '@/lib/cn'
 
-/** 실제 값은 API 연동 후 교체할 것. */
-const MOCK_PROFILE = {
-  nickname: '온탕러버',
-  level: 'LV.1',
-  title: '첫 탕',
-  stats: [
-    { label: '리뷰', value: 24 },
-    { label: '찜한 장소', value: 18 },
-    { label: '팜플렛', value: 6 },
-  ],
-}
+/**
+ * 통계는 아직 API가 없어 목이다. 닉네임·레벨은 `useAuth`의 실제 값을 쓴다.
+ * 칭호는 레벨 구간이 미확정(MY-03 비고)이라 넣지 않는다.
+ */
+const MOCK_STATS = [
+  { label: '리뷰', value: 24 },
+  { label: '찜한 장소', value: 18 },
+  { label: '팜플렛', value: 6 },
+]
 
 const TABS = [
   { to: '/my', label: '내 지도', end: true },
@@ -24,7 +23,9 @@ const TABS = [
 ]
 
 export default function MyPageLayout() {
-  const { nickname, level, title, stats } = MOCK_PROFILE
+  // RequireAuth를 통과했으므로 user는 반드시 있다.
+  const { user } = useAuth()
+  const nickname = user?.nickname ?? ''
 
   return (
     <div className="flex flex-col">
@@ -36,14 +37,13 @@ export default function MyPageLayout() {
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
               <span className="text-[20px] font-bold">{nickname}</span>
-              <Badge type="level">{level}</Badge>
-              <span className="text-text-secondary text-[14px]">{title}</span>
+              <Badge type="level">{`LV.${user?.level ?? 1}`}</Badge>
             </div>
           </div>
         </div>
 
         <div className="flex gap-8">
-          {stats.map((stat) => (
+          {MOCK_STATS.map((stat) => (
             <div key={stat.label} className="flex flex-col items-center">
               <span className="text-[18px] font-bold">{stat.value}</span>
               <span className="text-text-secondary text-[12px]">{stat.label}</span>

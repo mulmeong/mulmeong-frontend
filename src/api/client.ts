@@ -2,6 +2,12 @@ import { ApiError } from '@/api/ApiError'
 import { tokenStorage } from '@/api/token'
 import { env } from '@/lib/env'
 
+/**
+ * 401을 받아 세션을 비웠을 때 앱에 알리는 신호.
+ * API 레이어가 React를 모르게 하려고 DOM 이벤트를 쓴다 — `useAuth`가 받아서 상태를 정리한다.
+ */
+export const UNAUTHORIZED_EVENT = 'mulmeong:unauthorized'
+
 type RequestOptions = Omit<RequestInit, 'body' | 'method'> & {
   /** 객체를 넘기면 JSON으로 직렬화한다. FormData는 그대로 전송된다. */
   body?: unknown
@@ -54,6 +60,9 @@ async function request<T>(
       ...init,
       method,
       headers: finalHeaders,
+      // Refresh Token이 httpOnly 쿠키라 교차 출처에서도 쿠키를 주고받아야 한다.
+      // 기본값(same-origin)이면 로그인 응답의 쿠키가 저장조차 되지 않는다.
+      credentials: init.credentials ?? 'include',
       body: isFormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
     })
   } catch {
@@ -61,6 +70,13 @@ async function request<T>(
   }
 
   const data = await parseBody(response)
+
+  // 토큰이 만료·폐기됐다. 남겨두면 이후 요청마다 401을 반복한다.
+  // 인증이 필요 없는 요청(skipAuth)의 401은 자격 증명 실패라 세션과 무관하다.
+  if (response.status === 401 && !skipAuth) {
+    tokenStorage.clear()
+    window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
+  }
 
   if (!response.ok) {
     const message =

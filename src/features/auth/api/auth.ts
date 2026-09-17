@@ -4,7 +4,7 @@ import type { LoginRequest, SignupRequest } from '@/features/auth/schemas'
 import { env } from '@/lib/env'
 import type { User } from '@/types/user'
 
-import { mockCheckEmail, mockLogin, mockSignup } from './authMock'
+import { mockCheckEmail, mockGetMe, mockLogin, mockSignup } from './authMock'
 
 /** AUTH-01 로그인 응답. Refresh Token은 HttpOnly 쿠키로 따로 내려온다. */
 export type LoginResponse = {
@@ -54,6 +54,7 @@ export async function logout() {
   tokenStorage.clear()
 }
 
-export function getMe() {
+export function getMe(): Promise<User> {
+  if (env.useMock) return mockGetMe()
   return api.get<User>('/users/me')
 }
