@@ -17,14 +17,23 @@ type RequestOptions = Omit<RequestInit, 'body' | 'method'> & {
   skipAuth?: boolean
 }
 
+/**
+ * 모든 API가 공유하는 접두사. 호출부는 `/auth/login`처럼 짧게 쓰고 여기서 붙인다
+ * — 새 API를 추가할 때 빠뜨리지 않게 한 곳에 모아 둔다.
+ */
+const API_PREFIX = '/api/v1'
+
 function buildUrl(path: string, params?: RequestOptions['params']): string {
-  const url = new URL(path.replace(/^\//, ''), `${env.apiBaseUrl.replace(/\/$/, '')}/`)
+  const pathname = `${API_PREFIX}/${path.replace(/^\//, '')}`
+  // origin이 비면 같은 오리진으로 보낸다 — Vercel rewrite가 ALB로 넘긴다.
+  const url = new URL(pathname, env.apiUrl || window.location.origin)
   if (params) {
     for (const [key, value] of Object.entries(params)) {
       if (value !== undefined && value !== null) url.searchParams.set(key, String(value))
     }
   }
-  return url.toString()
+  // 같은 오리진이면 상대 경로로 보내 프록시 경유를 명확히 한다.
+  return env.apiUrl ? url.toString() : `${url.pathname}${url.search}`
 }
 
 async function parseBody(response: Response): Promise<unknown> {
