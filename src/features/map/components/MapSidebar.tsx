@@ -2,6 +2,7 @@ import { useId, useState, type FormEvent, type KeyboardEvent } from 'react'
 
 import Input from '@/components/ui/Input'
 import Tab from '@/components/ui/Tab'
+import RegionPlaces from '@/features/map/components/RegionPlaces'
 import SearchResultItem from '@/features/map/components/SearchResultItem'
 import SearchSuggestions from '@/features/map/components/SearchSuggestions'
 import SidebarMagazine from '@/features/map/components/SidebarMagazine'
@@ -38,39 +39,40 @@ const MOCK_SUGGESTION_IMAGES = [
   '/images/hero.jpg',
 ]
 
-/**
- * 결과 없음 안내. 가운데 정렬로 좁게 두면 줄마다 길이가 달라져 역삼각형으로 보인다 —
- * 왼쪽 정렬로 폭을 채우고 버튼은 한 줄에 붙인다.
- */
-function EmptyResult({ onReset }: { onReset: () => void }) {
-  return (
-    <div className="mt-3">
-      <p className="text-text-secondary text-[12px] leading-[1.6]">
-        검색 결과가 없어요. 다른 지역이나 검색어로 찾아보세요.
-      </p>
-      <button
-        type="button"
-        onClick={onReset}
-        className="text-text-primary mt-2 text-[11px] underline underline-offset-2 outline-none"
-      >
-        전체 지도 보기
-      </button>
-    </div>
-  )
-}
-
 function SectionLabel({ children }: { children: string }) {
   return <h2 className="text-text-secondary text-[11px] tracking-[0.04em]">{children}</h2>
 }
 
-function formatDistance(km: number) {
-  return km < 1 ? `${Math.round(km * 1000)}m` : `${km.toFixed(1)}km`
+function RegionChip({
+  selected,
+  onClick,
+  children,
+}: {
+  selected: boolean
+  onClick: () => void
+  children: string
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onClick}
+      className={cn(
+        'shrink-0 rounded-full px-3 py-1.5 text-[13px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-border-strong focus-visible:ring-offset-2',
+        selected
+          ? 'bg-inverse text-text-inverse font-medium'
+          : 'text-text-primary hover:bg-surface-dim',
+      )}
+    >
+      {children}
+    </button>
+  )
 }
 
 /**
  * 사이드바는 시안(1:479/1:555)의 좌표를 그대로 따르지 않는다.
  * 팀 논의로 밀도·위계를 우선하기로 해서, divider를 걷어내고 여백으로 섹션을 나눈다.
- * 검색 → 지역 → 추천 → 현재 지도에서 순으로 읽히게 하는 것이 기준이다.
+ * 검색 → 지역 필터 → 장소 카드 → 추천 순으로 읽히게 하는 것이 기준이다.
  */
 export default function MapSidebar({
   onsens,
@@ -83,9 +85,7 @@ export default function MapSidebar({
 }: MapSidebarProps) {
   const [keyword, setKeyword] = useState('')
   const [region, setRegion] = useState<string>()
-
-  /** 아무 조건도 없으면 '현재 지도에서'를 감춘다 — 전국 뷰라 목록이 의미 없다. */
-  const hasFilter = Boolean(keyword.trim() || region)
+  const [exploreAll, setExploreAll] = useState(false)
 
   /** 검색어가 있으면 검색 결과 화면으로 바뀐다 — 지역·추천은 숨는다. */
   const [searchedKeyword, setSearchedKeyword] = useState('')
@@ -101,6 +101,7 @@ export default function MapSidebar({
 
   function runSearch(next: string, nextRegion = region) {
     setSearchedKeyword(next)
+    setExploreAll(false)
     clear()
     setActiveIndex(-1)
     onSearch({ keyword: next || undefined, region: nextRegion })
@@ -145,21 +146,24 @@ export default function MapSidebar({
   }
 
   function handleRegion(next: string) {
-    const value = region === next ? undefined : next
-    setRegion(value)
-    onSearch({ keyword: keyword.trim() || undefined, region: value })
+    if (region === next) return
+    setRegion(next)
+    setExploreAll(false)
+    onSearch({ region: next })
   }
 
-  /** '전체'는 지역만 푼다 — 검색어는 건드리지 않는다. */
+  /** 입력 중인 검색어는 제출 전까지 지역 탐색에 적용하지 않는다. */
   function handleResetRegion() {
     if (!region) return
     setRegion(undefined)
-    onSearch({ keyword: keyword.trim() || undefined })
+    setExploreAll(false)
+    onSearch({})
   }
 
   function handleReset() {
     setKeyword('')
     setRegion(undefined)
+    setExploreAll(false)
     setSearchedKeyword('')
     setFocused(false)
     setActiveIndex(-1)
@@ -265,43 +269,44 @@ export default function MapSidebar({
           <>
             <section className="pt-8">
               <SectionLabel>지역으로 둘러보기</SectionLabel>
-              <div className="mt-3 flex flex-wrap gap-x-1.5 gap-y-2">
+              <div
+                role="group"
+                aria-label="지역 선택"
+                className="mt-3 flex flex-wrap gap-x-1.5 gap-y-2"
+              >
                 {/* 지역을 고른 뒤 전국으로 돌아올 길 — 칩을 다시 누르는 건 알아채기 어렵다. */}
-                <button
-                  type="button"
-                  aria-pressed={!region}
-                  onClick={handleResetRegion}
-                  className={cn(
-                    'rounded-full px-3 py-1.5 text-[13px] transition-colors outline-none',
-                    !region
-                      ? 'bg-inverse text-text-inverse font-medium'
-                      : 'text-text-primary hover:bg-surface-dim',
-                  )}
-                >
+                <RegionChip selected={!region} onClick={handleResetRegion}>
                   전체
-                </button>
+                </RegionChip>
 
                 {REGIONS.map((item) => (
-                  <button
+                  <RegionChip
                     key={item}
-                    type="button"
-                    aria-pressed={region === item}
+                    selected={region === item}
                     onClick={() => handleRegion(item)}
-                    className={cn(
-                      'rounded-full px-3 py-1.5 text-[13px] transition-colors outline-none',
-                      region === item
-                        ? 'bg-inverse text-text-inverse font-medium'
-                        : 'text-text-primary hover:bg-surface-dim',
-                    )}
                   >
                     {item}
-                  </button>
+                  </RegionChip>
                 ))}
               </div>
+
+              <RegionPlaces
+                key={region ?? 'all'}
+                region={region}
+                onsens={onsens}
+                loading={loading}
+                error={error}
+                selectedId={selectedId}
+                expanded={exploreAll}
+                onExpandedChange={setExploreAll}
+                onSelect={onSelect}
+                onRetry={() => onSearch({ region })}
+                onReset={handleReset}
+              />
             </section>
 
             {/* 첫 화면에만 둔다 — 지역을 고르면 그 지역 매거진이 이 자리를 대신한다. */}
-            {!region && (
+            {!region && !exploreAll && (
               <>
                 {/* 위 내용과의 최소 간격. mt-auto와 margin이 겹치지 않게 빈 칸으로 벌린다. */}
                 <div aria-hidden className="h-8 shrink-0" />
@@ -347,58 +352,9 @@ export default function MapSidebar({
           </>
         )}
 
-        {!isSearching && hasFilter && (
-          <section className="pt-8">
-            <SectionLabel>현재 지도에서</SectionLabel>
-
-            {loading && <p className="text-text-secondary mt-3 text-[13px]">불러오는 중…</p>}
-
-            {error && (
-              <p role="alert" className="text-danger mt-3 text-[13px]">
-                {error}
-              </p>
-            )}
-
-            {!loading && !error && onsens.length === 0 && <EmptyResult onReset={handleReset} />}
-
-            {!loading && !error && onsens.length > 0 && (
-              <ul className="mt-2 flex flex-col">
-                {onsens.map((onsen) => (
-                  <li key={onsen.id}>
-                    <button
-                      type="button"
-                      onClick={() => onSelect(onsen)}
-                      aria-current={onsen.id === selectedId || undefined}
-                      className={cn(
-                        '-mx-2 flex w-[calc(100%+1rem)] items-baseline justify-between gap-3 rounded-sm px-2 py-2.5 text-left',
-                        'transition-colors outline-none focus-visible:underline focus-visible:underline-offset-2',
-                        onsen.id === selectedId ? 'bg-surface-dim' : 'hover:bg-surface-dim',
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          'text-text-primary min-w-0 truncate text-[14px]',
-                          onsen.id === selectedId ? 'font-semibold' : 'font-medium',
-                        )}
-                      >
-                        {onsen.name}
-                      </span>
-                      {onsen.distanceKm !== undefined && (
-                        <span className="text-text-secondary shrink-0 text-[12px]">
-                          {formatDistance(onsen.distanceKm)}
-                        </span>
-                      )}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        )}
-
         {/* 목록과 매거진 사이 최소 간격. mt-auto와 겹치지 않게 빈 칸으로 벌린다. */}
         {/* 첫 화면은 '지금 이런 곳은 어때요'가 맡는다 — 매거진은 지역을 고른 뒤에 나온다. */}
-        {region && (
+        {!isSearching && region && !exploreAll && (
           <>
             <div aria-hidden className="h-8 shrink-0" />
             <SidebarMagazine region={region} />

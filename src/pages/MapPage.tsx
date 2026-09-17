@@ -1,12 +1,13 @@
 import { useCallback, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 
-import Header from '@/components/ui/Header'
+import AuthHeader from '@/features/auth/components/AuthHeader'
 import DirectionsPanel from '@/features/map/components/DirectionsPanel'
 import MapCanvas from '@/features/map/components/MapCanvas'
 import MapSidebar from '@/features/map/components/MapSidebar'
 import OnsenDetailPanel from '@/features/map/components/OnsenDetailPanel'
 import PoiFilter from '@/features/map/components/PoiFilter'
+import { REGION_PREVIEW_COUNT } from '@/features/map/constants'
+import { useOnsenMapPoints } from '@/features/map/hooks/useOnsenMapPoints'
 import { useOnsens } from '@/features/map/hooks/useOnsens'
 import { useDirections } from '@/features/map/hooks/useDirections'
 import { usePois } from '@/features/map/hooks/usePois'
@@ -14,15 +15,18 @@ import { cn } from '@/lib/cn'
 
 import { REGION_VIEWS } from '@/types/onsen'
 
-import type { MapBounds, MapView, Onsen, Region } from '@/types/onsen'
+import type { OnsenMapPoint } from '@/features/map/types/mapPoint'
+import type { MapBounds, MapView, Region } from '@/types/onsen'
 import type { PoiCategory } from '@/types/poi'
 
 /** 검색 결과가 하나뿐일 때 지도를 얼마나 당길지. */
 const SINGLE_RESULT_LEVEL = 5
 
+type SearchFilters = { keyword?: string; region?: string }
+
 export default function MapPage() {
-  const navigate = useNavigate()
-  const { onsens, loading, error, load } = useOnsens()
+  const { onsens, loading, error, load } = useOnsens(REGION_PREVIEW_COUNT)
+  const nationalMap = useOnsenMapPoints()
   const [selectedId, setSelectedId] = useState<number>()
 
   const [mode, setMode] = useState<'search' | 'directions'>('search')
@@ -30,13 +34,13 @@ export default function MapPage() {
   const directions = useDirections()
   const { updateField, invalidate } = directions
   const setDestination = useCallback(
-    (onsen: Onsen) => {
+    (onsen: OnsenMapPoint) => {
       updateField('destination', {
         text: onsen.name,
         place: {
           id: `onsen-${onsen.id}`,
           name: onsen.name,
-          address: onsen.address,
+          address: onsen.address ?? '',
           lat: onsen.lat,
           lng: onsen.lng,
         },
@@ -45,14 +49,14 @@ export default function MapPage() {
     [updateField],
   )
   const handleSelect = useCallback(
-    (onsen: Onsen) => {
+    (onsen: OnsenMapPoint) => {
       if (modeRef.current === 'directions') setDestination(onsen)
       else setSelectedId(onsen.id)
     },
     [setDestination],
   )
 
-  function openDirections(onsen?: Onsen) {
+  function openDirections(onsen?: OnsenMapPoint) {
     modeRef.current = 'directions'
     setMode('directions')
     setSelectedId(undefined)
@@ -67,21 +71,24 @@ export default function MapPage() {
   }
 
   // 검색어·지역은 MapSidebar가 들고 있다 — 지도를 움직여도 그 조건을 잃지 않게 기억한다.
-  const filtersRef = useRef<{ keyword?: string; region?: string }>({})
+  const filtersRef = useRef<SearchFilters>({})
   const [hasFilter, setHasFilter] = useState(false)
   const [focus, setFocus] = useState<MapView>()
 
   const handleSearch = useCallback(
-    async (filters: { keyword?: string; region?: string }) => {
+    async (filters: SearchFilters) => {
       filtersRef.current = filters
       setHasFilter(Boolean(filters.keyword || filters.region))
+      setSelectedId(undefined)
 
       if (!filters.keyword && !filters.region) {
-        setSelectedId(undefined)
         setFocus({ initial: true })
       }
 
-      const results = await load(filters)
+      // 조건이 없으면 첫 화면이라 전국을 다 받지 않는다 — 카드 미리보기에 쓸 만큼만.
+      const results = await load(
+        filters.keyword || filters.region ? filters : { ...filters, limit: REGION_PREVIEW_COUNT },
+      )
       // 초기 화면으로 돌아간 뒤 늦게 도착한 검색이 지도를 다시 이동시키지 않는다.
       if (filtersRef.current !== filters || modeRef.current !== 'search') return
 
@@ -113,8 +120,8 @@ export default function MapPage() {
   )
 
   /**
-   * 조건이 없으면 영역을 보내지 않는다 — 첫 화면이 전국 뷰라
-   * 그대로 보내면 전국 목록을 쏟아낸다.
+   * 조건이 없으면 전국 마커 캐시를 재사용하고 미리보기는 유지한다.
+   * 지도 이동으로 전체 카드 목록을 내려받지 않는다.
    */
   const handleBoundsChange = useCallback(
     (bounds: MapBounds) => {
@@ -124,8 +131,11 @@ export default function MapPage() {
     [load, hasFilter],
   )
 
-  // 목록·마커가 같은 선택 상태를 쓰므로 객체는 id로 되찾는다 (사본을 따로 들지 않는다).
-  const selected = onsens.find((onsen) => onsen.id === selectedId)
+  const mapOnsens = hasFilter ? onsens : nationalMap.points
+  // 첫 화면의 미리보기에 없는 마커도 선택할 수 있다. 상세는 선택한 id로 조회한다.
+  const selected =
+    onsens.find((onsen) => onsen.id === selectedId) ??
+    mapOnsens.find((onsen) => onsen.id === selectedId)
 
   /**
    * MAP-07 리스트 뷰 토글. 시안에 버튼이 없어 형태는 우리가 정했다 —
@@ -152,7 +162,7 @@ export default function MapPage() {
   return (
     // 지도는 화면을 꽉 채워야 해서 RootLayout(max-w-5xl 본문) 밖에 두고 헤더만 직접 쓴다.
     <div className="flex h-dvh flex-col overflow-hidden">
-      <Header onAuthClick={() => navigate('/login')} />
+      <AuthHeader />
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         {/* 모바일은 폭이 좁아 두 패널이 못 들어간다 — 상세가 열리면 검색을 감춘다(데스크탑은 둘 다). */}
@@ -216,7 +226,7 @@ export default function MapPage() {
 
         <main className="relative min-h-0 flex-1">
           <MapCanvas
-            onsens={onsens}
+            onsens={mapOnsens}
             selectedId={selectedId}
             onSelect={handleSelect}
             onBoundsChange={handleBoundsChange}
@@ -226,6 +236,29 @@ export default function MapPage() {
             directions={mode === 'directions' ? directions.result : undefined}
             route={mode === 'directions' ? directions.selectedRoute : undefined}
           />
+
+          {!hasFilter && mode === 'search' && (nationalMap.loading || nationalMap.error) && (
+            <div className="bg-surface/95 absolute bottom-5 left-1/2 z-[100] max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-sm px-4 py-3 text-center text-[12px]">
+              {nationalMap.loading ? (
+                <p role="status" className="text-text-secondary">
+                  지도에서 장소를 찾는 중…
+                </p>
+              ) : (
+                <>
+                  <p role="alert" className="text-text-secondary">
+                    지도에 장소를 표시하지 못했어요.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={nationalMap.retry}
+                    className="text-text-primary mt-2 min-h-9 underline underline-offset-4"
+                  >
+                    다시 시도
+                  </button>
+                </>
+              )}
+            </div>
+          )}
 
           {/*
             지도 위에 띄운다 — 컨테이너는 클릭을 통과시켜 팬·줌을 막지 않는다.
