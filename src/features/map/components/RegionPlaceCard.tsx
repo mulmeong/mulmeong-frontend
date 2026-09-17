@@ -11,6 +11,27 @@ type RegionPlaceCardProps = {
   onClick: () => void
 }
 
+const IMAGE_FRAME =
+  'bg-surface-dim relative flex aspect-[16/9] items-center justify-center overflow-hidden rounded-sm'
+
+/** 실제 카드와 사진·텍스트 행 높이를 공유해 로딩 전후 위치를 유지한다. */
+export function RegionPlaceCardSkeleton() {
+  return (
+    <div aria-hidden="true" className="motion-safe:animate-pulse">
+      <div className={IMAGE_FRAME} />
+      <div className="mt-2 flex h-4 items-center">
+        <div className="bg-border-default/35 h-2 w-14 rounded-full" />
+      </div>
+      <div className="mt-1 flex h-5 items-center">
+        <div className="bg-border-default/40 h-3 w-3/4 rounded-full" />
+      </div>
+      <div className="mt-1 flex h-4 items-center">
+        <div className="bg-border-default/30 h-2 w-1/2 rounded-full" />
+      </div>
+    </div>
+  )
+}
+
 export default function RegionPlaceCard({
   onsen,
   region,
@@ -33,7 +54,7 @@ export default function RegionPlaceCard({
       aria-current={selected || undefined}
       className="group block w-full rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-border-strong focus-visible:ring-offset-2"
     >
-      <span className="bg-surface-dim relative flex aspect-[8/5] items-center justify-center overflow-hidden rounded-sm">
+      <span className={IMAGE_FRAME}>
         {imageUrl && failedImage !== imageUrl ? (
           <img
             src={imageUrl}
@@ -62,18 +83,20 @@ export default function RegionPlaceCard({
           </span>
         )}
       </span>
-      <span className="text-text-secondary mt-3 block truncate text-[11px]">{location}</span>
+      <span className="text-text-secondary mt-2 block min-h-4 truncate text-[11px] leading-4">
+        {location}
+      </span>
       <span
         className={cn(
-          'text-text-primary mt-1 block truncate text-[14px] group-hover:underline group-hover:underline-offset-4',
+          'text-text-primary mt-1 block truncate text-[14px] leading-5 group-hover:underline group-hover:underline-offset-4',
           selected ? 'font-semibold' : 'font-medium',
         )}
       >
         {name}
       </span>
-      {description && (
-        <span className="text-text-secondary mt-1 block truncate text-[12px]">{description}</span>
-      )}
+      <span className="text-text-secondary mt-1 block min-h-4 truncate text-[12px] leading-4">
+        {description}
+      </span>
     </button>
   )
 }
