@@ -1,52 +1,62 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+﻿import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { fetchMagazines, magazineChanges } from '@/features/magazine/api/magazine'
+import type { MagazineList, MagazineListParams } from '@/types/magazine'
 
-import { ApiError } from '@/api/ApiError'
-import { fetchMagazines } from '@/features/magazine/api/magazine'
-
-import type { Magazine } from '@/types/magazine'
-
-/**
- * 매거진 목록 도메인 훅. 카테고리·지역이 바뀔 때만 다시 불러온다.
- * 같은 조건은 캐시에서 준다 — 관광공사 API 쿼터 방어와 같은 이유다.
- */
-export function useMagazines(category?: string, region?: string) {
-  const [magazines, setMagazines] = useState<Magazine[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string>()
-
-  const cache = useRef(new Map<string, Magazine[]>())
-  const requestId = useRef(0)
-
-  const load = useCallback(async (nextCategory?: string, nextRegion?: string) => {
-    const key = `${nextCategory ?? ''}|${nextRegion ?? ''}`
-
-    const cached = cache.current.get(key)
-    if (cached) {
-      setMagazines(cached)
-      setLoading(false)
-      setError(undefined)
-      return
-    }
-
-    const id = ++requestId.current
-    setLoading(true)
-    setError(undefined)
-    try {
-      const result = await fetchMagazines({ category: nextCategory, region: nextRegion })
-      if (id !== requestId.current) return
-      cache.current.set(key, result)
-      setMagazines(result)
-    } catch (err) {
-      if (id !== requestId.current) return
-      setError(err instanceof ApiError ? err.message : '매거진을 불러오지 못했습니다.')
-    } finally {
-      if (id === requestId.current) setLoading(false)
-    }
-  }, [])
-
+export function useMagazines(params: MagazineListParams = {}) {
+  const revision = useSyncExternalStore(magazineChanges.subscribe, magazineChanges.snapshot)
+  const key = JSON.stringify(params)
+  const [attempt, setAttempt] = useState(0)
+  const identity = `${key}|${revision}|${attempt}`
+  const [state, setState] = useState<{ identity: string; data?: MagazineList; error?: string }>()
+  const metadata = useRef<
+    | { filter: string; categories: MagazineList['categories']; regions: MagazineList['regions'] }
+    | undefined
+  >(undefined)
+  const filter = JSON.stringify({
+    category: params.category,
+    sidoCode: params.sidoCode,
+    sort: params.sort,
+    featured: params.featured,
+    size: params.size,
+  })
   useEffect(() => {
-    void load(category, region)
-  }, [load, category, region])
-
-  return { magazines, loading, error }
+    let cancelled = false
+    void fetchMagazines(JSON.parse(key) as MagazineListParams)
+      .then(async (data) => {
+        // 직접 2페이지로 진입한 경우에도 page=0에서만 제공하는 필터 정보를 확보한다.
+        let first = data
+        if (
+          (data.categories === null || data.regions === null) &&
+          metadata.current?.filter !== filter
+        ) {
+          first = await fetchMagazines({ ...JSON.parse(key), page: 0 } as MagazineListParams)
+        }
+        if (cancelled) return
+        if (first.categories !== null && first.regions !== null)
+          metadata.current = { filter, categories: first.categories, regions: first.regions }
+        setState({
+          identity,
+          data: {
+            ...data,
+            categories: data.categories ?? metadata.current?.categories ?? [],
+            regions: data.regions ?? metadata.current?.regions ?? [],
+          },
+        })
+      })
+      .catch(() => {
+        if (!cancelled)
+          setState({ identity, error: '매거진을 불러오지 못했어요. 다시 시도해 주세요.' })
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [key, identity, filter])
+  const current = state?.identity === identity ? state : undefined
+  return {
+    magazines: current?.data?.content ?? [],
+    data: current?.data,
+    loading: !current,
+    error: current?.error,
+    retry: () => setAttempt((value) => value + 1),
+  }
 }

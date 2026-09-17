@@ -1,39 +1,44 @@
-import { useEffect, useRef, useState } from 'react'
-
-import { ApiError } from '@/api/ApiError'
+﻿import { useEffect, useState } from 'react'
+import { ApiError } from '@/api'
 import { fetchMagazine } from '@/features/magazine/api/magazine'
+import type { MagazineDetail } from '@/types/magazine'
 
-import type { Magazine } from '@/types/magazine'
-
-type Fetched = { id: number; magazine?: Magazine; error?: string }
-
-/** MAG-03 상세 한 건. id가 바뀌면 다시 불러온다. */
 export function useMagazine(id: number) {
-  const [fetched, setFetched] = useState<Fetched>()
-  const requestId = useRef(0)
-
+  const [attempt, setAttempt] = useState(0)
+  const key = `${id}|${attempt}`
+  const [state, setState] = useState<{
+    key: string
+    magazine?: MagazineDetail
+    error?: string
+    notFound?: boolean
+  }>()
   useEffect(() => {
-    const current = ++requestId.current
-
+    let cancelled = false
     void fetchMagazine(id)
       .then((magazine) => {
-        if (current !== requestId.current) return
-        setFetched({ id, magazine, error: magazine ? undefined : '글을 찾을 수 없습니다.' })
+        if (!cancelled) setState({ key, magazine })
       })
-      .catch((err: unknown) => {
-        if (current !== requestId.current) return
-        setFetched({
-          id,
-          error: err instanceof ApiError ? err.message : '글을 불러오지 못했습니다.',
-        })
+      .catch((error) => {
+        if (!cancelled)
+          setState({
+            key,
+            notFound: error instanceof ApiError && error.status === 404,
+            error:
+              error instanceof ApiError && error.status === 404
+                ? '없거나 아직 발행되지 않은 글이에요.'
+                : '글을 불러오지 못했어요. 다시 시도해 주세요.',
+          })
       })
-  }, [id])
-
-  // 응답이 아직이거나 다른 id의 결과면 로딩으로 본다 — effect에서 비우면 한 프레임 늦는다.
-  const settled = fetched?.id === id
+    return () => {
+      cancelled = true
+    }
+  }, [id, key])
+  const current = state?.key === key ? state : undefined
   return {
-    magazine: settled ? fetched.magazine : undefined,
-    loading: !settled,
-    error: settled ? fetched.error : undefined,
+    magazine: current?.magazine,
+    loading: !current,
+    error: current?.error,
+    notFound: current?.notFound,
+    retry: () => setAttempt((value) => value + 1),
   }
 }
