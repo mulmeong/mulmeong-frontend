@@ -1,18 +1,17 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { ApiError } from '@/api/ApiError'
-import Button from '@/components/ui/Button'
 import Checkbox from '@/components/ui/Checkbox'
-import Input from '@/components/ui/Input'
 import { checkEmail, checkNickname, signup } from '@/features/auth/api/auth'
+import { AuthField, AuthHeading, AuthSubmit } from '@/features/auth/components/AuthForm'
 import AuthLayout from '@/features/auth/components/AuthLayout'
 import { AUTH_IMAGES } from '@/features/auth/constants'
 import {
   formatPhone,
   NICKNAME_MAX_LENGTH,
   NICKNAME_MIN_LENGTH,
-  PASSWORD_MIN_LENGTH,
+  PASSWORD_MAX_LENGTH,
   validateBirthDate,
   validateEmail,
   validateName,
@@ -33,6 +32,41 @@ type Form = {
 }
 
 type Errors = Partial<Record<keyof Form, string>>
+
+/** 서버에 중복 여부를 물어보는 필드. */
+type CheckedField = 'email' | 'nickname'
+
+const PASSWORD_HINT = '영문·숫자 포함 8자 이상'
+
+const FIELD_LAYOUT = '[&>div]:min-h-11 [&>div>input]:h-11'
+
+function validateField(field: keyof Form, values: Form): string | undefined {
+  switch (field) {
+    case 'email':
+      return validateEmail(values.email)
+    case 'password':
+      return validatePassword(values.password)
+        ? values.password.length > PASSWORD_MAX_LENGTH
+          ? validatePassword(values.password)
+          : `${PASSWORD_HINT} 입력해주세요.`
+        : undefined
+    case 'passwordConfirm':
+      return validatePasswordConfirm(values.passwordConfirm, values.password)
+    case 'name':
+      return validateName(values.name)
+    case 'nickname':
+      return validateNickname(values.nickname)
+    case 'birthDate': {
+      const error = validateBirthDate(values.birthDate)
+      if (error) return error
+      return new Date(values.birthDate).toISOString().slice(0, 10) === values.birthDate
+        ? undefined
+        : '존재하지 않는 날짜입니다.'
+    }
+    case 'phone':
+      return validatePhone(values.phone)
+  }
+}
 
 const INITIAL_FORM: Form = {
   email: '',
@@ -69,6 +103,8 @@ export default function SignupPage() {
   const [agreementError, setAgreementError] = useState<string>()
   const [submitError, setSubmitError] = useState<string>()
   const [submitting, setSubmitting] = useState(false)
+  const touched = useRef<Partial<Record<keyof Form, boolean>>>({})
+  const availabilityVersion = useRef({ email: 0, nickname: 0 })
 
   /** null=미확인. 값을 고치면 null로 돌아간다. */
   const [available, setAvailable] = useState<{ email: boolean | null; nickname: boolean | null }>({
@@ -77,10 +113,36 @@ export default function SignupPage() {
   })
 
   function update<K extends keyof Form>(key: K, value: Form[K]) {
-    setForm((prev) => ({ ...prev, [key]: value }))
-    setErrors((prev) => ({ ...prev, [key]: undefined }))
-    if (key === 'email' || key === 'nickname') {
-      setAvailable((prev) => ({ ...prev, [key]: null }))
+    const nextForm = { ...form, [key]: value }
+    setForm(nextForm)
+    setErrors((prev) => ({
+      ...prev,
+      [key]: touched.current[key] ? validateField(key, nextForm) : undefined,
+      ...(key === 'password' && touched.current.passwordConfirm
+        ? { passwordConfirm: validateField('passwordConfirm', nextForm) }
+        : {}),
+    }))
+    setSubmitError(undefined)
+    // 제네릭 K는 비교만으로 좁혀지지 않아 별도 변수로 받는다.
+    const checked: CheckedField | undefined =
+      key === 'email' || key === 'nickname' ? key : undefined
+    if (checked) {
+      availabilityVersion.current[checked] += 1
+      setAvailable((prev) => ({ ...prev, [checked]: null }))
+    }
+  }
+
+  function handleBlur(field: keyof Form) {
+    touched.current[field] = true
+    setErrors((prev) => ({ ...prev, [field]: validateField(field, form) }))
+    if (field === 'email' || field === 'nickname') void checkAvailability(field)
+  }
+
+  function updateAgreement(field: keyof Agreements, checked: boolean) {
+    const next = { ...agreements, [field]: checked }
+    setAgreements(next)
+    if (agreementError) {
+      setAgreementError(next.terms && next.privacy ? undefined : '필수 약관에 동의해주세요.')
     }
   }
 
@@ -91,13 +153,14 @@ export default function SignupPage() {
    * 이메일은 서버 엔드포인트가 아직 없어 실서버에서는 undefined가 온다 (auth.ts 주석 참고).
    */
   async function checkAvailability(field: 'email' | 'nickname') {
+    const version = ++availabilityVersion.current[field]
     const value = form[field].trim()
     const invalid = field === 'email' ? validateEmail(value) : validateNickname(value)
     if (!value || invalid) return
 
     try {
       const result = field === 'email' ? await checkEmail(value) : await checkNickname(value)
-      if (!result) return
+      if (!result || version !== availabilityVersion.current[field]) return
       setAvailable((prev) => ({ ...prev, [field]: result.available }))
       if (!result.available) {
         setErrors((prev) => ({
@@ -106,20 +169,24 @@ export default function SignupPage() {
         }))
       }
     } catch {
-      setAvailable((prev) => ({ ...prev, [field]: null }))
+      if (version === availabilityVersion.current[field]) {
+        setAvailable((prev) => ({ ...prev, [field]: null }))
+      }
     }
   }
 
-  async function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (submitting) return
+    for (const field of Object.keys(form) as (keyof Form)[]) touched.current[field] = true
 
     const nextErrors: Errors = {
       email: validateEmail(form.email),
-      password: validatePassword(form.password),
+      password: validateField('password', form),
       passwordConfirm: validatePasswordConfirm(form.passwordConfirm, form.password),
       name: validateName(form.name),
+      birthDate: validateField('birthDate', form),
       nickname: validateNickname(form.nickname),
-      birthDate: validateBirthDate(form.birthDate),
       phone: validatePhone(form.phone),
     }
 
@@ -138,7 +205,14 @@ export default function SignupPage() {
     setAgreementError(nextAgreementError)
     setSubmitError(undefined)
 
-    if (Object.values(nextErrors).some(Boolean) || nextAgreementError) return
+    const firstInvalid = (Object.keys(nextErrors) as (keyof Form)[]).find(
+      (field) => nextErrors[field],
+    )
+    if (firstInvalid || nextAgreementError) {
+      const name = firstInvalid ?? (agreements.terms ? 'privacy' : 'terms')
+      event.currentTarget.querySelector<HTMLInputElement>(`[name="${name}"]`)?.focus()
+      return
+    }
 
     setSubmitting(true)
     try {
@@ -166,6 +240,9 @@ export default function SignupPage() {
 
   return (
     <AuthLayout
+      formPage
+      panelClassName="lg:px-4 lg:py-12 xl:px-6"
+      contentClassName="[&>p:first-of-type]:mt-3"
       image={AUTH_IMAGES.signup.src}
       imageRatio={AUTH_IMAGES.signup.ratio}
       headline={['가입하고', '기록을 남겨요']}
@@ -174,113 +251,205 @@ export default function SignupPage() {
         '가고 싶은 곳을 찜해두고 팜플렛으로 만들어요',
       ]}
     >
-      <h1 className="text-[32px] leading-tight font-bold sm:text-[40px]">회원가입</h1>
+      <AuthHeading
+        title="회원가입"
+        subtitle="가고 싶은 온천을 저장하고, 나만의 여행을 기록하세요."
+      />
 
-      <form onSubmit={handleSubmit} noValidate className="mt-8 flex flex-col gap-5">
-        <Input
-          label="이메일"
-          type="email"
-          autoComplete="email"
-          placeholder="you@example.com"
-          value={form.email}
-          onChange={(e) => update('email', e.target.value)}
-          onBlur={() => checkAvailability('email')}
-          error={errors.email}
-          hint={available.email ? '사용할 수 있는 이메일입니다.' : undefined}
-        />
-
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Input
-            label="비밀번호"
-            type="password"
-            autoComplete="new-password"
-            placeholder={`${PASSWORD_MIN_LENGTH}자 이상`}
-            value={form.password}
-            onChange={(e) => update('password', e.target.value)}
-            error={errors.password}
+      <form
+        onSubmit={handleSubmit}
+        noValidate
+        aria-busy={submitting}
+        className="mt-9 flex flex-col gap-6 sm:mt-10"
+      >
+        <div className="flex flex-col gap-6">
+          <AuthField
+            compact
+            className={FIELD_LAYOUT}
+            label="이메일"
+            name="email"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            autoCapitalize="none"
+            spellCheck={false}
+            required
+            placeholder="you@example.com"
+            value={form.email}
+            onChange={(e) => update('email', e.target.value)}
+            onBlur={() => handleBlur('email')}
+            error={errors.email}
           />
-          <Input
-            label="비밀번호 확인"
-            type="password"
-            autoComplete="new-password"
-            placeholder="다시 입력"
-            value={form.passwordConfirm}
-            onChange={(e) => update('passwordConfirm', e.target.value)}
-            error={errors.passwordConfirm}
+
+          <div className="grid items-start gap-x-5 gap-y-6 md:grid-cols-2">
+            <AuthField
+              compact
+              className={`${FIELD_LAYOUT} [&>p]:break-keep`}
+              label="비밀번호"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              placeholder="비밀번호 입력"
+              maxLength={PASSWORD_MAX_LENGTH}
+              required
+              value={form.password}
+              onChange={(e) => update('password', e.target.value)}
+              onBlur={() => handleBlur('password')}
+              error={errors.password}
+              hint={PASSWORD_HINT}
+            />
+            <AuthField
+              compact
+              className={`${FIELD_LAYOUT} [&>p]:break-keep`}
+              label="비밀번호 확인"
+              reserveMessageSpace
+              name="passwordConfirm"
+              type="password"
+              autoComplete="new-password"
+              placeholder="비밀번호 다시 입력"
+              maxLength={PASSWORD_MAX_LENGTH}
+              required
+              value={form.passwordConfirm}
+              onChange={(e) => update('passwordConfirm', e.target.value)}
+              onBlur={() => handleBlur('passwordConfirm')}
+              error={errors.passwordConfirm}
+            />
+          </div>
+
+          <div className="grid items-start gap-x-5 gap-y-6 md:grid-cols-2">
+            <AuthField
+              compact
+              className={FIELD_LAYOUT}
+              label="이름"
+              name="name"
+              autoComplete="name"
+              placeholder="이름 입력"
+              required
+              value={form.name}
+              onChange={(e) => update('name', e.target.value)}
+              onBlur={() => handleBlur('name')}
+              error={errors.name}
+            />
+            <AuthField
+              compact
+              className={FIELD_LAYOUT}
+              label="생년월일"
+              reserveMessageSpace
+              name="birthDate"
+              inputMode="numeric"
+              autoComplete="bday"
+              placeholder="YYYY.MM.DD"
+              maxLength={10}
+              required
+              value={form.birthDate.replace(/-/g, '.')}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, '').slice(0, 8)
+                update(
+                  'birthDate',
+                  [digits.slice(0, 4), digits.slice(4, 6), digits.slice(6, 8)]
+                    .filter(Boolean)
+                    .join('-'),
+                )
+              }}
+              onBlur={() => handleBlur('birthDate')}
+              error={errors.birthDate}
+              trailing={
+                <span className="text-text-primary/60 relative flex size-11 items-center justify-center rounded-sm focus-within:ring-2 focus-within:ring-border-strong">
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    className="size-5"
+                  >
+                    <rect x="4" y="5" width="16" height="16" rx="2" />
+                    <path d="M8 3v4M16 3v4M4 10h16M8 14h2M14 14h2M8 17h2" />
+                  </svg>
+                  <input
+                    type="date"
+                    aria-label="생년월일 달력에서 선택"
+                    value={/^\d{4}-\d{2}-\d{2}$/.test(form.birthDate) ? form.birthDate : ''}
+                    onChange={(e) => update('birthDate', e.target.value)}
+                    onBlur={() => handleBlur('birthDate')}
+                    onClick={(e) => e.currentTarget.showPicker?.()}
+                    className="absolute inset-0 size-full cursor-pointer opacity-0"
+                  />
+                </span>
+              }
+            />
+          </div>
+
+          <AuthField
+            compact
+            className={FIELD_LAYOUT}
+            label="닉네임"
+            labelHint={`${NICKNAME_MIN_LENGTH}~${NICKNAME_MAX_LENGTH}자`}
+            reserveMessageSpace
+            name="nickname"
+            autoComplete="nickname"
+            placeholder="닉네임 입력"
+            required
+            value={form.nickname}
+            onChange={(e) => update('nickname', e.target.value)}
+            onBlur={() => handleBlur('nickname')}
+            error={errors.nickname}
+          />
+
+          <AuthField
+            compact
+            className={FIELD_LAYOUT}
+            label="전화번호"
+            name="phone"
+            type="tel"
+            inputMode="numeric"
+            autoComplete="tel"
+            placeholder="010-1234-5678"
+            required
+            value={form.phone}
+            onChange={(e) => update('phone', formatPhone(e.target.value))}
+            onBlur={() => handleBlur('phone')}
+            error={errors.phone}
           />
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Input
-            label="이름"
-            autoComplete="name"
-            placeholder="실명을 입력하세요"
-            value={form.name}
-            onChange={(e) => update('name', e.target.value)}
-            error={errors.name}
-          />
-          <Input
-            label="생년월일"
-            type="date"
-            autoComplete="bday"
-            value={form.birthDate}
-            onChange={(e) => update('birthDate', e.target.value)}
-            error={errors.birthDate}
-          />
-        </div>
-
-        <Input
-          label="닉네임"
-          autoComplete="nickname"
-          placeholder={`${NICKNAME_MIN_LENGTH}~${NICKNAME_MAX_LENGTH}자`}
-          value={form.nickname}
-          onChange={(e) => update('nickname', e.target.value)}
-          onBlur={() => checkAvailability('nickname')}
-          error={errors.nickname}
-          hint={available.nickname ? '사용할 수 있는 닉네임입니다.' : undefined}
-        />
-
-        <Input
-          label="전화번호"
-          type="tel"
-          inputMode="numeric"
-          autoComplete="tel"
-          placeholder="010-1234-5678"
-          value={form.phone}
-          onChange={(e) => update('phone', formatPhone(e.target.value))}
-          error={errors.phone}
-        />
-
-        <div className="flex flex-col gap-2.5">
+        <fieldset className="border-border-default/60 flex min-w-0 flex-col gap-1 border-t pt-4">
+          <legend className="sr-only">약관 동의</legend>
           <AgreementRow
-            label="이용약관 동의 (필수)"
+            label="이용약관 동의"
+            name="terms"
+            required
+            invalid={Boolean(agreementError) && !agreements.terms}
             checked={agreements.terms}
-            onChange={(checked) => {
-              setAgreements((prev) => ({ ...prev, terms: checked }))
-              setAgreementError(undefined)
-            }}
+            onChange={(checked) => updateAgreement('terms', checked)}
             to="/terms"
           />
           <AgreementRow
-            label="개인정보 처리방침 동의 (필수)"
+            label="개인정보 처리방침 동의"
+            name="privacy"
+            required
+            invalid={Boolean(agreementError) && !agreements.privacy}
             checked={agreements.privacy}
-            onChange={(checked) => {
-              setAgreements((prev) => ({ ...prev, privacy: checked }))
-              setAgreementError(undefined)
-            }}
+            onChange={(checked) => updateAgreement('privacy', checked)}
             to="/privacy"
           />
           <AgreementRow
-            label="매거진 소식 받기 (선택)"
+            label="매거진 소식 받기"
+            name="marketing"
             checked={agreements.marketing}
-            onChange={(checked) => setAgreements((prev) => ({ ...prev, marketing: checked }))}
+            onChange={(checked) => updateAgreement('marketing', checked)}
           />
           {agreementError && (
-            <p role="alert" className="text-danger text-[12px]">
+            <p
+              id="signup-agreement-error"
+              role="alert"
+              className="text-danger mt-1 text-[12px] leading-5"
+            >
               {agreementError}
             </p>
           )}
-        </div>
+        </fieldset>
 
         {submitError && (
           <p role="alert" className="text-danger text-[13px]">
@@ -288,14 +457,15 @@ export default function SignupPage() {
           </p>
         )}
 
-        <Button type="submit" size="large" disabled={submitting} className="mt-2 w-full">
-          {submitting ? '가입 중' : '회원가입'}
-        </Button>
+        <AuthSubmit disabled={submitting}>{submitting ? '가입 중…' : '회원가입'}</AuthSubmit>
       </form>
 
-      <p className="text-text-secondary mt-5 text-center text-[13px]">
+      <p className="text-text-primary/65 mt-6 text-center text-[13px] leading-6">
         이미 계정이 있나요?{' '}
-        <Link to="/login" className="text-text-primary font-bold">
+        <Link
+          to="/login"
+          className="text-text-primary ml-1 inline-flex min-h-11 items-center font-semibold underline-offset-4 hover:underline focus-visible:underline lg:min-h-8"
+        >
           로그인
         </Link>
       </p>
@@ -305,22 +475,45 @@ export default function SignupPage() {
 
 function AgreementRow({
   label,
+  name,
+  required = false,
+  invalid = false,
   checked,
   onChange,
   to,
 }: {
   label: string
+  name: string
+  required?: boolean
+  invalid?: boolean
   checked: boolean
   onChange: (checked: boolean) => void
   to?: string
 }) {
   return (
-    <div className="flex items-center justify-between gap-3">
-      <Checkbox label={label} checked={checked} onChange={(e) => onChange(e.target.checked)} />
+    <div className="flex min-h-11 items-center justify-between gap-3 lg:min-h-9">
+      <label className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-2.5 lg:min-h-9">
+        <Checkbox
+          name={name}
+          required={required}
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          aria-invalid={invalid || undefined}
+          aria-describedby={invalid ? 'signup-agreement-error' : undefined}
+          className="outline-none focus-visible:ring-2 focus-visible:ring-border-strong focus-visible:ring-offset-2 aria-invalid:border-danger"
+        />
+        <span className="text-text-primary text-[13px] leading-5">
+          {label}{' '}
+          <span className="text-text-primary/60 ml-1 inline-block text-[11px]">
+            ({required ? '필수' : '선택'})
+          </span>
+        </span>
+      </label>
       {to && (
         <Link
           to={to}
-          className="text-text-secondary hover:text-text-primary shrink-0 text-[12px] underline-offset-2 hover:underline"
+          aria-label={`${label} 내용 보기`}
+          className="text-text-primary/65 hover:text-text-primary inline-flex min-h-11 min-w-9 shrink-0 items-center justify-end text-[12px] underline-offset-4 hover:underline focus-visible:underline lg:min-h-9"
         >
           보기
         </Link>

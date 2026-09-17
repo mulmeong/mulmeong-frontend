@@ -1,10 +1,9 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { ApiError } from '@/api/ApiError'
-import Button from '@/components/ui/Button'
 import Checkbox from '@/components/ui/Checkbox'
-import Input from '@/components/ui/Input'
+import { AuthField, AuthHeading, AuthSubmit } from '@/features/auth/components/AuthForm'
 import AuthLayout from '@/features/auth/components/AuthLayout'
 import { useAuth } from '@/features/auth/hooks/authContext'
 import { AUTH_IMAGES } from '@/features/auth/constants'
@@ -25,15 +24,17 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
   const [keepSignedIn, setKeepSignedIn] = useState(true)
+  const touched = useRef({ email: false, password: false })
 
   const [errors, setErrors] = useState<Errors>({})
   const [submitError, setSubmitError] = useState<string>()
   const [submitting, setSubmitting] = useState(false)
 
-  async function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (submitting) return
+    touched.current = { email: true, password: true }
 
     const nextErrors: Errors = {
       email: validateEmail(email),
@@ -41,7 +42,12 @@ export default function LoginPage() {
     }
     setErrors(nextErrors)
     setSubmitError(undefined)
-    if (nextErrors.email || nextErrors.password) return
+    if (nextErrors.email || nextErrors.password) {
+      event.currentTarget
+        .querySelector<HTMLInputElement>(`[name="${nextErrors.email ? 'email' : 'password'}"]`)
+        ?.focus()
+      return
+    }
 
     setSubmitting(true)
     try {
@@ -60,48 +66,84 @@ export default function LoginPage() {
 
   return (
     <AuthLayout
+      formPage
+      panelClassName="lg:px-14"
+      contentClassName="max-w-[420px] [&>p:first-of-type]:mt-2"
       image={AUTH_IMAGES.login.src}
       imageRatio={AUTH_IMAGES.login.ratio}
       headline={['오늘은 어느 온천에', '몸을 담글까']}
     >
-      <h1 className="text-[38px] leading-tight font-bold sm:text-[44px]">로그인</h1>
-      <p className="text-text-secondary mt-2 text-[14px]">저장한 장소와 내 지도를 이어서</p>
+      <AuthHeading title="로그인" subtitle="저장한 온천과 나만의 지도를 이어서 만나보세요." />
 
-      <form onSubmit={handleSubmit} noValidate className="mt-10 flex flex-col gap-6">
-        <Input
+      <form
+        onSubmit={handleSubmit}
+        noValidate
+        aria-busy={submitting}
+        className="mt-10 flex flex-col gap-6"
+      >
+        <AuthField
+          compact
           label="이메일"
+          name="email"
           type="email"
+          inputMode="email"
           autoComplete="email"
+          autoCapitalize="none"
+          spellCheck={false}
+          required
           placeholder="you@example.com"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value)
+            if (touched.current.email)
+              setErrors((previous) => ({ ...previous, email: validateEmail(e.target.value) }))
+            setSubmitError(undefined)
+          }}
+          onBlur={() => {
+            touched.current.email = true
+            setErrors((previous) => ({ ...previous, email: validateEmail(email) }))
+          }}
           error={errors.email}
         />
 
         <div className="flex flex-col gap-3">
-          <Input
+          <AuthField
+            compact
             label="비밀번호"
-            type={showPassword ? 'text' : 'password'}
+            name="password"
+            type="password"
             autoComplete="current-password"
-            placeholder="비밀번호"
+            placeholder="비밀번호 입력"
+            required
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            error={errors.password}
-            trailing={{
-              label: showPassword ? '숨기기' : '표시',
-              onClick: () => setShowPassword((prev) => !prev),
+            onChange={(e) => {
+              setPassword(e.target.value)
+              if (touched.current.password)
+                setErrors((previous) => ({
+                  ...previous,
+                  password: validatePassword(e.target.value),
+                }))
+              setSubmitError(undefined)
             }}
+            onBlur={() => {
+              touched.current.password = true
+              setErrors((previous) => ({ ...previous, password: validatePassword(password) }))
+            }}
+            error={errors.password}
           />
 
-          <div className="flex items-center justify-between">
-            <Checkbox
-              label="로그인 상태 유지"
-              checked={keepSignedIn}
-              onChange={(e) => setKeepSignedIn(e.target.checked)}
-            />
+          <div className="text-text-primary/65 flex min-h-11 items-center justify-between gap-3 text-[12px] lg:min-h-8">
+            <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 lg:min-h-8">
+              <Checkbox
+                checked={keepSignedIn}
+                onChange={(e) => setKeepSignedIn(e.target.checked)}
+                className="outline-none focus-visible:ring-2 focus-visible:ring-border-strong focus-visible:ring-offset-2"
+              />
+              로그인 상태 유지
+            </label>
             <Link
               to="/password-reset"
-              className="text-text-secondary hover:text-text-primary text-[13px]"
+              className="hover:text-text-primary inline-flex min-h-11 shrink-0 items-center underline-offset-4 hover:underline focus-visible:underline lg:min-h-8"
             >
               비밀번호 찾기
             </Link>
@@ -114,14 +156,17 @@ export default function LoginPage() {
           </p>
         )}
 
-        <Button type="submit" size="large" disabled={submitting} className="mt-2 w-full">
+        <AuthSubmit disabled={submitting} className="mt-2">
           {submitting ? '로그인 중…' : '로그인'}
-        </Button>
+        </AuthSubmit>
       </form>
 
-      <p className="text-text-secondary mt-6 text-center text-[13px]">
+      <p className="text-text-primary/65 mt-6 text-center text-[13px] leading-6">
         계정이 없나요?{' '}
-        <Link to="/signup" className="text-text-primary font-bold">
+        <Link
+          to="/signup"
+          className="text-text-primary ml-1 inline-flex min-h-11 items-center font-semibold underline-offset-4 hover:underline focus-visible:underline lg:min-h-6"
+        >
           회원가입
         </Link>
       </p>
