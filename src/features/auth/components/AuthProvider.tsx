@@ -1,39 +1,35 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 
-import { tokenStorage, UNAUTHORIZED_EVENT } from '@/api'
-import { getMe, login as loginRequest, logout as logoutRequest } from '@/features/auth/api/auth'
+import { UNAUTHORIZED_EVENT } from '@/api'
+import { login as loginRequest, logout as logoutRequest, reissue } from '@/features/auth/api/auth'
 import { AuthContext } from '@/features/auth/hooks/authContext'
 
 import type { LoginRequest } from '@/features/auth/schemas'
-import type { User } from '@/types/user'
+import type { AuthUser } from '@/types/user'
 
 /**
  * 로그인 상태를 앱에 한 벌만 둔다. 모든 라우트를 감싸는 최상위 경계다.
  *
- * 토큰이 "있는지"가 아니라 `getMe()`가 통하는지로 판단한다 — localStorage에 만료된
- * 토큰이 남아 있어도 로그인으로 치면 마이페이지가 빈 화면으로 뜬다.
+ * 세션의 근거는 Access Token이 아니라 **Refresh 쿠키**다 — 첫 진입에 `/auth/reissue`를
+ * 불러 복원한다. Access는 30분이라 새로고침 시점엔 이미 만료됐을 수 있고, 쿠키는
+ * HttpOnly라 JS가 미리 볼 수 없어 "있는지" 확인 없이 그냥 호출한다 (명세 AUTH-01).
  *
  * 라우터 밖(`main.tsx`)이 아니라 안에 두는 이유: 아래에서 `useNavigate` 같은
  * 라우터 훅을 쓸 수 있어야 한다.
  */
 export default function AuthProvider() {
-  const [user, setUser] = useState<User>()
-  // 토큰이 없으면 복원할 세션도 없다 — 처음부터 완료 상태로 시작한다.
-  const [loading, setLoading] = useState(() => Boolean(tokenStorage.get()))
+  const [user, setUser] = useState<AuthUser>()
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!tokenStorage.get()) return
-
     let alive = true
-    getMe()
-      .then((me) => {
-        if (alive) setUser(me)
+    reissue()
+      .then(({ user: next }) => {
+        if (alive) setUser(next)
       })
-      .catch(() => {
-        // 만료·폐기된 토큰이다. 남겨두면 매 요청마다 401을 부른다.
-        tokenStorage.clear()
-      })
+      // 쿠키가 없거나 만료됐다 = 비로그인. 화면을 막지 않는다 (AUTH-02).
+      .catch(() => {})
       .finally(() => {
         if (alive) setLoading(false)
       })
@@ -42,7 +38,7 @@ export default function AuthProvider() {
     }
   }, [])
 
-  // 토큰이 만료되면 API 레이어가 이미 토큰을 비웠다 — 화면의 로그인 상태도 같이 내린다.
+  // 재발급까지 실패한 401이다 (API 레이어가 이미 토큰을 비웠다).
   useEffect(() => {
     const handle = () => setUser(undefined)
     window.addEventListener(UNAUTHORIZED_EVENT, handle)

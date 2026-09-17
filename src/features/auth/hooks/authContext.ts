@@ -1,10 +1,10 @@
 import { createContext, useContext } from 'react'
 
 import type { LoginRequest } from '@/features/auth/schemas'
-import type { User } from '@/types/user'
+import type { AuthUser } from '@/types/user'
 
 export type AuthState = {
-  user?: User
+  user?: AuthUser
   /** 첫 세션 복원이 끝나기 전. 이때 로그인 여부로 화면을 가르면 깜빡인다. */
   loading: boolean
   login: (body: LoginRequest) => Promise<void>

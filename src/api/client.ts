@@ -38,11 +38,35 @@ async function parseBody(response: Response): Promise<unknown> {
   }
 }
 
-async function request<T>(
+/**
+ * 재발급을 수행하는 함수. 순환 참조를 피하려고 auth 모듈이 시작 시 주입한다
+ * (auth → client → auth가 되면 모듈 초기화 순서가 꼬인다).
+ */
+let reissueFn: (() => Promise<unknown>) | undefined
+
+export function setReissueHandler(fn: () => Promise<unknown>) {
+  reissueFn = fn
+}
+
+/** 동시에 401이 여러 개 떠도 재발급은 한 번만 나간다. */
+let reissuing: Promise<boolean> | undefined
+
+function reissueOnce(): Promise<boolean> {
+  if (!reissueFn) return Promise.resolve(false)
+  reissuing ??= reissueFn()
+    .then(() => true)
+    .catch(() => false)
+    .finally(() => {
+      reissuing = undefined
+    })
+  return reissuing
+}
+
+async function send(
   method: string,
   path: string,
-  { body, params, skipAuth, headers, ...init }: RequestOptions = {},
-): Promise<T> {
+  { body, params, skipAuth, headers, ...init }: RequestOptions,
+): Promise<Response> {
   const isFormData = body instanceof FormData
   const finalHeaders = new Headers(headers)
 
@@ -54,9 +78,8 @@ async function request<T>(
     if (token) finalHeaders.set('Authorization', `Bearer ${token}`)
   }
 
-  let response: Response
   try {
-    response = await fetch(buildUrl(path, params), {
+    return await fetch(buildUrl(path, params), {
       ...init,
       method,
       headers: finalHeaders,
@@ -68,12 +91,28 @@ async function request<T>(
   } catch {
     throw new ApiError(0, '네트워크 연결을 확인해주세요.')
   }
+}
+
+async function request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
+  let response = await send(method, path, options)
+
+  /*
+   * Access Token이 만료됐다. 쿠키로 재발급받아 원요청을 한 번만 다시 보낸다.
+   *
+   * `skipAuth` 요청은 제외한다 — 로그인 실패(401)나 재발급 자체의 401까지 재발급을
+   * 부르면 무한 루프가 된다 (명세 비고). FormData는 이미 소비돼 재전송할 수 없다.
+   */
+  const retriable =
+    response.status === 401 && !options.skipAuth && !(options.body instanceof FormData)
+
+  if (retriable && (await reissueOnce())) {
+    response = await send(method, path, options)
+  }
 
   const data = await parseBody(response)
 
-  // 토큰이 만료·폐기됐다. 남겨두면 이후 요청마다 401을 반복한다.
-  // 인증이 필요 없는 요청(skipAuth)의 401은 자격 증명 실패라 세션과 무관하다.
-  if (response.status === 401 && !skipAuth) {
+  // 재발급까지 실패했다. 토큰을 남겨두면 이후 요청마다 401을 반복한다.
+  if (response.status === 401 && !options.skipAuth) {
     tokenStorage.clear()
     window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
   }
