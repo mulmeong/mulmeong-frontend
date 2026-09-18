@@ -16,7 +16,7 @@ let cached: { points: OnsenMapPoint[]; expiresAt: number } | undefined
 let pending: Promise<OnsenMapPoint[]> | undefined
 
 async function requestMapPoints(): Promise<OnsenMapPoint[]> {
-  if (env.useMock) {
+  if (env.useMockMapPoints) {
     return MOCK_ONSENS.map(({ id, name, lat, lng }) => ({ id, name, lat, lng }))
   }
 

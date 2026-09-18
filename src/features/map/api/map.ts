@@ -31,15 +31,29 @@ export type OnsenListItem = Onsen & { distanceKm?: number }
 export type Suggestion =
   { type: 'region'; value: string } | { type: 'onsen'; id: number; name: string; address: string }
 
+/** 서버 검색 응답(GET /map/onsens/search). 명세의 /onsens/suggest는 아직 없다. */
+type SearchResponse = {
+  results: { type: string; onsenId: number; name: string; address: string | null }[]
+}
+
 export function suggestPlaces(keyword: string): Promise<Suggestion[]> {
   const trimmed = keyword.trim()
   if (!trimmed) return Promise.resolve([])
 
-  if (env.useMock) return mockSuggest(trimmed)
-  return api.get<Suggestion[]>('/onsens/suggest', {
-    params: { keyword: trimmed },
-    skipAuth: true,
-  })
+  if (env.useMockSuggest) return mockSuggest(trimmed)
+  return api
+    .get<SearchResponse>('/map/onsens/search', {
+      params: { keyword: trimmed, limit: 10 },
+      skipAuth: true,
+    })
+    .then(({ results }) =>
+      results.map((item): Suggestion => ({
+        type: 'onsen',
+        id: item.onsenId,
+        name: item.name,
+        address: item.address ?? '',
+      })),
+    )
 }
 
 export function searchOnsens(params: SearchOnsensParams = {}): Promise<OnsenListItem[]> {
