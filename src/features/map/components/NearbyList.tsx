@@ -22,7 +22,7 @@ function PlaceRow({ place }: { place: NearbyPlace }) {
           src={place.imageUrl}
           alt=""
           loading="lazy"
-          className="bg-surface-dim size-16 shrink-0 rounded-sm object-cover"
+          className="bg-surface-dim size-16 shrink-0 rounded-[2px] object-cover"
         />
       ) : (
         // INFO 카드(카카오 맛집·카페)는 사진이 없다 — 자리를 비우면 줄이 흔들려 라벨을 넣는다.
@@ -31,11 +31,15 @@ function PlaceRow({ place }: { place: NearbyPlace }) {
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
-        <p className="text-text-primary truncate text-[14px] font-medium">{place.name}</p>
-        <p className="text-text-secondary text-[12px]">{meta}</p>
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
+        <p className="text-text-primary text-[14px] leading-[1.5] font-semibold break-keep [overflow-wrap:anywhere]">
+          {place.name}
+        </p>
+        <p className="text-text-secondary text-[12px] leading-5">{meta}</p>
         {place.description && (
-          <p className="text-text-secondary truncate text-[12px]">{place.description}</p>
+          <p className="text-text-secondary line-clamp-2 text-[12px] leading-[1.65] [overflow-wrap:anywhere]">
+            {place.description}
+          </p>
         )}
       </div>
     </>
@@ -48,20 +52,25 @@ function PlaceRow({ place }: { place: NearbyPlace }) {
         href={place.kakaoPlaceUrl}
         target="_blank"
         rel="noreferrer"
-        className="hover:bg-surface-dim -mx-2 flex gap-3 rounded-sm px-2 py-2 transition-colors outline-none focus-visible:underline"
+        className="hover:bg-surface-dim -mx-2 flex items-start gap-3 px-2 py-4 transition-colors outline-none focus-visible:ring-1 focus-visible:ring-inverse focus-visible:ring-inset"
       >
         {body}
       </a>
     )
   }
 
-  return <div className="-mx-2 flex gap-3 px-2 py-2">{body}</div>
+  return <div className="flex items-start gap-3 py-4">{body}</div>
 }
 
 export default function NearbyList({ onsenId, active }: NearbyListProps) {
   const { result, loading, error } = useNearby(onsenId, active)
 
-  if (loading) return <p className="text-text-secondary text-[13px]">불러오는 중…</p>
+  if (loading)
+    return (
+      <p role="status" className="text-text-secondary py-3 text-[13px] leading-[1.7]">
+        불러오는 중…
+      </p>
+    )
 
   if (error) {
     return (
@@ -77,7 +86,7 @@ export default function NearbyList({ onsenId, active }: NearbyListProps) {
 
   return (
     <div>
-      <ul className="flex flex-col">
+      <ul className="divide-border-default/60 -mt-4 flex flex-col divide-y">
         {result.items.map((place) => (
           <li key={place.externalId}>
             <PlaceRow place={place} />
@@ -90,7 +99,7 @@ export default function NearbyList({ onsenId, active }: NearbyListProps) {
         <button
           type="button"
           disabled
-          className="text-text-secondary mt-3 w-full cursor-not-allowed text-[12px] outline-none"
+          className="text-text-secondary mt-3 min-h-11 w-full cursor-not-allowed text-[12px] outline-none"
         >
           전체 보기
         </button>

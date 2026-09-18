@@ -1,12 +1,14 @@
 import type { Onsen } from '@/types/onsen'
 import type { OnsenDetail } from '@/types/onsenDetail'
 
-/** 시안 데이터행 — 라벨 64px + 값, 행 높이 33px. */
+/** 이용 안내는 값이 여러 줄이어도 같은 시작선에 맞춘다. */
 function DataRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-baseline py-[9px]">
-      <span className="text-text-secondary w-16 shrink-0 text-[12px]">{label}</span>
-      <span className="text-text-primary min-w-0 flex-1 text-[14px]">{value}</span>
+    <div className="grid grid-cols-[64px_minmax(0,1fr)] items-start gap-3">
+      <dt className="text-text-secondary text-[12px] leading-6">{label}</dt>
+      <dd className="text-text-primary text-[13px] leading-6 whitespace-pre-line [overflow-wrap:anywhere]">
+        {value}
+      </dd>
     </div>
   )
 }
@@ -81,35 +83,83 @@ export default function OnsenSpecSummary({
   }
 
   return (
-    <div>
+    <div className="space-y-7">
       {specRows.length > 0 && (
-        <div className="divide-border-default divide-y">
-          {specRows.map(([label, value]) => (
-            <DataRow key={label} label={label} value={value} />
-          ))}
-        </div>
+        <dl aria-label="온천 핵심 정보" className="grid grid-cols-2 gap-x-5 gap-y-6">
+          {specRows
+            .filter(([label]) => label !== '효능')
+            .map(([label, value]) => (
+              <div key={label} className="flex min-w-0 flex-col gap-1.5">
+                <dt className="text-text-secondary order-2 text-[12px] leading-5">
+                  {label === '수질 유형' ? '수질' : label}
+                </dt>
+                <dd className="text-text-primary order-1 text-[21px] leading-snug font-semibold tracking-tight [overflow-wrap:anywhere]">
+                  {value === '정보 준비 중' ? (
+                    <span className="text-text-secondary text-[13px] font-normal tracking-normal">
+                      {value}
+                    </span>
+                  ) : label === 'pH' ? (
+                    <>
+                      {ph}
+                      {phLabel && (
+                        <span className="text-text-secondary mt-1 block text-[11px] font-normal tracking-normal">
+                          {phLabel}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    value
+                  )}
+                </dd>
+              </div>
+            ))}
+        </dl>
       )}
 
       {description && (
-        <p className="text-text-primary mt-[22px] text-[14px] leading-[1.6]">{description}</p>
+        <p className="text-text-primary text-[14px] leading-[1.9] break-keep whitespace-pre-line [overflow-wrap:anywhere]">
+          {description}
+        </p>
       )}
 
       {features && features.length > 0 && (
-        <div className="mt-[22px]">
-          <h3 className="text-text-secondary text-[12px]">온천 특징</h3>
-          <p className="text-text-primary mt-[6px] text-[14px] leading-[1.5]">
-            {features.join(' · ')}
+        <section>
+          <h3 className="text-text-primary text-[13px] font-semibold">온천 특징</h3>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {features.map((feature, index) => (
+              <li key={`${feature}-${index}`}>
+                <Badge
+                  type="category"
+                  className="border-border-default/60 rounded-[4px] px-2 py-1 text-[11px] leading-4"
+                >
+                  {feature}
+                </Badge>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {benefits && (
+        <section>
+          <h3 className="text-text-primary text-[13px] font-semibold">효능</h3>
+          <p className="text-text-primary mt-2 text-[13px] leading-[1.85] whitespace-pre-line [overflow-wrap:anywhere]">
+            {benefits}
           </p>
-        </div>
+        </section>
       )}
 
       {visitRows.length > 0 && (
-        <div className="divide-border-default mt-[22px] divide-y border-t-0">
-          {visitRows.map(([label, value]) => (
-            <DataRow key={label} label={label} value={value} />
-          ))}
-        </div>
+        <section className="border-border-default/60 border-t pt-6">
+          <h3 className="text-text-primary text-[13px] font-semibold">이용 안내</h3>
+          <dl className="mt-4 space-y-3">
+            {visitRows.map(([label, value]) => (
+              <DataRow key={label} label={label} value={value} />
+            ))}
+          </dl>
+        </section>
       )}
     </div>
   )
 }
+import { Badge } from '@/components/ui'

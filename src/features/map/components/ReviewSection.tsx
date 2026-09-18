@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
+import { Button } from '@/components/ui'
 import { useAuth } from '@/features/auth/hooks/authContext'
 import MockReviewList from '@/features/map/components/MockReviewList'
 import ReviewForm from '@/features/map/components/ReviewForm'
@@ -72,20 +73,22 @@ export default function ReviewSection({ onsen }: { onsen: OnsenListItem }) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <button
-        type="button"
-        onClick={handleWriteClick}
-        className="border-border-default text-text-primary hover:bg-surface-dim h-10 w-full rounded-sm border text-[13px] font-medium transition-colors outline-none"
-      >
-        리뷰 쓰기
-      </button>
+    <div className="flex flex-col gap-7">
+      <div>
+        <Button
+          hierarchy="secondary"
+          onClick={handleWriteClick}
+          className="border-border-default hover:bg-surface-dim min-h-11 w-full py-2.5 text-[13px] outline-none focus-visible:ring-1 focus-visible:ring-inverse focus-visible:ring-offset-2"
+        >
+          리뷰 작성하기
+        </Button>
 
-      {!loggedIn && (
-        <p className="text-text-secondary text-center text-[12px] leading-[1.6]">
-          리뷰 작성은 로그인이 필요해요.
-        </p>
-      )}
+        {!loggedIn && (
+          <p className="text-text-secondary mt-2.5 text-center text-[11px] leading-[1.7]">
+            리뷰 작성은 로그인이 필요해요.
+          </p>
+        )}
+      </div>
 
       {env.useMock ? (
         <MockReviewList onsen={onsen} />
