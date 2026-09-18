@@ -1,3 +1,8 @@
+/** 도메인 플래그가 비어 있으면 전역 VITE_USE_MOCK을 따른다. */
+function mockFlag(value: string | undefined) {
+  return (value ?? import.meta.env.VITE_USE_MOCK) !== 'false'
+}
+
 export const env = {
   /**
    * API 서버 origin. **Vercel 프록시를 쓰므로 보통 빈 값이다** — 비어 있으면 같은
@@ -14,7 +19,6 @@ export const env = {
    * 하나를 붙이려고 `VITE_USE_MOCK=false`로 전부 켜면 아직 안 되는 쪽이 깨진다.
    * 값이 없으면 전역 `useMock`을 따르므로 기존 동작은 그대로다.
    */
-  useMockMagazine: import.meta.env.VITE_USE_MOCK_MAGAZINE
-    ? import.meta.env.VITE_USE_MOCK_MAGAZINE !== 'false'
-    : import.meta.env.VITE_USE_MOCK !== 'false',
+  useMockMagazine: mockFlag(import.meta.env.VITE_USE_MOCK_MAGAZINE),
+  useMockOnsenDetail: mockFlag(import.meta.env.VITE_USE_MOCK_ONSEN_DETAIL),
 }
