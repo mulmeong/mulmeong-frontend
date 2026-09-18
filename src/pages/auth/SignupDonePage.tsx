@@ -90,10 +90,21 @@ export default function SignupDonePage() {
         ))}
       </ul>
 
-      <Link to="/" className="mt-7 block">
+      {/*
+       * 가입은 자동 로그인을 하지 않는다(AUTH-07). 위 단계는 비로그인으로도 볼 수 있지만
+       * 찜·리뷰에서 로그인 화면으로 밀려나므로, 로그인을 먼저 권한다.
+       */}
+      <Link to="/login" className="mt-7 block">
         <Button size="large" className="w-full">
-          홈으로
+          로그인하고 시작하기
         </Button>
+      </Link>
+
+      <Link
+        to="/"
+        className="text-text-secondary hover:text-text-primary mt-4 flex min-h-11 items-center justify-center text-[13px]"
+      >
+        둘러보기부터 할게요
       </Link>
     </AuthLayout>
   )
