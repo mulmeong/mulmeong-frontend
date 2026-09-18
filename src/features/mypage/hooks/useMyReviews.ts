@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError } from '@/api/ApiError'
 import { getMyReviews } from '@/features/mypage/api/reviews'
 
-import type { MyReviewsPage, ReviewRegion, ReviewSort } from '@/types/review'
+import type { MyReviewsPage, ReviewRegion, ReviewSort } from '@/types/myReview'
 
 /**
  * 내 리뷰 목록 도메인 훅.

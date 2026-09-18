@@ -1,14 +1,14 @@
 import { ApiError } from '@/api/ApiError'
 import { matchesRegionGroup } from '@/types/region'
-import { FACILITY_OPTIONS, VISIT_TIMES } from '@/types/review'
+import { RATING_MAX, RATING_MIN, VISIT_TIMES } from '@/types/review'
 
 import type {
   MyReview,
+  MyReviewDetail,
   MyReviewsPage,
-  ReviewDetail,
   ReviewRegion,
   ReviewSort,
-} from '@/types/review'
+} from '@/types/myReview'
 
 const MOCK_DELAY_MS = 300
 
@@ -172,13 +172,9 @@ export function mockDeleteReview(): Promise<void> {
  * id로 만들어낸다. 열 때마다 같은 값이 나오도록 무작위를 쓰지 않는다 —
  * 수정하다 새로고침하면 다른 리뷰로 바뀌는 것처럼 보인다.
  */
-export function mockGetReviewDetail(reviewId: number): Promise<ReviewDetail> {
+export function mockGetReviewDetail(reviewId: number): Promise<MyReviewDetail> {
   const review = MOCK_REVIEWS.find((item) => item.id === reviewId)
   if (!review) return Promise.reject(new ApiError(404, '리뷰를 찾을 수 없습니다.'))
-
-  const visitTime = VISIT_TIMES[reviewId % VISIT_TIMES.length].id
-  // 시설은 id를 비트로 읽어 고른다 — 항목마다 들쭉날쭉하게 나오게.
-  const facilities = FACILITY_OPTIONS.filter((_, index) => ((reviewId >> index) & 1) === 1)
 
   return delay({
     id: review.id,
@@ -186,23 +182,23 @@ export function mockGetReviewDetail(reviewId: number): Promise<ReviewDetail> {
     onsenName: review.onsenName,
     onsenAddress: review.onsenAddress,
     onsenCategory: '온천',
-    visitTime,
-    facilities: facilities.length > 0 ? [...facilities] : ['온탕'],
-    aspectRatings: {
-      // 전체 만족도 언저리에서 흔들리게 두되 1~5를 벗어나지 않게 자른다.
-      cleanliness: clampRating(review.rating),
-      crowding: clampRating(review.rating - 1),
+    spec: {
+      visitTime: VISIT_TIMES[reviewId % VISIT_TIMES.length],
+      // 전체 만족도 언저리에서 흔들리게 두되 허용 범위를 벗어나지 않게 자른다.
+      clean: clampRating(review.rating),
+      crowd: clampRating(review.rating - 1),
       facility: clampRating(review.rating + 1),
     },
     rating: review.rating,
-    content: review.content,
-    photoUrls: [],
-    visitedAt: review.createdAt,
+    body: review.content,
+    imageUrls: [],
+    // 작성 계약의 visitedAt은 YYYY-MM-DD다.
+    visitedAt: review.createdAt.slice(0, 10),
   })
 }
 
 function clampRating(value: number): number {
-  return Math.min(5, Math.max(1, value))
+  return Math.min(RATING_MAX, Math.max(RATING_MIN, value))
 }
 
 export function mockUpdateReview(): Promise<void> {
