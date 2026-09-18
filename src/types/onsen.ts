@@ -2,8 +2,15 @@
 export type Onsen = {
   id: number
   name: string
-  /** 시·도 + 시군구 (예: 서울 강남구) */
+  /** 전체 주소 (예: 강원 강릉시 남부로125번길 18). 일부 항목은 비어 있다. */
   address: string
+  /**
+   * 정식 시·도 명칭 (예: 강원특별자치도, 부산광역시).
+   * 지역 필터는 `address`가 아니라 이 값으로 건다 — `regionOf()` 참고.
+   */
+  sido?: string
+  /** 시군구 (예: 강릉시, 동래구). */
+  sigungu?: string
   lat: number
   lng: number
   /** 없을 수 있다 — 사진 없는 항목도 지도에는 뜬다. */
@@ -67,14 +74,84 @@ export type MapBounds = {
   neLng: number
 }
 
-/** 지역 필터 단위 — 포도알 지도(MY-02)와 같은 시·도 17단위. */
+/**
+ * 지도 지역 필터 — 8개 광역 묶음.
+ * 포도알 지도(MY-02)의 시·도 17단위와 **다른 단위다** — 통합하려 하지 말 것.
+ */
 export const REGIONS = ['서울', '경기', '인천', '강원', '충청', '경상', '전라', '제주'] as const
 
-/** 지도를 옮길 목표 — 한 곳으로(point) 또는 여러 결과가 다 보이게(bounds). */
-export type MapView = { lat: number; lng: number; level: number } | { bounds: MapBounds }
+export type Region = (typeof REGIONS)[number]
 
-/** 지도를 처음 열었을 때 보여주는 전국 뷰. */
-export const NATIONAL_VIEW = { lat: 36.5, lng: 127.8, level: 13 } as const
+/**
+ * 시·도(17) → 권역(8) 매핑.
+ *
+ * 데이터의 `sido`는 '경상북도'·'부산광역시'처럼 정식 명칭이라 권역명으로 시작하지 않는다.
+ * 주소 앞 토큰으로 거르면(`address.startsWith('경상')`) 충청·경상·전라가 통째로 빠진다
+ * — 주소는 '경북 울진군…', '부산 동래구…' 형태다. 반드시 이 표를 거칠 것.
+ */
+const SIDO_TO_REGION: Record<string, Region> = {
+  서울특별시: '서울',
+  경기도: '경기',
+  인천광역시: '인천',
+  강원특별자치도: '강원',
+  대전광역시: '충청',
+  세종특별자치시: '충청',
+  충청북도: '충청',
+  충청남도: '충청',
+  부산광역시: '경상',
+  대구광역시: '경상',
+  울산광역시: '경상',
+  경상북도: '경상',
+  경상남도: '경상',
+  광주광역시: '전라',
+  전라남도: '전라',
+  전북특별자치도: '전라',
+  제주특별자치도: '제주',
+}
+
+/**
+ * 주소 앞에 오는 약칭 (예: '경북 울진군…', '부산 동래구…').
+ * `sido`가 비어 있을 때만 쓰는 보조 표다.
+ */
+const ABBREV_TO_REGION: Record<string, Region> = {
+  서울: '서울',
+  경기: '경기',
+  인천: '인천',
+  강원: '강원',
+  대전: '충청',
+  세종: '충청',
+  충북: '충청',
+  충남: '충청',
+  부산: '경상',
+  대구: '경상',
+  울산: '경상',
+  경북: '경상',
+  경남: '경상',
+  광주: '전라',
+  전남: '전라',
+  전북: '전라',
+  제주: '제주',
+}
+
+/**
+ * 온천이 어느 권역인지 판단한다. 정식 `sido`를 우선 보고, 없으면 주소 앞 토큰으로 넘어간다.
+ * 둘 다 모르면 undefined — 임의로 넘겨짚지 않는다 (엉뚱한 권역에 섞이면 찾기 어렵다).
+ */
+export function regionOf(place: {
+  sido?: string | null
+  address?: string | null
+}): Region | undefined {
+  if (place.sido && SIDO_TO_REGION[place.sido]) return SIDO_TO_REGION[place.sido]
+  const first = place.address?.trim().split(/\s+/)[0]
+  return first ? ABBREV_TO_REGION[first] : undefined
+}
+
+/** 지도를 옮길 목표 — 한 곳, 여러 결과의 범위, 또는 처음 화면. */
+export type MapView =
+  { lat: number; lng: number; level: number } | { bounds: MapBounds } | { initial: true }
+
+/** SDK 생성용 기본값. 실제 전국 범위와 축소 한도는 지도 컨테이너 크기에 맞춰 계산한다. */
+export const NATIONAL_VIEW = { lat: 35.8, lng: 127.8, level: 13 } as const
 
 /**
  * 지역을 고르면 지도를 옮길 위치.
@@ -90,5 +167,3 @@ export const REGION_VIEWS: Record<Region, { lat: number; lng: number; level: num
   전라: { lat: 35.3, lng: 127.0, level: 11 },
   제주: { lat: 33.4, lng: 126.55, level: 10 },
 }
-
-export type Region = (typeof REGIONS)[number]

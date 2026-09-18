@@ -40,7 +40,12 @@ export default function MagazineDetailPage() {
   }
 
   const { title, subtitle, category, readMinutes, publishedAt, author, photographer } = magazine
-  const { caption, body, quote, likeCount, coverImageUrl } = magazine
+  const { body, likeCount, heroImageUrl } = magazine
+  // body는 MULMUNG_TEXT 문자열 한 덩어리로 온다 — 빈 줄 기준으로 문단을 나눈다.
+  const paragraphs = body
+    .split(/\n{2,}/)
+    .map((text) => text.trim())
+    .filter(Boolean)
 
   const byline = [
     author && `글 ${author}`,
@@ -101,18 +106,17 @@ export default function MagazineDetailPage() {
           <span>{readMinutes}분</span>
         </div>
 
-        {coverImageUrl ? (
+        {heroImageUrl ? (
           <img
-            src={coverImageUrl}
+            src={heroImageUrl}
             alt=""
             className="mt-9 h-[420px] w-full rounded-sm object-cover"
           />
         ) : (
           <div className="bg-surface-dim mt-9 h-[420px] w-full rounded-sm" />
         )}
-        {caption && <p className="text-text-secondary mt-3 text-[11px]">{caption}</p>}
 
-        {body?.map((paragraph, index) => (
+        {paragraphs.map((paragraph, index) => (
           <p
             key={paragraph}
             className={cn(
@@ -125,12 +129,6 @@ export default function MagazineDetailPage() {
             {paragraph}
           </p>
         ))}
-
-        {quote && (
-          <blockquote className="border-t-border-strong border-b-border-default text-text-primary my-9 border-t border-b py-9 text-center text-[26px] leading-[1.5] font-bold">
-            “{quote}”
-          </blockquote>
-        )}
 
         <Link
           to="/magazine"

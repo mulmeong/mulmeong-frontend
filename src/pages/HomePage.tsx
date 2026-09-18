@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 
-import Header from '@/components/ui/Header'
+import AuthHeader from '@/features/auth/components/AuthHeader'
 import ClosingSection from '@/features/home/components/ClosingSection'
 import ExpandingPanels from '@/features/home/components/ExpandingPanels'
 import HeroSection from '@/features/home/components/HeroSection'
@@ -60,7 +59,6 @@ function useDocumentSnap() {
 const SECTION = 'relative h-dvh w-full shrink-0 snap-start snap-always overflow-hidden'
 
 export default function HomePage() {
-  const navigate = useNavigate()
   const scrollDir = useScrollDirection()
   useDocumentSnap()
 
@@ -68,12 +66,11 @@ export default function HomePage() {
     // 스크롤은 문서가 한다 (useDocumentSnap 참고). 여기에 overflow를 주면
     // 스크롤 주체가 이 div로 바뀌면서 키보드 스크롤이 막힌다.
     <div className="bg-surface text-text-primary">
-      <Header
+      <AuthHeader
         className={cn(
           'fixed inset-x-0 top-0 z-50 bg-transparent transition-transform duration-300',
           scrollDir === 'down' && '-translate-y-full',
         )}
-        onAuthClick={() => navigate('/login')}
       />
 
       <section className={SECTION}>

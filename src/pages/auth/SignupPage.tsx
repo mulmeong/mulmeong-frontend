@@ -5,7 +5,7 @@ import { ApiError } from '@/api/ApiError'
 import Button from '@/components/ui/Button'
 import Checkbox from '@/components/ui/Checkbox'
 import Input from '@/components/ui/Input'
-import { checkNickname, signup } from '@/features/auth/api/auth'
+import { checkEmail, signup } from '@/features/auth/api/auth'
 import AuthLayout from '@/features/auth/components/AuthLayout'
 import { AUTH_IMAGES } from '@/features/auth/constants'
 import {
@@ -14,7 +14,6 @@ import {
   validateBirthDate,
   validateEmail,
   validateName,
-  validateNickname,
   validatePassword,
   validatePasswordConfirm,
   validatePhone,
@@ -27,7 +26,6 @@ type Form = {
   name: string
   birthDate: string
   phone: string
-  nickname: string
 }
 
 type Errors = Partial<Record<keyof Form, string>>
@@ -39,7 +37,6 @@ const INITIAL_FORM: Form = {
   name: '',
   birthDate: '',
   phone: '',
-  nickname: '',
 }
 
 /** 이용약관·개인정보는 필수, 매거진 수신은 선택. */
@@ -64,38 +61,32 @@ export default function SignupPage() {
   const [submitError, setSubmitError] = useState<string>()
   const [submitting, setSubmitting] = useState(false)
 
-  /** null=미확인. 닉네임을 고치면 null로 돌아간다. */
-  const [nicknameAvailable, setNicknameAvailable] = useState<boolean | null>(null)
-  const [checkingNickname, setCheckingNickname] = useState(false)
+  /** null=미확인. 이메일을 고치면 null로 돌아간다. */
+  const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null)
 
   function update<K extends keyof Form>(key: K, value: Form[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
     setErrors((prev) => ({ ...prev, [key]: undefined }))
-    if (key === 'nickname') setNicknameAvailable(null)
+    if (key === 'email') setEmailAvailable(null)
   }
 
-  async function handleNicknameCheck() {
-    const error = validateNickname(form.nickname)
-    if (error) {
-      setErrors((prev) => ({ ...prev, nickname: error }))
-      return
-    }
+  /**
+   * AUTH-07 이메일 중복 확인. 명세대로 blur 시점에 부른다.
+   * UX 보조일 뿐이라 실패해도 막지 않는다 — 최종 검증은 가입 API가 한다.
+   */
+  async function handleEmailBlur() {
+    const value = form.email.trim()
+    if (!value || validateEmail(value)) return
 
-    setCheckingNickname(true)
     try {
-      const { available } = await checkNickname(form.nickname.trim())
-      setNicknameAvailable(available)
-      setErrors((prev) => ({
-        ...prev,
-        nickname: available ? undefined : '이미 사용 중인 닉네임입니다.',
-      }))
-    } catch (error) {
-      setErrors((prev) => ({
-        ...prev,
-        nickname: error instanceof ApiError ? error.message : '중복 확인에 실패했습니다.',
-      }))
-    } finally {
-      setCheckingNickname(false)
+      const { available } = await checkEmail(value)
+      setEmailAvailable(available)
+      if (!available) {
+        setErrors((prev) => ({ ...prev, email: '이미 가입된 이메일입니다.' }))
+      }
+    } catch {
+      // 조회 실패는 조용히 넘어간다. 가입 시 서버가 409로 잡는다.
+      setEmailAvailable(null)
     }
   }
 
@@ -109,11 +100,11 @@ export default function SignupPage() {
       name: validateName(form.name),
       birthDate: validateBirthDate(form.birthDate),
       phone: validatePhone(form.phone),
-      nickname: validateNickname(form.nickname),
     }
 
-    if (!nextErrors.nickname && nicknameAvailable !== true) {
-      nextErrors.nickname = '닉네임 중복 확인을 해주세요.'
+    // 중복이 확인된 이메일이면 제출 전에 잡는다 (미확인은 서버가 판단).
+    if (!nextErrors.email && emailAvailable === false) {
+      nextErrors.email = '이미 가입된 이메일입니다.'
     }
 
     const nextAgreementError =
@@ -127,16 +118,17 @@ export default function SignupPage() {
 
     setSubmitting(true)
     try {
-      const { user } = await signup({
-        email: form.email,
+      // 닉네임은 서버가 만들어 응답으로 준다. 자동 로그인은 하지 않는다.
+      const { nickname } = await signup({
+        email: form.email.trim().toLowerCase(),
         password: form.password,
+        passwordConfirm: form.passwordConfirm,
         name: form.name.trim(),
         birthDate: form.birthDate,
-        phone: form.phone.replace(/\D/g, ''),
-        nickname: form.nickname.trim(),
+        phone: formatPhone(form.phone),
         marketingAgreed: agreements.marketing,
       })
-      navigate('/signup/done', { replace: true, state: { nickname: user.nickname } })
+      navigate('/signup/done', { replace: true, state: { nickname } })
     } catch (error) {
       setSubmitError(
         error instanceof ApiError
@@ -168,7 +160,9 @@ export default function SignupPage() {
           placeholder="you@example.com"
           value={form.email}
           onChange={(e) => update('email', e.target.value)}
+          onBlur={handleEmailBlur}
           error={errors.email}
+          hint={emailAvailable ? '사용할 수 있는 이메일입니다.' : undefined}
         />
 
         <div className="grid gap-5 sm:grid-cols-2">
@@ -222,19 +216,7 @@ export default function SignupPage() {
           error={errors.phone}
         />
 
-        <Input
-          label="닉네임"
-          placeholder="리뷰에 표시됩니다"
-          value={form.nickname}
-          onChange={(e) => update('nickname', e.target.value)}
-          error={errors.nickname}
-          hint={nicknameAvailable ? '사용할 수 있는 닉네임입니다.' : undefined}
-          trailing={{
-            label: checkingNickname ? '확인 중' : '중복 확인',
-            onClick: handleNicknameCheck,
-            disabled: checkingNickname,
-          }}
-        />
+        {/* 닉네임은 서버가 자동 생성한다 (AUTH-07) — 가입 후 마이페이지에서 바꾼다. */}
 
         <div className="flex flex-col gap-2.5">
           <AgreementRow

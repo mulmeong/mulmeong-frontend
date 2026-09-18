@@ -10,6 +10,12 @@ export type SearchOnsensParams = {
   region?: string
   /** 지도에 보이는 영역 (MAP-03). 없으면 전체에서 찾는다. */
   bounds?: MapBounds
+  /**
+   * 서버가 돌려줄 최대 개수. 조건 없이 조회하면 전국 505곳이 통째로 오므로
+   * 첫 화면처럼 일부만 쓰는 화면에서 응답 크기를 제한한다. 외부 API 쿼터 절감 여부는
+   * 서버 구현에 달려 있으며, limit 지원은 실서버 연동 시 확인해야 한다.
+   */
+  limit?: number
 }
 
 /**
@@ -36,15 +42,15 @@ export function suggestPlaces(keyword: string): Promise<Suggestion[]> {
   })
 }
 
-export function searchOnsens({ keyword, region, bounds }: SearchOnsensParams = {}): Promise<
-  OnsenListItem[]
-> {
-  if (env.useMock) return mockSearchOnsens(keyword, region, bounds)
+export function searchOnsens(params: SearchOnsensParams = {}): Promise<OnsenListItem[]> {
+  const { keyword, region, bounds, limit } = params
+  if (env.useMock) return mockSearchOnsens(params)
   // 비로그인도 지도를 볼 수 있다 (AUTH-02).
   return api.get<OnsenListItem[]>('/onsens', {
     params: {
       keyword,
       region,
+      limit,
       swLat: bounds?.swLat,
       swLng: bounds?.swLng,
       neLat: bounds?.neLat,
