@@ -97,13 +97,13 @@ export function AuthField({
           )
         }
         className={cn(
-          'min-w-0 gap-2 [&>label]:text-[13px] [&>label]:font-medium [&>label]:text-text-primary',
+          'min-w-0 gap-2 [&>label]:text-[13px] [&>label]:leading-5 [&>label]:font-medium [&>label]:text-text-primary/90',
           '[&>div]:min-h-12 [&>div]:pb-0 [&>div]:transition-colors',
-          '[&_input]:w-full [&_input]:text-[16px] [&_input]:leading-6 [&_input::placeholder]:text-text-primary/45',
+          '[&_input]:w-full [&_input]:text-[17px] [&_input]:leading-6 [&_input]:font-normal [&_input]:text-text-primary [&_input::placeholder]:text-text-primary/45',
           '[&>p]:min-h-5 [&>p]:text-[12px] [&>p]:leading-5',
           error
             ? '[&>div:focus-within]:border-danger'
-            : '[&>div:focus-within]:border-border-strong [&>p]:text-text-primary/65',
+            : '[&>div:focus-within]:border-border-strong [&>p]:text-text-primary/60',
           // 44px 입력 영역 안의 상단 여백이 라벨과 값 사이의 10px 간격을 만든다.
           compact &&
             'gap-0 [&>label]:leading-5 [&>div]:min-h-11 [&>div>input]:h-11 [&>p]:mt-1.5 [&>p]:min-h-0 [&>p]:leading-[18px]',
