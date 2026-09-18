@@ -11,7 +11,7 @@ import ReviewItem from '@/features/mypage/components/ReviewItem'
 import { useMyReviews } from '@/features/mypage/hooks/useMyReviews'
 
 import { REGION_GROUPS } from '@/types/region'
-import { REVIEW_SORTS, type MyReview, type ReviewRegion, type ReviewSort } from '@/types/review'
+import { REVIEW_SORTS, type MyReview, type ReviewRegion, type ReviewSort } from '@/types/myReview'
 
 /** 내 리뷰 · 담당: 예린 */
 export default function MyReviewsPage() {

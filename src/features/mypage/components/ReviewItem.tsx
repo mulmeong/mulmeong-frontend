@@ -3,7 +3,7 @@ import { useId } from 'react'
 import ReviewDetailPanel from '@/features/mypage/components/ReviewDetailPanel'
 import { cn } from '@/lib/cn'
 
-import type { MyReview } from '@/types/review'
+import type { MyReview } from '@/types/myReview'
 
 type ReviewItemProps = {
   review: MyReview
