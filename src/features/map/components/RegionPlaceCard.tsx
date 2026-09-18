@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import { cn } from '@/lib/cn'
+import FavoriteButton from '@/features/favorites/FavoriteButton'
 
 import type { OnsenListItem } from '@/features/map/api/map'
 
@@ -48,6 +49,7 @@ export default function RegionPlaceCard({
       .join(' · ') || tags.slice(0, 2).join(' · ')
 
   return (
+    <div className="relative">
     <button
       type="button"
       onClick={onClick}
@@ -99,5 +101,9 @@ export default function RegionPlaceCard({
         {description}
       </span>
     </button>
+    <div className="absolute top-2 right-2 rounded-sm bg-white/85">
+      <FavoriteButton target={{ placeId: onsen.id }} name={name} />
+    </div>
+    </div>
   )
 }

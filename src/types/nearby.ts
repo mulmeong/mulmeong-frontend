@@ -14,6 +14,8 @@ export type NearbyPlace = {
   category: string
   categoryLabel: string
   name: string
+  address?: string | null
+  phone?: string | null
   description?: string
   imageUrl?: string | null
   lat: number

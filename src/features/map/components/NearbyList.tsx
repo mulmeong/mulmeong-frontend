@@ -1,4 +1,6 @@
 import { useNearby } from '@/features/map/hooks/useNearby'
+import FavoriteButton from '@/features/favorites/FavoriteButton'
+import type { FavoriteRequest } from '@/features/favorites/api'
 
 import type { NearbyPlace } from '@/types/nearby'
 
@@ -14,6 +16,13 @@ function formatDistance(m: number) {
 
 function PlaceRow({ place }: { place: NearbyPlace }) {
   const meta = `${place.categoryLabel} · ${formatDistance(place.distanceM)}`
+  const category = place.category === 'RESTAURANT' || place.category === 'CAFE' ||
+    place.category === 'ATTRACTION' || place.category === 'SPA' ? place.category : 'ETC'
+  const target: FavoriteRequest = place.placeId != null ? { placeId: place.placeId } : {
+    source: place.source, externalId: place.externalId, name: place.name,
+    lat: place.lat, lng: place.lng, category, imageUrl: place.imageUrl,
+    address: place.address, phone: place.phone,
+  }
 
   const body = (
     <>
@@ -45,21 +54,21 @@ function PlaceRow({ place }: { place: NearbyPlace }) {
     </>
   )
 
-  // 카카오 장소만 바깥으로 나갈 곳이 있다. TourAPI 항목은 아직 열 상세가 없어 정적으로 둔다.
-  if (place.kakaoPlaceUrl) {
-    return (
+  return (
+    <div className="flex items-center gap-2">
+      {place.kakaoPlaceUrl ? (
       <a
         href={place.kakaoPlaceUrl}
         target="_blank"
         rel="noreferrer"
-        className="hover:bg-surface-dim -mx-2 flex items-start gap-3 px-2 py-4 transition-colors outline-none focus-visible:ring-1 focus-visible:ring-inverse focus-visible:ring-inset"
+        className="hover:bg-surface-dim -mx-2 flex min-w-0 flex-1 items-start gap-3 px-2 py-4 transition-colors outline-none focus-visible:ring-1 focus-visible:ring-inverse focus-visible:ring-inset"
       >
         {body}
       </a>
-    )
-  }
-
-  return <div className="flex items-start gap-3 py-4">{body}</div>
+      ) : <div className="flex min-w-0 flex-1 items-start gap-3 py-4">{body}</div>}
+      <FavoriteButton target={target} name={place.name} />
+    </div>
+  )
 }
 
 export default function NearbyList({ onsenId, active }: NearbyListProps) {

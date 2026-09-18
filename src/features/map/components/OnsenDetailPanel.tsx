@@ -1,6 +1,7 @@
 import { useId, useState, type ReactNode } from 'react'
 
 import OnsenSpecSummary from '@/components/OnsenSpecSummary'
+import FavoriteButton from '@/features/favorites/FavoriteButton'
 import NearbyList from '@/features/map/components/NearbyList'
 import ReviewSection from '@/features/map/components/ReviewSection'
 import { useOnsenDetail } from '@/features/map/hooks/useOnsenDetail'
@@ -138,16 +139,7 @@ function OnsenDetailContent({
             {address}
           </p>
         </div>
-        {/* 찜은 PAM-07·로그인 필요 범위라 A-1에서는 자리만 잡는다. */}
-        <button
-          type="button"
-          disabled
-          aria-label="장소 저장 (준비 중)"
-          title="저장 기능은 준비 중입니다."
-          className="text-text-secondary -mt-0.5 flex size-8 shrink-0 cursor-not-allowed items-center justify-center"
-        >
-          <ActionIcon kind="save" className="size-5" />
-        </button>
+        <FavoriteButton target={{ placeId: onsen.id }} name={name} className="-mt-0.5" />
       </div>
 
       {imageUrl ? (
@@ -156,13 +148,16 @@ function OnsenDetailContent({
         <div aria-hidden="true" className="bg-surface-dim mt-6 h-[180px] w-full rounded-sm" />
       )}
 
-      {/* 저장·공유는 후속 범위. 길찾기는 이 온천을 도착지로 채운다. */}
+      {/* 길찾기는 이 온천을 도착지로 채운다. */}
       <div
         role="group"
         aria-label="장소 액션"
         className="mt-2 grid grid-cols-3 gap-1 pb-1"
       >
-        {ACTIONS.map((action) => (
+        {ACTIONS.map((action) => action.icon === 'save' ? (
+          <FavoriteButton key={action.icon} target={{ placeId: onsen.id }} name={name} label="저장"
+            className="h-9 w-full text-[12px] font-medium" />
+        ) : (
           <button
             key={action.icon}
             type="button"

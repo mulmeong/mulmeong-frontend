@@ -1,4 +1,5 @@
 import type { RegionGroupId } from '@/types/region'
+import type { FavoriteCategory } from '@/features/favorites/api'
 
 /**
  * 찜한 장소 하나(MY-03).
@@ -17,7 +18,12 @@ export type SavedPlace = {
   category: SavedCategory
   /** 0~5, 소수 한 자리. 리뷰가 없으면 undefined. */
   rating?: number
-  reviewCount: number
+  reviewCount?: number
+  placeType?: FavoriteCategory
+  subText?: string
+  kakaoPlaceUrl?: string
+  lat?: number
+  lng?: number
   /** 없을 수 있다 — 사진 없는 항목도 목록에는 뜬다. */
   imageUrl?: string
 }
@@ -45,10 +51,11 @@ export const SAVED_CATEGORIES = [
   { id: 'attraction', label: '관광지' },
 ] as const
 
-export type SavedCategory = (typeof SAVED_CATEGORIES)[number]['id']
+export type SavedCategory = (typeof SAVED_CATEGORIES)[number]['id'] | 'etc'
 
 /** 카테고리 id -> 목록 배지에 쓸 한글 이름. */
 export function categoryLabel(category: SavedCategory): string {
+  if (category === 'etc') return '기타'
   return SAVED_CATEGORIES.find((item) => item.id === category)?.label ?? category
 }
 

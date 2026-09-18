@@ -1,4 +1,5 @@
 import { cn } from '@/lib/cn'
+import FavoriteButton from '@/features/favorites/FavoriteButton'
 
 import type { OnsenListItem } from '@/features/map/api/map'
 
@@ -26,12 +27,13 @@ export default function SearchResultItem({ onsen, selected, onClick }: SearchRes
   const specLine = spec || tags.join(' · ')
 
   return (
+    <div className="flex items-center gap-2">
     <button
       type="button"
       onClick={onClick}
       aria-current={selected || undefined}
       className={cn(
-        '-mx-2 flex w-[calc(100%+1rem)] items-center gap-3 rounded-sm px-2 py-2.5 text-left',
+        '-ml-2 flex min-w-0 flex-1 items-center gap-3 rounded-sm px-2 py-2.5 text-left',
         'transition-colors outline-none focus-visible:underline focus-visible:underline-offset-2',
         selected ? 'bg-surface-dim' : 'hover:bg-surface-dim',
       )}
@@ -65,5 +67,7 @@ export default function SearchResultItem({ onsen, selected, onClick }: SearchRes
         </span>
       )}
     </button>
+    <FavoriteButton target={{ placeId: onsen.id }} name={name} />
+    </div>
   )
 }
