@@ -1,3 +1,5 @@
+import { normalizeWaterCode, waterCodeLabel, waterPhLabel } from '@/lib/onsenWaterLabels'
+
 import type { Onsen } from '@/types/onsen'
 import type { OnsenDetail } from '@/types/onsenDetail'
 
@@ -37,6 +39,15 @@ export default function OnsenSpecSummary({
   const waterQuality = detail?.water.type ?? onsen.waterQuality
   const mainComponent = detail?.water.component ?? onsen.mainComponent
   const ph = detail?.water.ph ?? onsen.ph
+  const phDescription =
+    ph !== undefined && ph !== null
+      ? waterPhLabel(ph, detail?.water.ph != null && detail.water.ph !== onsen.ph ? undefined : phLabel)
+      : undefined
+  const sameComposition = Boolean(
+    waterQuality &&
+      mainComponent &&
+      normalizeWaterCode(waterQuality) === normalizeWaterCode(mainComponent),
+  )
   const benefits = detail?.water.benefit ?? onsen.benefits
   const description = detail?.regionComment ?? onsen.description
   const openingHours = detail?.hours ?? onsen.openingHours
@@ -51,11 +62,11 @@ export default function OnsenSpecSummary({
   // 온천 핵심 정보
   const specRows = rowsOf([
     ['수온', waterTempLabel],
-    ['수질 유형', waterQuality],
-    ['주요 성분', mainComponent],
+    [sameComposition ? '수질 · 주요 성분' : '수질', waterQuality],
+    ['주요 성분', sameComposition ? undefined : mainComponent],
     [
       'pH',
-      ph !== undefined && ph !== null ? (phLabel ? `${ph} (${phLabel})` : `${ph}`) : undefined,
+      ph !== undefined && ph !== null ? `${ph}` : undefined,
     ],
     ['효능', benefits],
   ])
@@ -83,32 +94,32 @@ export default function OnsenSpecSummary({
   }
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-8">
       {specRows.length > 0 && (
         <dl aria-label="온천 핵심 정보" className="grid grid-cols-2 gap-x-5 gap-y-6">
           {specRows
             .filter(([label]) => label !== '효능')
             .map(([label, value]) => (
               <div key={label} className="flex min-w-0 flex-col gap-1.5">
-                <dt className="text-text-secondary order-2 text-[12px] leading-5">
-                  {label === '수질 유형' ? '수질' : label}
+                <dt className="text-text-secondary text-[11px] leading-5">
+                  {label}
                 </dt>
-                <dd className="text-text-primary order-1 text-[21px] leading-snug font-semibold tracking-tight [overflow-wrap:anywhere]">
+                <dd className="text-text-primary text-[18px] leading-6 font-medium [overflow-wrap:anywhere]">
                   {value === '정보 준비 중' ? (
                     <span className="text-text-secondary text-[13px] font-normal tracking-normal">
                       {value}
                     </span>
-                  ) : label === 'pH' ? (
-                    <>
-                      {ph}
-                      {phLabel && (
-                        <span className="text-text-secondary mt-1 block text-[11px] font-normal tracking-normal">
-                          {phLabel}
-                        </span>
-                      )}
-                    </>
                   ) : (
                     value
+                  )}
+                  {((label === '수온' && value !== '정보 준비 중') || label === 'pH' || waterCodeLabel(value)) && (
+                    <span className="text-text-secondary mt-1.5 block text-[12px] leading-5 font-normal break-keep">
+                      {label === '수온'
+                        ? '온천수의 온도'
+                        : label === 'pH'
+                        ? phDescription
+                        : `${waterCodeLabel(value)}${label === '수질' ? ' 계열' : ''}`}
+                    </span>
                   )}
                 </dd>
               </div>
@@ -124,7 +135,7 @@ export default function OnsenSpecSummary({
 
       {features && features.length > 0 && (
         <section>
-          <h3 className="text-text-primary text-[13px] font-semibold">온천 특징</h3>
+          <h3 className="text-text-primary text-[15px] leading-6 font-semibold">온천 특징</h3>
           <ul className="mt-3 flex flex-wrap gap-2">
             {features.map((feature, index) => (
               <li key={`${feature}-${index}`}>
@@ -142,7 +153,7 @@ export default function OnsenSpecSummary({
 
       {benefits && (
         <section>
-          <h3 className="text-text-primary text-[13px] font-semibold">효능</h3>
+          <h3 className="text-text-primary text-[15px] leading-6 font-semibold">효능</h3>
           <p className="text-text-primary mt-2 text-[13px] leading-[1.85] whitespace-pre-line [overflow-wrap:anywhere]">
             {benefits}
           </p>
@@ -150,8 +161,8 @@ export default function OnsenSpecSummary({
       )}
 
       {visitRows.length > 0 && (
-        <section className="border-border-default/60 border-t pt-6">
-          <h3 className="text-text-primary text-[13px] font-semibold">이용 안내</h3>
+        <section>
+          <h3 className="text-text-primary text-[15px] leading-6 font-semibold">이용 안내</h3>
           <dl className="mt-4 space-y-3">
             {visitRows.map(([label, value]) => (
               <DataRow key={label} label={label} value={value} />

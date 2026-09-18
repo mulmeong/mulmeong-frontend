@@ -1,7 +1,6 @@
 import { useId, useState, type ReactNode } from 'react'
 
 import OnsenSpecSummary from '@/components/OnsenSpecSummary'
-import { Tab } from '@/components/ui'
 import NearbyList from '@/features/map/components/NearbyList'
 import ReviewSection from '@/features/map/components/ReviewSection'
 import { useOnsenDetail } from '@/features/map/hooks/useOnsenDetail'
@@ -52,7 +51,6 @@ function ActionIcon({
 
 type OnsenDetailPanelProps = {
   onsen: OnsenListItem | OnsenMapPoint
-  onClose: () => void
   onDirections: () => void
 }
 
@@ -60,23 +58,15 @@ type OnsenDetailPanelProps = {
  * MAP-02 상세패널. 한눈에·정보 탭은 명세에 있는 온천 스펙(수온·수질·효능·시설·요금·뚜벅이)으로
  * 채운다. 리뷰(REV-*)는 목 모드에서 화면 검토용 목록을 보여준다.
  */
-export default function OnsenDetailPanel({ onsen, onClose, onDirections }: OnsenDetailPanelProps) {
+export default function OnsenDetailPanel({ onsen, onDirections }: OnsenDetailPanelProps) {
   const { detail, loading, error, retry } = useOnsenDetail(onsen.id)
   const summary = 'tags' in onsen ? onsen : detail ? onsenFromDetail(detail) : undefined
 
   if (!summary) {
     return (
       <div className="bg-surface scrollbar-thin h-full overflow-y-auto px-4 pb-8">
-        <div className="flex items-center justify-between pt-3">
+        <div className="flex h-12 items-center pt-3">
           <span className="text-text-secondary text-[11px]">장소 상세</span>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="상세 닫기"
-            className="text-text-secondary hover:text-text-primary flex size-9 items-center justify-center text-[18px] outline-none focus-visible:ring-1 focus-visible:ring-inverse"
-          >
-            ✕
-          </button>
         </div>
         <h2 className="text-text-primary pt-1 text-[20px] leading-[1.4] font-semibold tracking-tight">
           {onsen.name}
@@ -109,7 +99,6 @@ export default function OnsenDetailPanel({ onsen, onClose, onDirections }: Onsen
       key={onsen.id}
       onsen={summary}
       detail={detail}
-      onClose={onClose}
       onDirections={onDirections}
     />
   )
@@ -118,12 +107,10 @@ export default function OnsenDetailPanel({ onsen, onClose, onDirections }: Onsen
 function OnsenDetailContent({
   onsen,
   detail,
-  onClose,
   onDirections,
 }: {
   onsen: OnsenListItem
   detail?: OnsenDetail
-  onClose: () => void
   onDirections: () => void
 }) {
   const [tab, setTab] = useState<DetailTab>('한눈에')
@@ -138,16 +125,8 @@ function OnsenDetailContent({
 
   return (
     <div className="bg-surface scrollbar-thin h-full min-w-0 overflow-y-auto px-4 pb-8">
-      <div className="flex items-center justify-between pt-3">
+      <div className="flex h-12 items-center pt-3">
         <span className="text-text-secondary text-[11px]">장소 상세</span>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="상세 닫기"
-          className="text-text-secondary hover:text-text-primary flex size-9 items-center justify-center text-[18px] leading-none outline-none focus-visible:ring-1 focus-visible:ring-inverse"
-        >
-          ✕
-        </button>
       </div>
 
       <div className="flex items-start justify-between gap-3 pt-1">
@@ -181,7 +160,7 @@ function OnsenDetailContent({
       <div
         role="group"
         aria-label="장소 액션"
-        className="border-border-default/60 mt-2 grid grid-cols-3 gap-1 border-b pb-1"
+        className="mt-2 grid grid-cols-3 gap-1 pb-1"
       >
         {ACTIONS.map((action) => (
           <button
@@ -215,7 +194,7 @@ function OnsenDetailContent({
       <div
         role="tablist"
         aria-label="장소 상세 정보"
-        className="bg-surface border-border-default/70 sticky top-0 z-10 flex border-b"
+        className="bg-surface sticky top-0 z-10 grid h-11 shrink-0 grid-cols-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-border-default/70 after:content-['']"
         onKeyDown={(event) => {
           const index = TABS.indexOf(tab)
           const next =
@@ -235,20 +214,29 @@ function OnsenDetailContent({
         }}
       >
         {TABS.map((item, index) => (
-          <Tab
+          <button
             key={item}
+            type="button"
+            role="tab"
             id={`${tabsId}-tab-${index}`}
             aria-controls={`${tabsId}-panel`}
-            selected={tab === item}
+            aria-selected={tab === item}
             tabIndex={tab === item ? 0 : -1}
             onClick={() => setTab(item)}
             className={cn(
-              'min-h-12 flex-1 items-center justify-center py-3 text-[13px] outline-none after:h-[2px] after:rounded-none focus-visible:ring-1 focus-visible:ring-inverse focus-visible:ring-inset',
-              tab !== item && 'text-text-primary/65',
+              'relative flex h-11 min-w-0 items-center justify-center border-0 p-0 text-[13px] leading-5 font-medium whitespace-nowrap outline-none focus-visible:underline focus-visible:decoration-dotted focus-visible:underline-offset-4',
+              tab === item ? 'text-text-primary' : 'text-text-primary/65',
             )}
           >
-            {item}
-          </Tab>
+            <span className="block leading-5">{item}</span>
+            <span
+              aria-hidden="true"
+              className={cn(
+                'bg-text-primary pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[2px]',
+                tab === item ? 'opacity-100' : 'opacity-0',
+              )}
+            />
+          </button>
         ))}
       </div>
 
@@ -270,10 +258,11 @@ function OnsenDetailContent({
 
 /** 여러 줄 값도 라벨과 상단을 맞춘다. */
 function Row({ label, value }: { label: string; value: ReactNode }) {
+  const stacked = ['주소', '편의시설', '가는 법', '주차'].includes(label)
   return (
-    <div className="grid grid-cols-[64px_minmax(0,1fr)] items-start gap-3">
-      <dt className="text-text-secondary text-[12px] leading-6">{label}</dt>
-      <dd className="text-text-primary text-[13px] leading-6 whitespace-pre-line [overflow-wrap:anywhere]">
+    <div className={stacked ? 'space-y-1.5' : 'grid grid-cols-[64px_minmax(0,1fr)] items-start gap-3'}>
+      <dt className="text-text-secondary text-[11px] leading-6">{label}</dt>
+      <dd className="text-text-primary text-[13px] leading-6 font-medium break-keep whitespace-pre-line [overflow-wrap:anywhere]">
         {value}
       </dd>
     </div>
@@ -284,8 +273,8 @@ function Section({ title, rows }: { title: string; rows: [string, ReactNode][] }
   if (rows.length === 0) return null
   return (
     <section>
-      <h3 className="text-text-primary text-[13px] font-semibold">{title}</h3>
-      <dl className="mt-4 space-y-3">
+      <h3 className="text-text-primary text-[15px] leading-6 font-semibold">{title}</h3>
+      <dl className="mt-4 space-y-4">
         {rows.map(([label, value]) => (
           <Row key={label} label={label} value={value} />
         ))}
@@ -384,7 +373,7 @@ function Details({ onsen, detail }: { onsen: OnsenListItem; detail?: OnsenDetail
   }
 
   return (
-    <div className="divide-border-default/60 space-y-6 divide-y [&>section:not(:first-child)]:pt-6">
+    <div className="space-y-9">
       <Section title="기본 정보" rows={basic} />
       <Section title="이용 안내" rows={usage} />
       <Section title="시설" rows={facilityRows} />
@@ -392,8 +381,8 @@ function Details({ onsen, detail }: { onsen: OnsenListItem; detail?: OnsenDetail
       <Section title="교통" rows={access} />
       {notice && (
         <section>
-          <h3 className="text-text-primary text-[13px] font-semibold">참고사항</h3>
-          <p className="text-text-primary mt-3 text-[13px] leading-[1.85] whitespace-pre-line [overflow-wrap:anywhere]">
+          <h3 className="text-text-primary text-[15px] leading-6 font-semibold">참고사항</h3>
+          <p className="text-text-secondary mt-4 max-w-prose text-[13px] leading-7 break-keep whitespace-pre-line [overflow-wrap:anywhere]">
             {notice}
           </p>
         </section>
