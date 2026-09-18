@@ -7,6 +7,6 @@ export const env = {
   apiUrl: import.meta.env.VITE_API_URL ?? '',
   /** 지도 작업 전까지는 비어 있을 수 있다. */
   kakaoMapKey: import.meta.env.VITE_KAKAO_MAP_KEY ?? '',
-  /** 백엔드 준비 전까지 목 응답을 쓴다. 연동되면 .env에서 false로 끈다. */
-  useMock: import.meta.env.VITE_USE_MOCK !== 'false',
+  /** 백엔드 없이 화면만 볼 때 true. 기본값은 실서버 연동이다. */
+  useMock: import.meta.env.VITE_USE_MOCK === 'true',
 }
