@@ -12,7 +12,7 @@ type RegionPlaceCardProps = {
 }
 
 const IMAGE_FRAME =
-  'bg-surface-dim relative flex aspect-[16/9] items-center justify-center overflow-hidden rounded-sm'
+  'bg-surface-dim relative flex aspect-[16/9] items-center justify-center overflow-hidden rounded-[2px]'
 
 /** 실제 카드와 사진·텍스트 행 높이를 공유해 로딩 전후 위치를 유지한다. */
 export function RegionPlaceCardSkeleton() {

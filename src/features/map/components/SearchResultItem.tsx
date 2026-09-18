@@ -37,9 +37,9 @@ export default function SearchResultItem({ onsen, selected, onClick }: SearchRes
       )}
     >
       {imageUrl ? (
-        <img src={imageUrl} alt="" className="size-11 shrink-0 rounded-sm object-cover" />
+        <img src={imageUrl} alt="" className="size-11 shrink-0 rounded-[2px] object-cover" />
       ) : (
-        <div className="bg-surface-dim size-11 shrink-0 rounded-sm" />
+        <div className="bg-surface-dim size-11 shrink-0 rounded-[2px]" />
       )}
 
       <span className="min-w-0 flex-1">
