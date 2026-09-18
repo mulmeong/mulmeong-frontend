@@ -24,6 +24,48 @@ export type SearchOnsensParams = {
  */
 export type OnsenListItem = Onsen & { distanceKm?: number }
 
+type OnsenListResponse = {
+  content: ServerOnsenListItem[]
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+}
+
+type ServerOnsenListItem = {
+  onsenId: number
+  name: string
+  sido?: string
+  sigungu?: string
+  address?: string
+  lat?: number
+  lng?: number
+  waterTemp?: number
+  waterType?: string
+  thumbnail?: string | null
+  reviewCount?: number
+  rating?: number | null
+}
+
+function toOnsenListItem(item: ServerOnsenListItem): OnsenListItem {
+  return {
+    id: item.onsenId,
+    name: item.name,
+    address: item.address ?? '',
+    sido: item.sido,
+    sigungu: item.sigungu,
+    lat: item.lat ?? 0,
+    lng: item.lng ?? 0,
+    imageUrl: item.thumbnail ?? undefined,
+    rating: item.rating ?? undefined,
+    reviewCount: item.reviewCount ?? 0,
+    tags: [],
+    waterTempC: item.waterTemp,
+    waterQuality: item.waterType,
+    mainComponent: item.waterType,
+  }
+}
+
 /**
  * MAP-05 자동완성 제안. 온천명과 지역명을 같이 돌려준다.
  * 시안이 없어 형태는 우리가 정했다 — BE 검색 스펙이 정해지면 맞춘다.
@@ -42,15 +84,15 @@ export function suggestPlaces(keyword: string): Promise<Suggestion[]> {
   })
 }
 
-export function searchOnsens(params: SearchOnsensParams = {}): Promise<OnsenListItem[]> {
+export async function searchOnsens(params: SearchOnsensParams = {}): Promise<OnsenListItem[]> {
   const { keyword, region, bounds, limit } = params
   if (env.useMock) return mockSearchOnsens(params)
   // 비로그인도 지도를 볼 수 있다 (AUTH-02).
-  return api.get<OnsenListItem[]>('/onsens', {
+  const response = await api.get<OnsenListResponse>('/onsens', {
     params: {
       keyword,
       region,
-      limit,
+      size: limit,
       swLat: bounds?.swLat,
       swLng: bounds?.swLng,
       neLat: bounds?.neLat,
@@ -58,4 +100,5 @@ export function searchOnsens(params: SearchOnsensParams = {}): Promise<OnsenList
     },
     skipAuth: true,
   })
+  return response.content.map(toOnsenListItem)
 }
