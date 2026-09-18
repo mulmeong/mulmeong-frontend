@@ -223,7 +223,7 @@ export default function SignupPage() {
     setSubmitting(true)
     try {
       // 자동 로그인은 하지 않는다 — 가입 후 사용자가 직접 로그인한다 (AUTH-07).
-      const { nickname } = await signup({
+      const { nickname, email } = await signup({
         email: form.email.trim().toLowerCase(),
         password: form.password,
         passwordConfirm: form.passwordConfirm,
@@ -232,7 +232,9 @@ export default function SignupPage() {
         birthDate: form.birthDate,
         phone: formatPhone(form.phone),
       })
-      navigate('/signup/done', { replace: true, state: { nickname } })
+      // 완료 화면이 로그인으로 넘길 때 이메일을 채워 다시 입력하지 않게 한다.
+      // 서버가 돌려준 값을 쓴다 — 소문자 정규화가 이미 적용돼 있다.
+      navigate('/signup/done', { replace: true, state: { nickname, email } })
     } catch (error) {
       setSubmitError(
         error instanceof ApiError

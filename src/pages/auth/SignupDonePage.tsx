@@ -5,7 +5,7 @@ import Button from '@/components/ui/Button'
 import AuthLayout from '@/features/auth/components/AuthLayout'
 import { AUTH_IMAGES } from '@/features/auth/constants'
 
-type LocationState = { nickname?: string } | null
+type LocationState = { nickname?: string; email?: string } | null
 
 /** 레벨 구간·칭호는 MY-03 미확정. 확정되면 서버에서 받는다. */
 const INITIAL_LEVEL = 1
@@ -42,6 +42,7 @@ export default function SignupDonePage() {
   const navigate = useNavigate()
   const { state } = useLocation() as { state: LocationState }
   const nickname = state?.nickname
+  const email = state?.email
 
   // 가입 흐름을 거치지 않고 URL로 직접 들어온 경우.
   if (!nickname) return <Navigate to="/signup" replace />
@@ -94,7 +95,7 @@ export default function SignupDonePage() {
        * 가입은 자동 로그인을 하지 않는다(AUTH-07). 위 단계는 비로그인으로도 볼 수 있지만
        * 찜·리뷰에서 로그인 화면으로 밀려나므로, 로그인을 먼저 권한다.
        */}
-      <Link to="/login" className="mt-7 block">
+      <Link to="/login" state={{ email }} className="mt-7 block">
         <Button size="large" className="w-full">
           로그인하고 시작하기
         </Button>

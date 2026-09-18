@@ -19,10 +19,12 @@ export default function LoginPage() {
   const location = useLocation()
   const { login } = useAuth()
 
+  const state = location.state as { from?: string; email?: string } | null
   /** 로그인이 필요해 밀려난 화면. 없으면 홈으로 보낸다. */
-  const from = (location.state as { from?: string } | null)?.from
+  const from = state?.from
 
-  const [email, setEmail] = useState('')
+  // 가입 직후 넘어온 경우 방금 만든 이메일을 채워 다시 입력하지 않게 한다.
+  const [email, setEmail] = useState(state?.email ?? '')
   const [password, setPassword] = useState('')
   const [keepSignedIn, setKeepSignedIn] = useState(true)
   const touched = useRef({ email: false, password: false })
