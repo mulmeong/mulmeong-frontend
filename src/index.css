@@ -53,6 +53,21 @@
   color-scheme: light;
 }
 
+@keyframes map-detail-enter {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .map-detail-enter {
+    animation: map-detail-enter 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
 /**
  * 풀페이지 스냅. 문서 자체를 스크롤 컨테이너로 쓴다.
  *

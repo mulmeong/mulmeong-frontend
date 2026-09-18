@@ -19,8 +19,11 @@ declare namespace kakao.maps {
   class Map {
     constructor(container: HTMLElement, options: { center: LatLng; level?: number })
     getCenter(): LatLng
+    setDraggable(draggable: boolean): void
+    setZoomable(zoomable: boolean): void
     setCenter(latlng: LatLng): void
     panTo(latlng: LatLng): void
+    jump(center: LatLng, level: number, options?: { animate?: boolean | { duration: number } }): void
     getLevel(): number
     setLevel(level: number): void
     setMaxLevel(level: number): void

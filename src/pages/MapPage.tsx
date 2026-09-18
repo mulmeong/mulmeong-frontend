@@ -4,6 +4,7 @@ import AuthHeader from '@/features/auth/components/AuthHeader'
 import DirectionsPanel from '@/features/map/components/DirectionsPanel'
 import MapCanvas from '@/features/map/components/MapCanvas'
 import MapSidebar from '@/features/map/components/MapSidebar'
+import MapSavedControls from '@/features/map/components/MapSavedControls'
 import OnsenDetailPanel from '@/features/map/components/OnsenDetailPanel'
 import PoiFilter from '@/features/map/components/PoiFilter'
 import { REGION_PREVIEW_COUNT } from '@/features/map/constants'
@@ -28,6 +29,7 @@ export default function MapPage() {
   const { onsens, loading, error, load } = useOnsens(REGION_PREVIEW_COUNT)
   const nationalMap = useOnsenMapPoints()
   const [selectedId, setSelectedId] = useState<number>()
+  const [nationalView, setNationalView] = useState(true)
 
   const [mode, setMode] = useState<'search' | 'directions'>('search')
   const modeRef = useRef(mode)
@@ -142,6 +144,14 @@ export default function MapPage() {
    * 패널 경계의 손잡이로 접고 편다. 모바일은 45dvh 스트립이라 접는 의미가 없어 데스크탑만.
    */
   const [collapsed, setCollapsed] = useState(false)
+  const [sidebarVersion, setSidebarVersion] = useState(0)
+
+  function handleNationalView() {
+    setCollapsed(false)
+    setCategories([])
+    setSidebarVersion((version) => version + 1)
+    void handleSearch({})
+  }
 
   // MAP-04 카테고리 POI — 켜진 것만 지도 중심 기준으로 불러온다.
   const [categories, setCategories] = useState<PoiCategory[]>([])
@@ -176,6 +186,7 @@ export default function MapPage() {
         >
           <div className={cn('h-full min-h-0', mode !== 'search' && 'hidden')}>
             <MapSidebar
+              key={sidebarVersion}
               onsens={onsens}
               loading={loading}
               error={error}
@@ -215,12 +226,26 @@ export default function MapPage() {
 
         {/* 검색 패널을 교체하지 않고 그 오른쪽에 더한다 — 지도는 남은 폭을 쓴다. */}
         {selected && (
-          <aside className="border-border-default flex h-[45dvh] w-full min-w-0 shrink-0 flex-col border-b lg:h-auto lg:w-[347px] lg:border-r lg:border-b-0">
-            <OnsenDetailPanel
-              onsen={selected}
-              onClose={() => setSelectedId(undefined)}
-              onDirections={() => openDirections(selected)}
-            />
+          <aside className="border-border-default relative z-[110] flex h-[45dvh] w-full min-w-0 shrink-0 flex-col border-b lg:h-auto lg:w-[347px] lg:border-r lg:border-b-0">
+            <div className="h-full min-h-0 w-full overflow-hidden">
+              <div className="map-detail-enter h-full min-h-0 w-full">
+                <OnsenDetailPanel
+                  onsen={selected}
+                  onDirections={() => openDirections(selected)}
+                />
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedId(undefined)}
+              aria-label="장소 상세 닫기"
+              title="장소 상세 닫기"
+              className="border-border-default bg-surface text-text-secondary hover:text-text-primary absolute top-full right-3 flex h-[23px] w-[51px] items-center justify-center rounded-b-md border border-t-0 text-[11px] transition-colors outline-none focus-visible:ring-1 focus-visible:ring-inverse lg:top-1/2 lg:right-auto lg:left-full lg:h-[51px] lg:w-[23px] lg:-translate-y-1/2 lg:rounded-none lg:rounded-r-md lg:border-t lg:border-l-0"
+            >
+              <span aria-hidden="true" className="rotate-90 lg:rotate-0">
+                ‹
+              </span>
+            </button>
           </aside>
         )}
 
@@ -228,6 +253,8 @@ export default function MapPage() {
           <MapCanvas
             onsens={mapOnsens}
             selectedId={selectedId}
+            loading={mode === 'search' && (loading || (!hasFilter && nationalMap.loading))}
+            onNationalViewChange={setNationalView}
             onSelect={handleSelect}
             onBoundsChange={handleBoundsChange}
             pois={pois}
@@ -237,26 +264,18 @@ export default function MapPage() {
             route={mode === 'directions' ? directions.selectedRoute : undefined}
           />
 
-          {!hasFilter && mode === 'search' && (nationalMap.loading || nationalMap.error) && (
+          {!hasFilter && mode === 'search' && !nationalMap.loading && nationalMap.error && (
             <div className="bg-surface/95 absolute bottom-5 left-1/2 z-[100] max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-sm px-4 py-3 text-center text-[12px]">
-              {nationalMap.loading ? (
-                <p role="status" className="text-text-secondary">
-                  지도에서 장소를 찾는 중…
-                </p>
-              ) : (
-                <>
-                  <p role="alert" className="text-text-secondary">
-                    지도에 장소를 표시하지 못했어요.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={nationalMap.retry}
-                    className="text-text-primary mt-2 min-h-9 underline underline-offset-4"
-                  >
-                    다시 시도
-                  </button>
-                </>
-              )}
+              <p role="alert" className="text-text-secondary">
+                지도에 장소를 표시하지 못했어요.
+              </p>
+              <button
+                type="button"
+                onClick={nationalMap.retry}
+                className="text-text-primary mt-2 min-h-9 underline underline-offset-4"
+              >
+                다시 시도
+              </button>
             </div>
           )}
 
@@ -265,9 +284,23 @@ export default function MapPage() {
             카카오맵이 타일·컨트롤에 자체 z-index를 써서, 값을 넉넉히 올려야 가려지지 않는다.
           */}
           {mode === 'search' && (
-            <div className="pointer-events-none absolute inset-x-0 top-1.5 z-[100]">
-              <PoiFilter selected={categories} onToggle={handleToggleCategory} />
-            </div>
+            <>
+              <div className="pointer-events-none absolute inset-x-0 top-3 z-[100] flex items-center gap-3 px-3">
+                <div className="min-w-0 flex-1">
+                  <PoiFilter selected={categories} onToggle={handleToggleCategory} />
+                </div>
+                {(!nationalView || selectedId !== undefined || hasFilter) && (
+                  <button
+                    type="button"
+                    onClick={handleNationalView}
+                    className="border-border-default/70 bg-surface text-text-secondary pointer-events-auto mr-1 inline-flex h-8 shrink-0 items-center justify-center rounded-md border px-2.5 text-[11px] leading-4 whitespace-nowrap hover:bg-surface-dim hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                  >
+                    전국 보기
+                  </button>
+                )}
+                <MapSavedControls />
+              </div>
+            </>
           )}
         </main>
       </div>
