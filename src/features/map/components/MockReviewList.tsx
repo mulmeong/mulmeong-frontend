@@ -1,4 +1,5 @@
 import { getMockReviews } from '@/features/map/api/reviewMock'
+import ReviewEmptyState from '@/features/map/components/ReviewEmptyState'
 
 import type { OnsenListItem } from '@/features/map/api/map'
 
@@ -7,7 +8,7 @@ export default function MockReviewList({ onsen }: { onsen: OnsenListItem }) {
   const reviews = getMockReviews(onsen.id, onsen.reviewCount)
 
   if (reviews.length === 0) {
-    return <p className="text-text-secondary text-[13px]">아직 등록된 리뷰가 없습니다.</p>
+    return <ReviewEmptyState />
   }
 
   return (

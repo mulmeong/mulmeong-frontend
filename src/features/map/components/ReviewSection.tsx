@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui'
 import { useAuth } from '@/features/auth/hooks/authContext'
 import MockReviewList from '@/features/map/components/MockReviewList'
+import ReviewEmptyState from '@/features/map/components/ReviewEmptyState'
 import ReviewForm from '@/features/map/components/ReviewForm'
 import { env } from '@/lib/env'
 
@@ -78,23 +79,17 @@ export default function ReviewSection({ onsen }: { onsen: OnsenListItem }) {
         <Button
           hierarchy="secondary"
           onClick={handleWriteClick}
-          className="border-border-default hover:bg-surface-dim min-h-11 w-full py-2.5 text-[13px] outline-none focus-visible:ring-1 focus-visible:ring-inverse focus-visible:ring-offset-2"
+          className="border-border-default/60 hover:bg-surface-dim h-8 w-fit max-w-full rounded-[4px] border px-2.5 py-0 text-[12px] leading-4 font-medium outline-none focus-visible:ring-1 focus-visible:ring-inverse focus-visible:ring-offset-2"
         >
-          리뷰 작성하기
+          {loggedIn ? '리뷰 작성하기' : '로그인하고 리뷰 작성하기'}
         </Button>
-
-        {!loggedIn && (
-          <p className="text-text-secondary mt-2.5 text-center text-[11px] leading-[1.7]">
-            리뷰 작성은 로그인이 필요해요.
-          </p>
-        )}
       </div>
 
       {env.useMock ? (
         <MockReviewList onsen={onsen} />
-      ) : (
-        <p className="text-text-secondary text-[13px] leading-[1.6]">아직 리뷰가 없어요.</p>
-      )}
+      ) : onsen.reviewCount === 0 ? (
+        <ReviewEmptyState />
+      ) : null}
     </div>
   )
 }
