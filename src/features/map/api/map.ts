@@ -33,7 +33,24 @@ export type Suggestion =
 
 /** 서버 검색 응답(GET /map/onsens/search). 명세의 /onsens/suggest는 아직 없다. */
 type SearchResponse = {
-  results: { type: string; onsenId: number; name: string; address: string | null }[]
+  results: {
+    type: string
+    onsenId: number
+    name: string
+    address: string | null
+    lat: number
+    lng: number
+  }[]
+}
+
+/** 좌표까지 필요한 호출부(길찾기 출발·도착 선택)가 있어 원본 그대로 돌려준다. */
+export function searchOnsensByKeyword(keyword: string, limit = 10) {
+  return api
+    .get<SearchResponse>('/map/onsens/search', {
+      params: { keyword, limit },
+      skipAuth: true,
+    })
+    .then(({ results }) => results)
 }
 
 export function suggestPlaces(keyword: string): Promise<Suggestion[]> {
@@ -41,19 +58,14 @@ export function suggestPlaces(keyword: string): Promise<Suggestion[]> {
   if (!trimmed) return Promise.resolve([])
 
   if (env.useMockSuggest) return mockSuggest(trimmed)
-  return api
-    .get<SearchResponse>('/map/onsens/search', {
-      params: { keyword: trimmed, limit: 10 },
-      skipAuth: true,
-    })
-    .then(({ results }) =>
-      results.map((item): Suggestion => ({
-        type: 'onsen',
-        id: item.onsenId,
-        name: item.name,
-        address: item.address ?? '',
-      })),
-    )
+  return searchOnsensByKeyword(trimmed).then((results) =>
+    results.map((item): Suggestion => ({
+      type: 'onsen',
+      id: item.onsenId,
+      name: item.name,
+      address: item.address ?? '',
+    })),
+  )
 }
 
 export function searchOnsens(params: SearchOnsensParams = {}): Promise<OnsenListItem[]> {
