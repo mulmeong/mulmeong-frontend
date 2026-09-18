@@ -21,6 +21,8 @@ export const env = {
    */
   useMockMagazine: mockFlag(import.meta.env.VITE_USE_MOCK_MAGAZINE),
   useMockSuggest: mockFlag(import.meta.env.VITE_USE_MOCK_SUGGEST),
+  useMockOnsenList: mockFlag(import.meta.env.VITE_USE_MOCK_ONSEN_LIST),
+  useMockNearby: mockFlag(import.meta.env.VITE_USE_MOCK_NEARBY),
   useMockRoutePlaces: mockFlag(import.meta.env.VITE_USE_MOCK_ROUTE_PLACES),
   useMockMapPoints: mockFlag(import.meta.env.VITE_USE_MOCK_MAP_POINTS),
   useMockOnsenDetail: mockFlag(import.meta.env.VITE_USE_MOCK_ONSEN_DETAIL),
