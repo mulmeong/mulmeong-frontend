@@ -194,7 +194,7 @@ function OnsenDetailContent({
       <div
         role="tablist"
         aria-label="장소 상세 정보"
-        className="bg-surface sticky top-0 z-10 grid h-11 shrink-0 grid-cols-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-border-default/70 after:content-['']"
+        className="bg-surface sticky top-0 z-10 mt-4 grid h-10 shrink-0 grid-cols-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-border-default/70 after:content-['']"
         onKeyDown={(event) => {
           const index = TABS.indexOf(tab)
           const next =
@@ -224,7 +224,7 @@ function OnsenDetailContent({
             tabIndex={tab === item ? 0 : -1}
             onClick={() => setTab(item)}
             className={cn(
-              'relative flex h-11 min-w-0 items-center justify-center border-0 p-0 text-[13px] leading-5 font-medium whitespace-nowrap outline-none focus-visible:underline focus-visible:decoration-dotted focus-visible:underline-offset-4',
+              'relative flex h-10 min-w-0 items-center justify-center border-0 p-0 text-[13px] leading-5 font-medium whitespace-nowrap outline-none focus-visible:underline focus-visible:decoration-dotted focus-visible:underline-offset-4',
               tab === item ? 'text-text-primary' : 'text-text-primary/65',
             )}
           >

@@ -61,7 +61,7 @@ export default function RegionPlaceCard({
             alt=""
             loading="lazy"
             onError={() => setFailedImage(imageUrl)}
-            className="size-full object-cover transition-transform duration-300 motion-safe:group-hover:scale-105"
+            className="size-full object-cover transition-opacity duration-200 group-hover:opacity-90"
           />
         ) : (
           <svg
@@ -78,8 +78,9 @@ export default function RegionPlaceCard({
           </svg>
         )}
         {selected && (
-          <span className="bg-inverse text-text-inverse absolute right-2 bottom-2 rounded-sm px-1.5 py-0.5 text-[9px] leading-3">
-            보고 있는 곳
+          <span className="text-text-primary absolute right-3 bottom-3 inline-flex items-center gap-1.5 rounded-[4px] bg-white/85 px-2 py-1 text-[11px] leading-4 font-semibold backdrop-blur-[2px]">
+            <span aria-hidden="true" className="bg-text-primary size-1.5 rounded-full" />
+            현재 보는 곳
           </span>
         )}
       </span>

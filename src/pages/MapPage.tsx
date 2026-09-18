@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import AuthHeader from '@/features/auth/components/AuthHeader'
 import DirectionsPanel from '@/features/map/components/DirectionsPanel'
@@ -29,6 +29,9 @@ export default function MapPage() {
   const { onsens, loading, error, load } = useOnsens(REGION_PREVIEW_COUNT)
   const nationalMap = useOnsenMapPoints()
   const [selectedId, setSelectedId] = useState<number>()
+  const [detailClosing, setDetailClosing] = useState(false)
+  const [detailEntered, setDetailEntered] = useState(false)
+  const detailEnterFrame = useRef<number>()
   const [nationalView, setNationalView] = useState(true)
 
   const [mode, setMode] = useState<'search' | 'directions'>('search')
@@ -53,15 +56,40 @@ export default function MapPage() {
   const handleSelect = useCallback(
     (onsen: OnsenMapPoint) => {
       if (modeRef.current === 'directions') setDestination(onsen)
-      else setSelectedId(onsen.id)
+      else {
+        const opening = selectedId === undefined
+        if (detailEnterFrame.current !== undefined) {
+          cancelAnimationFrame(detailEnterFrame.current)
+          detailEnterFrame.current = undefined
+        }
+        setDetailClosing(false)
+        setDetailEntered(!opening)
+        setSelectedId(onsen.id)
+        if (opening) {
+          detailEnterFrame.current = requestAnimationFrame(() => {
+            detailEnterFrame.current = requestAnimationFrame(() => {
+              setDetailEntered(true)
+              detailEnterFrame.current = undefined
+            })
+          })
+        }
+      }
     },
-    [setDestination],
+    [selectedId, setDestination],
   )
+
+  useEffect(() => {
+    return () => {
+      if (detailEnterFrame.current !== undefined) cancelAnimationFrame(detailEnterFrame.current)
+    }
+  }, [])
 
   function openDirections(onsen?: OnsenMapPoint) {
     modeRef.current = 'directions'
     setMode('directions')
     setSelectedId(undefined)
+    setDetailClosing(false)
+    setDetailEntered(false)
     setCollapsed(false)
     if (onsen) setDestination(onsen)
   }
@@ -82,6 +110,8 @@ export default function MapPage() {
       filtersRef.current = filters
       setHasFilter(Boolean(filters.keyword || filters.region))
       setSelectedId(undefined)
+      setDetailClosing(false)
+      setDetailEntered(false)
 
       if (!filters.keyword && !filters.region) {
         setFocus({ initial: true })
@@ -181,7 +211,7 @@ export default function MapPage() {
             'border-border-default h-[45dvh] w-full min-w-0 shrink-0 flex-col border-b',
             'lg:h-auto lg:border-r lg:border-b-0',
             collapsed ? 'lg:w-0 lg:overflow-hidden lg:border-r-0' : 'lg:flex lg:w-[380px]',
-            selected ? 'hidden' : 'flex',
+            selected ? 'hidden lg:flex' : 'flex',
           )}
         >
           <div className={cn('h-full min-h-0', mode !== 'search' && 'hidden')}>
@@ -226,18 +256,40 @@ export default function MapPage() {
 
         {/* 검색 패널을 교체하지 않고 그 오른쪽에 더한다 — 지도는 남은 폭을 쓴다. */}
         {selected && (
-          <aside className="border-border-default relative z-[110] flex h-[45dvh] w-full min-w-0 shrink-0 flex-col border-b lg:h-auto lg:w-[347px] lg:border-r lg:border-b-0">
+          <aside
+            className={cn(
+              'map-detail-panel border-border-default relative z-[110] flex min-w-0 shrink-0 flex-col border-b lg:border-r lg:border-b-0',
+            )}
+            onAnimationEnd={() => {
+              if (!detailClosing) return
+              setSelectedId(undefined)
+              setDetailClosing(false)
+              setDetailEntered(false)
+            }}
+          >
             <div className="h-full min-h-0 w-full overflow-hidden">
-              <div className="map-detail-enter h-full min-h-0 w-full">
-                <OnsenDetailPanel
-                  onsen={selected}
-                  onDirections={() => openDirections(selected)}
-                />
+              <div
+                className={cn(
+                  'map-detail-surface h-full min-h-0 w-full',
+                  detailClosing
+                    ? 'map-detail-surface-exit'
+                    : detailEntered && 'map-detail-surface-enter',
+                )}
+              >
+                <div className="h-full min-h-0 w-full">
+                  <OnsenDetailPanel
+                    onsen={selected}
+                    onDirections={() => openDirections(selected)}
+                  />
+                </div>
               </div>
             </div>
             <button
               type="button"
-              onClick={() => setSelectedId(undefined)}
+              onClick={() => {
+                setDetailEntered(false)
+                setDetailClosing(true)
+              }}
               aria-label="장소 상세 닫기"
               title="장소 상세 닫기"
               className="border-border-default bg-surface text-text-secondary hover:text-text-primary absolute top-full right-3 flex h-[23px] w-[51px] items-center justify-center rounded-b-md border border-t-0 text-[11px] transition-colors outline-none focus-visible:ring-1 focus-visible:ring-inverse lg:top-1/2 lg:right-auto lg:left-full lg:h-[51px] lg:w-[23px] lg:-translate-y-1/2 lg:rounded-none lg:rounded-r-md lg:border-t lg:border-l-0"
