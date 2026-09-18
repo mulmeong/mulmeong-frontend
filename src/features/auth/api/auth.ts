@@ -49,11 +49,15 @@ export type Availability = { available: boolean }
  * 가입 폼 blur 시점 닉네임 중복 확인. 중복이어도 200 + available:false로 온다.
  * 서버 제약과 같은 2~10자를 통과한 값만 넘길 것 — 길이가 어긋나면 400이다.
  *
- * ⚠️ 서버 SecurityConfig의 permitAll에 이 경로가 빠져 있어 비로그인은 401이다
- * (email/check만 열려 있다). 그래서 실서버에서도 목을 쓴다 — BE가 열면 이 분기를 지운다.
+ * ⚠️ 서버 permitAll에 이 경로가 빠져 있어 지금은 비로그인이 401이다(email/check만 열림).
+ * BE 수정 대기 중 — 고쳐지면 그대로 통한다.
  */
 export function checkNickname(nickname: string): Promise<Availability> {
-  return mockCheckNickname(nickname)
+  if (env.useMockAuth) return mockCheckNickname(nickname)
+  return api.get<Availability>('/auth/nickname/check', {
+    params: { nickname },
+    skipAuth: true,
+  })
 }
 
 /** 이메일 중복 확인. 중복이어도 200 + available:false로 온다. */
@@ -95,10 +99,10 @@ setReissueHandler(reissue)
 /**
  * 마이페이지 프로필 (MY-01). 로그인 응답보다 넓어 진입 시 따로 받는다.
  *
- * ⚠️ 서버에 `/users/me`가 아직 없다 — UserController가 `/api/v1/auth`만 매핑한다(404).
- * 그래서 실서버에서도 목을 쓴다. BE가 만들면 아래 주석을 살린다.
+ * ⚠️ 서버에 아직 이 경로가 없다 — UserController가 `/api/v1/auth`만 매핑해 404다.
+ * BE 수정 대기 중 — 만들어지면 그대로 통한다.
  */
 export function getMe(): Promise<MyProfile> {
-  return mockGetMe()
-  // return api.get<MyProfile>('/users/me')
+  if (env.useMockAuth) return mockGetMe()
+  return api.get<MyProfile>('/users/me')
 }
