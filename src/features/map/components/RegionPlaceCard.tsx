@@ -78,7 +78,7 @@ export default function RegionPlaceCard({
           </svg>
         )}
         {selected && (
-          <span className="bg-inverse text-text-inverse absolute right-2 bottom-2 rounded-sm px-2 py-1 text-[10px]">
+          <span className="bg-inverse text-text-inverse absolute right-2 bottom-2 rounded-sm px-1.5 py-0.5 text-[9px] leading-3">
             보고 있는 곳
           </span>
         )}

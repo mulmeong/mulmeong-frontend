@@ -158,10 +158,10 @@ export default function MapSidebar({
   }
 
   return (
-    <div className="bg-surface flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
+    <div className="bg-surface box-border flex h-full w-full min-h-0 min-w-0 max-w-full flex-col overflow-hidden py-3">
       {/* 모바일은 한 흐름으로 스크롤한다. 데스크톱에서는 매거진 높이를 먼저 확보한다. */}
-      <div className="scrollbar-thin flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain lg:overflow-clip">
-        <div className="scrollbar-thin flex shrink-0 flex-col px-5 pb-3 lg:min-h-0 lg:shrink lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-contain [&>*]:shrink-0">
+      <div className="scrollbar-thin flex w-full min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain lg:overflow-clip">
+        <div className="scrollbar-thin box-border flex w-full min-w-0 shrink-0 flex-col overflow-x-hidden px-5 pb-3 lg:min-h-0 lg:shrink lg:overflow-y-auto lg:overscroll-contain [&>*]:min-w-0 [&>*]:shrink-0">
           <div role="tablist" className="flex gap-5 pt-4">
             <Tab selected>장소 검색</Tab>
             <Tab onClick={onDirections}>길찾기</Tab>
