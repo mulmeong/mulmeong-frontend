@@ -38,7 +38,13 @@ type CheckedField = 'email' | 'nickname'
 
 const PASSWORD_HINT = '영문·숫자 포함 8자 이상'
 
-const FIELD_LAYOUT = '[&>div]:min-h-11 [&>div>input]:h-11'
+const FIELD_LAYOUT = [
+  '[&>div]:min-h-11 [&>div>input]:h-11',
+  '[&>label]:text-[14px] [&>label]:leading-5 [&>label]:font-medium',
+  '[&_input]:text-[16px] [&_input]:leading-6 [&_input]:font-normal',
+  '[&_input::placeholder]:text-[15px] [&_input::placeholder]:font-normal',
+  '[&>p]:text-[12px] [&>label>span]:text-[12px]',
+].join(' ')
 
 function validateField(field: keyof Form, values: Form): string | undefined {
   switch (field) {
@@ -242,7 +248,7 @@ export default function SignupPage() {
     <AuthLayout
       formPage
       panelClassName="lg:px-4 lg:py-12 xl:px-6"
-      contentClassName="[&>p:first-of-type]:mt-3"
+      contentClassName="relative top-6 [&>p:first-of-type]:mt-3"
       image={AUTH_IMAGES.signup.src}
       imageRatio={AUTH_IMAGES.signup.ratio}
       headline={['가입하고', '기록을 남겨요']}
