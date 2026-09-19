@@ -2,15 +2,17 @@ import { Link } from 'react-router-dom'
 
 import MagazineImage from '@/features/magazine/components/MagazineImage'
 import { useMagazines } from '@/features/magazine/hooks/useMagazines'
+import { regionOf } from '@/types/onsen'
 
 /** 좁은 패널에서는 대표 기사 한 편의 제목과 읽기 동작을 충분히 보여준다. */
 export default function SidebarMagazine({ region }: { region?: string }) {
   // 매거진은 sidoCode(행안부 2자리)로 거르는데 지도는 8개 권역이라 코드가 1:1로 안 맞는다.
-  // 목록을 받아 regionName으로 좁힌다 — 권역명이 지역명에 포함되는지로 판단한다.
-  const { magazines, loading, error } = useMagazines({ size: 12 })
+  // 그래서 목록을 받아 프론트에서 좁힌다. regionName은 '경북'·'경남' 같은 축약형이라
+  // 권역명('경상')과 문자열로 비교하면 걸리지 않는다 — regionOf로 같은 권역 기준을 쓴다.
+  const { magazines, loading, error } = useMagazines({ size: 30 })
 
   const visible = region
-    ? magazines.filter((magazine) => magazine.regionName.includes(region))
+    ? magazines.filter((magazine) => regionOf({ address: magazine.regionName }) === region)
     : magazines
   const story = visible[0]
 
