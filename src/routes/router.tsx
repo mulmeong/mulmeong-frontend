@@ -44,8 +44,8 @@ export const router = createBrowserRouter([
         path: '/',
         element: <RootLayout />,
         children: [
-          // 공유 링크는 로그인 없이 열린다 (AUTH-02).
-          { path: 'p/:token', element: <SharedPamphletPage /> },
+          // 공유 링크는 비로그인도 열린다 (AUTH-02). 서버 SHARE_BASE와 같은 경로다.
+          { path: 'pamphlet/:token', element: <SharedPamphletPage /> },
           { path: 'magazine', element: <MagazinePage /> },
           { path: 'magazine/archive', element: <MagazineArchivePage /> },
           { path: 'magazine/:id', element: <MagazineDetailPage /> },

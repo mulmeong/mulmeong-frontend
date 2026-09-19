@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useOutletContext } from 'react-router-dom'
 
 import { ApiError } from '@/api'
 import Button from '@/components/ui/Button'
@@ -7,7 +7,9 @@ import Chip from '@/components/ui/Chip'
 import Input from '@/components/ui/Input'
 import Modal from '@/components/ui/Modal'
 import { useFavorites } from '@/features/favorites/FavoritesProvider'
-import { createPamphlet } from '@/features/mypage/api/pamphlets'
+import { createPamphlet, fetchPamphletDetail } from '@/features/mypage/api/pamphlets'
+import type { MyPageOutletContext } from '@/features/mypage/components/MyPageLayout'
+import PamphletCreateFlow from '@/features/mypage/components/PamphletCreateFlow'
 import Pagination from '@/features/mypage/components/Pagination'
 import SavedPlaceItem from '@/features/mypage/components/SavedPlaceItem'
 import { useSavedPlaces } from '@/features/mypage/hooks/useSavedPlaces'
@@ -17,7 +19,8 @@ import {
   PAMPHLET_PARTY_MIN,
   PAMPHLET_PLACE_MAX,
   PAMPHLET_TITLE_MAX,
-  type Pamphlet,
+  type CreatedPamphlet,
+  type PamphletDetail,
 } from '@/types/pamphlet'
 import {
   SAVED_CATEGORIES,
@@ -31,6 +34,8 @@ import {
 export default function MySavedPage() {
   const navigate = useNavigate()
   const favorites = useFavorites()
+  // 팜플렛을 만들면 헤더의 팜플렛 수가 늘어난다. 헤더는 탭 바깥이라 직접 불러줘야 한다.
+  const { reloadProfile } = useOutletContext<MyPageOutletContext>()
 
   const [sort, setSort] = useState<SavedSort>('RECENT')
   const [category, setCategory] = useState<SavedCategory | 'all'>('all')
@@ -55,10 +60,16 @@ export default function MySavedPage() {
   const [title, setTitle] = useState('')
   const [partySize, setPartySize] = useState('')
   const [travelDate, setTravelDate] = useState('')
-  const [creating, setCreating] = useState(false)
-  /** 만들어진 팜플렛. 공유 링크를 보여줄 때만 값이 있다. */
-  const [created, setCreated] = useState<Pamphlet | null>(null)
-  const [copied, setCopied] = useState(false)
+  /**
+   * 만들기 흐름. 띄워두는 동안 엮는 중 → 표지 → 펼침 → 미리보기로 이어진다.
+   * placeCount는 만들어지기 전 '엮는 중' 문구에 쓰므로 시작할 때 박아둔다.
+   */
+  const [flow, setFlow] = useState<{
+    placeCount: number
+    created?: CreatedPamphlet
+    detail?: PamphletDetail
+    error?: string
+  } | null>(null)
 
   const tooMany = selected.size > PAMPHLET_PLACE_MAX
   const canSubmit = title.trim().length > 0 && selected.size > 0 && !tooMany
@@ -72,43 +83,35 @@ export default function MySavedPage() {
   }
 
   const submitPamphlet = async () => {
-    if (!canSubmit) return
+    // flow가 있으면 이미 만드는 중이다 — 두 번 눌러도 한 번만 나간다.
+    if (!canSubmit || flow) return
 
-    setCreating(true)
+    const placeIds = [...selected]
+    setFormOpen(false)
     setActionError(undefined)
+    setFlow({ placeCount: placeIds.length })
+
     try {
-      const pamphlet = await createPamphlet({
+      const created = await createPamphlet({
         title: title.trim(),
         // 안 채운 항목은 빈 값 대신 아예 뺀다 — 서버가 400으로 막는다.
         partySize: partySize ? Number(partySize) : undefined,
         travelDate: travelDate || undefined,
         // Set은 넣은 순서를 지킨다. 고른 순서가 그대로 팜플렛 순서가 된다.
-        placeIds: [...selected],
+        placeIds,
       })
-      setFormOpen(false)
-      setCreated(pamphlet)
-      setCopied(false)
+
       // 만들고 나면 선택을 푼다 — 같은 묶음을 실수로 두 번 만들지 않게.
       setSelected(new Set())
+      // 헤더의 팜플렛 수를 맞춘다.
+      reloadProfile()
+
+      // 만들기 응답에는 장소가 없다. 미리보기에 보여줄 내용은 상세에만 있다.
+      const detail = await fetchPamphletDetail(created.pamphletId)
+      setFlow((current) => (current ? { ...current, created, detail } : current))
     } catch (cause) {
-      setFormOpen(false)
-      setActionError(cause instanceof ApiError ? cause.message : '팜플렛을 만들지 못했습니다.')
-    } finally {
-      setCreating(false)
-    }
-  }
-
-  /** 만들기 응답의 공유 링크. 목록 응답과 타입을 공유해서 없을 수도 있게 열려 있다. */
-  const shareUrl = created?.shareUrl ?? ''
-
-  const copyShareUrl = async () => {
-    if (!shareUrl) return
-    try {
-      await navigator.clipboard.writeText(shareUrl)
-      setCopied(true)
-    } catch {
-      // 클립보드는 https나 사용자 동작이 아니면 막힌다. 링크는 화면에 그대로 있다.
-      setCopied(false)
+      const message = cause instanceof ApiError ? cause.message : '팜플렛을 만들지 못했습니다.'
+      setFlow((current) => (current ? { ...current, error: message } : current))
     }
   }
 
@@ -206,7 +209,7 @@ export default function MySavedPage() {
         {/* 같은 줄의 칩(py-2 / 13px)과 높이를 맞춘다 — Button 기본값은 한 단계 커서 혼자 튄다. */}
         <Button
           onClick={openForm}
-          disabled={selected.size === 0 || tooMany}
+          disabled={selected.size === 0 || tooMany || flow !== null}
           className="px-4 py-2 text-[13px]"
         >
           선택 {selected.size}곳으로 팜플렛 만들기
@@ -326,39 +329,32 @@ export default function MySavedPage() {
           </span>
         }
         primaryAction={{
-          label: creating ? '만드는 중…' : '만들기',
+          label: '만들기',
           onClick: () => void submitPamphlet(),
-          disabled: !canSubmit || creating,
+          disabled: !canSubmit,
         }}
         secondaryAction={{ label: '취소', onClick: () => setFormOpen(false) }}
       />
 
-      <Modal
-        open={created !== null}
-        onClose={() => setCreated(null)}
-        kicker="팜플렛 완성"
-        title={created?.title ?? ''}
-        description={
-          <span className="mt-2 flex flex-col gap-3 text-left">
-            <span className="text-text-secondary text-[13px]">
-              장소 {created?.placeCount ?? 0}곳이 담겼습니다.
-              {shareUrl ? ' 링크로 공유해 보세요.' : ' 팜플렛 탭에서 볼 수 있습니다.'}
-            </span>
-            {/* 링크를 화면에도 그대로 둔다 — 클립보드가 막힌 환경에서도 직접 복사할 수 있게. */}
-            {shareUrl && (
-              <span className="bg-surface-dim text-text-primary rounded-sm px-3 py-2 text-[12px] break-all">
-                {shareUrl}
-              </span>
-            )}
-          </span>
-        }
-        primaryAction={{
-          label: copied ? '복사했습니다' : '링크 복사',
-          onClick: () => void copyShareUrl(),
-          disabled: !shareUrl,
-        }}
-        secondaryAction={{ label: '닫기', onClick: () => setCreated(null) }}
-      />
+      {/* 만든 뒤에도 페이지를 옮기지 않는다 — 결과를 먼저 보고 이동은 사용자가 고른다. */}
+      {flow && (
+        <PamphletCreateFlow
+          placeCount={flow.placeCount}
+          created={flow.created}
+          detail={flow.detail}
+          error={flow.error}
+          onClose={() => setFlow(null)}
+          onManage={(pamphletId) => {
+            setFlow(null)
+            // new는 목록으로 돌아갔을 때 방금 만든 카드를 짚어주는 데 쓴다.
+            void navigate(`/my/pamphlets?pamphlet=${pamphletId}&new=${pamphletId}`)
+          }}
+          onRetry={() => {
+            setFlow(null)
+            setFormOpen(true)
+          }}
+        />
+      )}
 
       <Modal
         open={pendingDelete !== null}

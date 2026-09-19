@@ -7,10 +7,10 @@ import {
   PamphletPlace,
 } from '@/features/mypage/components/PamphletContent'
 import PamphletCover from '@/features/mypage/components/PamphletCover'
-import type { PamphletPreview } from '@/features/mypage/data/pamphletPreview'
+import type { PamphletView } from '@/features/mypage/data/pamphletView'
 
 type PamphletReaderProps = {
-  pamphlet: PamphletPreview
+  pamphlet: PamphletView
   source: HTMLButtonElement
   fromCard: boolean
   onClose: () => void
@@ -333,14 +333,24 @@ export default function PamphletReader({
               </div>
               <div className="pamphlet-reader-back" aria-hidden="true">
                 <div className="pamphlet-reader-snapshot">
-                  <PamphletCover pamphlet={{ ...pamphlet, placeCount: pamphlet.places.length }} />
+                  <PamphletCover
+                    number={pamphlet.number}
+                    title={pamphlet.title}
+                    placeCount={pamphlet.places.length}
+                    createdAt={pamphlet.createdAt}
+                  />
                 </div>
               </div>
             </div>
           </div>
           <div className="pamphlet-reader-mobile-cover" aria-hidden="true">
             <div className="pamphlet-reader-snapshot">
-              <PamphletCover pamphlet={{ ...pamphlet, placeCount: pamphlet.places.length }} />
+              <PamphletCover
+                number={pamphlet.number}
+                title={pamphlet.title}
+                placeCount={pamphlet.places.length}
+                createdAt={pamphlet.createdAt}
+              />
             </div>
           </div>
         </div>

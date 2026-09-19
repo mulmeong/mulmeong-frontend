@@ -1,10 +1,10 @@
 import { useState } from 'react'
 
-import type { PamphletPreview } from '@/features/mypage/data/pamphletPreview'
-import { categoryLabel, type SavedPlace } from '@/types/saved'
+import type { PamphletView, PamphletViewPlace } from '@/features/mypage/data/pamphletView'
+import { categoryLabel, type SavedCategory } from '@/types/saved'
 
 // 장소의 특성·동선에 관한 사실을 만들지 않고, 저장된 카테고리만 설명한다.
-const PLACE_CONTEXT: Record<SavedPlace['category'], string> = {
+const PLACE_CONTEXT: Record<SavedCategory, string> = {
   onsen: '이번 여행의 온천·사우나 시간으로 엮어둔 곳입니다.',
   restaurant: '이번 여행에서 식사 장소로 엮어둔 곳입니다.',
   cafe: '여행 중 쉬어갈 카페로 엮어둔 곳입니다.',
@@ -12,7 +12,7 @@ const PLACE_CONTEXT: Record<SavedPlace['category'], string> = {
   etc: '이번 여행에 함께 엮어둔 곳입니다.',
 }
 
-export function PamphletIntro({ pamphlet }: { pamphlet: PamphletPreview }) {
+export function PamphletIntro({ pamphlet }: { pamphlet: PamphletView }) {
   const regions = [...new Set(pamphlet.places.map((place) => place.address))]
 
   return (
@@ -43,10 +43,9 @@ export function PamphletIntro({ pamphlet }: { pamphlet: PamphletPreview }) {
   )
 }
 
-export function PamphletPlace({ place, index }: { place: SavedPlace; index: number }) {
+export function PamphletPlace({ place, index }: { place: PamphletViewPlace; index: number }) {
   const [failedImage, setFailedImage] = useState<string>()
-  const description =
-    'description' in place && typeof place.description === 'string' ? place.description.trim() : ''
+  const description = place.description?.trim() ?? ''
 
   return (
     <article className="pamphlet-editorial pamphlet-place">
@@ -76,15 +75,6 @@ export function PamphletPlace({ place, index }: { place: SavedPlace; index: numb
       <p className="pamphlet-place-location">
         {place.address} · {categoryLabel(place.category)}
       </p>
-      {place.rating !== undefined && (
-        <p
-          className="pamphlet-place-rating"
-          aria-label={`평점 ${place.rating.toFixed(1)}, 리뷰 ${place.reviewCount}개`}
-        >
-          <span aria-hidden="true">★</span> {place.rating.toFixed(1)}
-          <span>({(place.reviewCount ?? 0).toLocaleString('ko-KR')})</span>
-        </p>
-      )}
     </article>
   )
 }

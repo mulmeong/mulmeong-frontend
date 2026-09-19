@@ -158,12 +158,10 @@ export default function PamphletCreateFlow({
                 {created.title} 팜플렛이 완성되었습니다
               </h2>
               <PamphletCover
-                pamphlet={{
-                  number: String(created.placeCount).padStart(2, '0'),
-                  title: created.title,
-                  createdAt: created.createdAt,
-                  placeCount: created.placeCount,
-                }}
+                number={String(created.placeCount).padStart(2, '0')}
+                title={created.title}
+                placeCount={created.placeCount}
+                createdAt={created.createdAt}
               />
             </div>
           </div>
