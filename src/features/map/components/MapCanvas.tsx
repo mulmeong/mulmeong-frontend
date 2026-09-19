@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { loadKakaoMap } from '@/features/map/utils/loadKakaoMap'
+import PoiMarkers from '@/features/map/components/PoiMarkers'
 import {
   captureMapViewport,
   getViewportMaxLevel,
@@ -14,7 +15,7 @@ import type { MapViewportLimits } from '@/features/map/utils/mapViewportLimits'
 import type { DirectionsResult, RouteOption } from '@/features/map/types/directions'
 import type { OnsenMapPoint } from '@/features/map/types/mapPoint'
 import type { MapBounds, MapView } from '@/types/onsen'
-import type { Poi } from '@/types/poi'
+import type { MapPoi } from '@/types/poi'
 
 type MapCanvasProps = {
   onsens: OnsenMapPoint[]
@@ -26,9 +27,11 @@ type MapCanvasProps = {
   /** MAP-03 이 지역 재검색 — 팬·줌이 멎으면 보이는 영역을 알린다. */
   onBoundsChange?: (bounds: MapBounds) => void
   /** MAP-04 카테고리 POI — 온천과 섞이지 않게 다른 마커로 그린다. */
-  pois?: Poi[]
+  pois?: MapPoi[]
+  selectedPoiKey?: string
+  onSelectPoi?: (key?: string) => void
   /** POI 조회 기준점. 영역과 함께 알린다. */
-  onCenterChange?: (center: { lat: number; lng: number }) => void
+  onCenterChange?: (center: { lat: number; lng: number; level: number }) => void
   /** 지역을 고르거나 검색하면 그쪽으로 지도를 옮긴다. 없으면 전국 뷰 그대로. */
   focus?: MapView
   directions?: DirectionsResult
@@ -60,8 +63,6 @@ const onsenMarker = (selected = false) =>
 
 const ONSEN_MARKER = svgMarker(onsenMarker())
 const ONSEN_MARKER_SELECTED = svgMarker(onsenMarker(true))
-const ONSEN_MARKER_SIZE = 36
-const ONSEN_SELECTED_SIZE = 48
 const FAVORITE_MARKER = svgMarker(
   '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="14" fill="#1C1B18" stroke="white" stroke-width="1.5"/><path d="M18 25 10.8 18a4.5 4.5 0 0 1 7.2-5.3 4.5 4.5 0 0 1 7.2 5.3Z" fill="white"/></svg>',
 )
@@ -89,32 +90,8 @@ const CLUSTER_STYLES = [34, 38, 42].map((size) => ({
   cursor: 'pointer',
 }))
 
-/** 주변 장소는 같은 무채색 계열의 빈 원으로 온천과 구분한다. */
-const POI_MARKER = svgMarker(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
-    <circle cx="10" cy="10" r="5.5" fill="#FFFFFF" fill-opacity=".94"
-      stroke="#1C1B18" stroke-opacity=".75" stroke-width="1.5"/>
-  </svg>`,
-)
-const POI_MARKER_SIZE = 20
+const EMPTY_POIS: MapPoi[] = []
 
-/** 이름표는 HTML로 그린다 — Marker는 텍스트를 못 올린다. */
-function labelHtml(text: string, tone: 'onsen' | 'poi') {
-  const label = document.createElement('span')
-  label.textContent = text
-  const style =
-    tone === 'onsen'
-      ? 'background:#1A1A1A;color:#FFFFFF;font-weight:600;'
-      : 'background:#FFFFFF;color:#1A1A1A;border:1px solid #D8D3CC;'
-  return (
-    `<div style="${style}padding:2px 7px;border-radius:9px;font-size:11px;` +
-    `line-height:1.5;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.18);` +
-    `font-family:system-ui,sans-serif;">${label.innerHTML}</div>`
-  )
-}
-
-/** 이 레벨보다 넓게 보면 이름표를 숨긴다 — 전국 뷰에서 글자가 서로 겹친다. */
-const LABEL_MAX_LEVEL = 8
 
 /** idle이 연달아 오는 걸 묶는다 — 쿼터 방어 (CLAUDE.md 비기능 요구사항). */
 const BOUNDS_DEBOUNCE_MS = 600
@@ -137,6 +114,8 @@ export default function MapCanvas({
   onSelect,
   onBoundsChange,
   pois,
+  selectedPoiKey,
+  onSelectPoi,
   onCenterChange,
   focus,
   directions,
@@ -145,13 +124,7 @@ export default function MapCanvas({
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<kakao.maps.Map | null>(null)
   const viewportLimitsRef = useRef<MapViewportLimits | null>(null)
-  const markersRef = useRef<kakao.maps.Marker[]>([])
   const clustererRef = useRef<kakao.maps.MarkerClusterer | null>(null)
-  const poiMarkersRef = useRef<kakao.maps.Marker[]>([])
-  const labelsRef = useRef<kakao.maps.CustomOverlay[]>([])
-
-  /** 확대 수준에 따라 이름표를 접었다 편다. */
-  const [level, setLevel] = useState<number>(NATIONAL_VIEW.level)
 
   const [error, setError] = useState<string>()
   const [ready, setReady] = useState(false)
@@ -256,107 +229,66 @@ export default function MapCanvas({
     clustererRef.current = clusterer
   }, [ready])
 
-  // 목록이 바뀌면 마커를 다시 그린다.
+  // Custom overlays retain the existing clusterer while allowing image fallback and hover.
   useEffect(() => {
     const map = mapRef.current
     const clusterer = clustererRef.current
     if (!ready || !map || !clusterer) return
-
     const maps = window.kakao.maps
     clusterer.clear()
-
-    markersRef.current = onsens.map((onsen) => {
+    const markers = onsens.map((onsen) => {
       const chosen = onsen.id === selectedId
-      const size = chosen ? ONSEN_SELECTED_SIZE : ONSEN_MARKER_SIZE
-      // 원의 중심이 장소 좌표를 가리키도록 이미지 중앙에 고정한다.
-      const image = new maps.MarkerImage(
-        favoriteMarkers ? FAVORITE_MARKER : chosen ? ONSEN_MARKER_SELECTED : ONSEN_MARKER,
-        new maps.Size(size, size),
-        { offset: new maps.Point(size / 2, size / 2) },
-      )
-
-      const marker = new maps.Marker({
+      const size = chosen ? 54 : 44
+      const host = document.createElement('div')
+      host.style.cssText = `position:relative;width:${size}px;height:${size}px;`
+      const button = document.createElement('button')
+      button.type = 'button'
+      button.setAttribute('aria-label', onsen.name)
+      button.setAttribute('aria-pressed', String(chosen))
+      button.style.cssText = `display:block;padding:0;box-sizing:border-box;width:100%;height:100%;border-radius:50%;border:${chosen ? '3px solid #292823' : '2px solid white'};background:white;box-shadow:0 2px 5px #0002;cursor:pointer;overflow:hidden;`
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) button.style.transition = 'transform 160ms ease-out'
+      const image = document.createElement('img')
+      image.alt = ''
+      image.style.cssText = 'display:block;width:100%;height:100%;object-fit:cover;'
+      const fallback = favoriteMarkers ? FAVORITE_MARKER : chosen ? ONSEN_MARKER_SELECTED : ONSEN_MARKER
+      image.onerror = () => { image.onerror = null; image.src = fallback }
+      image.src = onsen.imageUrl && (!onsen.markerType || onsen.markerType === 'REGISTERED') ? onsen.imageUrl : fallback
+      button.append(image)
+      const label = document.createElement('span')
+      label.textContent = onsen.name
+      label.style.cssText = 'display:none;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:8px;max-width:220px;width:max-content;padding:4px 8px;border:1px solid #ddd;border-radius:4px;background:white;color:#1c1b18;font:500 12px/1.5 system-ui;pointer-events:none;white-space:normal;'
+      host.append(button, label)
+      const overlay = new maps.CustomOverlay({
         position: new maps.LatLng(onsen.lat, onsen.lng),
-        title: onsen.name,
-        image,
-        zIndex: chosen ? 3 : 2,
+        content: host, xAnchor: 0.5, yAnchor: 0.5, zIndex: chosen ? 50 : 25, clickable: true,
       })
-      maps.event.addListener(marker, 'click', () => onSelect?.(onsen))
-      return marker
+      const show = () => {
+        label.style.display = 'block'
+        button.style.transform = chosen ? 'none' : 'scale(1.06)'
+        overlay.setZIndex(chosen ? 50 : 40)
+      }
+      const hide = () => {
+        label.style.display = 'none'
+        button.style.transform = 'none'
+        overlay.setZIndex(chosen ? 50 : 25)
+      }
+      button.onmouseenter = show
+      button.onmouseleave = hide
+      button.onfocus = show
+      button.onblur = hide
+      button.onclick = (event) => { event.stopPropagation(); onSelect?.(onsen) }
+      return overlay
     })
-
-    // 클러스터러가 지도에 붙인다 — marker.setMap()을 직접 부르면 클러스터가 안 먹는다.
-    clusterer.addMarkers(markersRef.current)
-
-    // 결과 전체에 범위를 맞추지 않는다 — MAP-03이 보이는 영역 기준이라 서로 싸운다.
-    // selectedId가 바뀌면 선택 마커 모양도 바뀌므로 다시 그린다.
-  }, [onsens, ready, onSelect, selectedId, favoriteMarkers])
-
-  // MAP-04: POI는 클러스터러에 넣지 않는다 — 온천 클러스터 숫자가 오염된다.
-  useEffect(() => {
-    const map = mapRef.current
-    if (!ready || !map) return
-
-    const maps = window.kakao.maps
-    poiMarkersRef.current.forEach((marker) => marker.setMap(null))
-
-    const image = new maps.MarkerImage(
-      POI_MARKER,
-      new maps.Size(POI_MARKER_SIZE, POI_MARKER_SIZE),
-      { offset: new maps.Point(POI_MARKER_SIZE / 2, POI_MARKER_SIZE / 2) },
-    )
-    poiMarkersRef.current = (pois ?? []).map((poi) => {
-      const marker = new maps.Marker({
-        position: new maps.LatLng(poi.lat, poi.lng),
-        title: poi.name,
-        image,
-        // 온천 마커 아래에 깔아 주인공을 가리지 않게 한다.
-        zIndex: 1,
-      })
+    clusterer.addMarkers(markers.filter((marker, index) => {
+      if (onsens[index].id !== selectedId) return true
       marker.setMap(map)
-      return marker
-    })
-  }, [pois, ready])
-
-  // 이름표. 마커와 별개 객체라 따로 걷어내고 다시 단다.
-  useEffect(() => {
-    const map = mapRef.current
-    if (!ready || !map) return
-
-    const maps = window.kakao.maps
-    labelsRef.current.forEach((overlay) => overlay.setMap(null))
-    labelsRef.current = []
-
-    // 넓게 보면 글자가 서로 겹쳐 지도를 덮는다 — 일정 이상 확대했을 때만 보여준다.
-    if (level > LABEL_MAX_LEVEL) return
-
-    const make = (
-      lat: number,
-      lng: number,
-      text: string,
-      tone: 'onsen' | 'poi',
-      zIndex: number,
-      selected = false,
-    ) =>
-      new maps.CustomOverlay({
-        position: new maps.LatLng(lat, lng),
-        content: labelHtml(text, tone),
-        // 마커 위쪽에 띄운다.
-        yAnchor: selected ? 2.35 : 1.9,
-        zIndex,
-        clickable: false,
-      })
-
-    const overlays = [
-      ...onsens.map((o) =>
-        make(o.lat, o.lng, o.name, 'onsen', o.id === selectedId ? 5 : 4, o.id === selectedId),
-      ),
-      ...(pois ?? []).map((p) => make(p.lat, p.lng, p.name, 'poi', 3)),
-    ]
-
-    overlays.forEach((overlay) => overlay.setMap(map))
-    labelsRef.current = overlays
-  }, [onsens, pois, selectedId, ready, level])
+      return false
+    }))
+    return () => {
+      clusterer.clear()
+      markers.forEach((marker) => marker.setMap(null))
+    }
+  }, [onsens, ready, onSelect, selectedId, favoriteMarkers])
 
   // MAP-03: 팬·줌이 멎으면(idle) 보이는 영역을 알린다.
   useEffect(() => {
@@ -365,6 +297,7 @@ export default function MapCanvas({
     if (!ready || !map) return
 
     let timer: ReturnType<typeof setTimeout> | undefined
+    const cancelPending = () => clearTimeout(timer)
 
     const handleIdle = () => {
       clearTimeout(timer)
@@ -380,17 +313,18 @@ export default function MapCanvas({
         })
 
         const center = map.getCenter()
-        onCenterChange?.({ lat: center.getLat(), lng: center.getLng() })
-        setLevel(map.getLevel())
+        onCenterChange?.({ lat: center.getLat(), lng: center.getLng(), level: map.getLevel() })
       }, BOUNDS_DEBOUNCE_MS)
     }
 
     window.kakao.maps.event.addListener(map, 'idle', handleIdle)
+    window.kakao.maps.event.addListener(map, 'bounds_changed', cancelPending)
     handleIdle()
 
     return () => {
       clearTimeout(timer)
       window.kakao.maps.event.removeListener(map, 'idle', handleIdle)
+      window.kakao.maps.event.removeListener(map, 'bounds_changed', cancelPending)
     }
   }, [ready, onBoundsChange, onCenterChange])
 
@@ -562,6 +496,7 @@ export default function MapCanvas({
   return (
     <div className="relative size-full" aria-busy={busy}>
       <div ref={containerRef} className="size-full" inert={busy} />
+      {ready && onSelectPoi && <PoiMarkers map={mapRef.current} pois={pois ?? EMPTY_POIS} selectedKey={selectedPoiKey} onSelect={onSelectPoi} />}
       {busy && (
         <div
           role="status"

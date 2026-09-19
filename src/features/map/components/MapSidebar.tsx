@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent, type KeyboardEvent } from 'react'
+import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 
 import Input from '@/components/ui/Input'
 import PlaceListSkeleton from '@/features/map/components/PlaceListSkeleton'
@@ -73,6 +73,14 @@ export default function MapSidebar({
   /** 검색어가 있으면 검색 결과 화면으로 바뀐다 — 지역·추천은 숨는다. */
   const [searchedKeyword, setSearchedKeyword] = useState('')
   const isSearching = Boolean(searchedKeyword)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    // 새 목록은 제목부터 보여주고 이전 목록의 중간 스크롤 위치를 가져오지 않는다.
+    if (contentRef.current) contentRef.current.scrollTop = 0
+    setScrolled(false)
+  }, [region, searchedKeyword, exploreAll])
 
   /** 자동완성 (MAP-05) — 입력창에 포커스가 있고 아직 제출하지 않았을 때만 연다. */
   const [focused, setFocused] = useState(false)
@@ -156,9 +164,7 @@ export default function MapSidebar({
 
   return (
     <div className="bg-surface box-border flex h-full w-full min-h-0 min-w-0 max-w-full flex-col overflow-hidden pb-3">
-      {/* 모바일은 한 흐름으로 스크롤한다. 데스크톱에서는 매거진 높이를 먼저 확보한다. */}
-      <div className="scrollbar-thin flex w-full min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain lg:overflow-clip">
-        <div className="scrollbar-thin box-border flex w-full min-w-0 shrink-0 flex-col overflow-x-hidden px-5 pb-3 lg:min-h-0 lg:shrink lg:overflow-y-auto lg:overscroll-contain [&>*]:min-w-0 [&>*]:shrink-0">
+      <div className="relative z-20 w-full min-w-0 shrink-0 bg-white px-5 pb-5">
           <form onSubmit={handleSubmit} className="relative">
             <Input
               variant="search"
@@ -190,8 +196,43 @@ export default function MapSidebar({
             )}
           </form>
 
+          {!isSearching && (
+            <section className="pt-4">
+              <SectionLabel>지역으로 둘러보기</SectionLabel>
+              <div
+                role="group"
+                aria-label="지역 선택"
+                className="mt-2 flex flex-wrap gap-x-1.5 gap-y-1.5"
+              >
+                <RegionChip selected={!region} onClick={handleResetRegion}>
+                  전체
+                </RegionChip>
+                {REGIONS.map((item) => (
+                  <RegionChip
+                    key={item}
+                    selected={region === item}
+                    onClick={() => handleRegion(item)}
+                  >
+                    {item}
+                  </RegionChip>
+                ))}
+              </div>
+            </section>
+          )}
+        <span aria-hidden="true" className={cn(
+          'pointer-events-none absolute inset-x-0 top-full h-3 bg-linear-to-b from-white to-transparent transition-opacity duration-150 motion-reduce:transition-none',
+          scrolled ? 'opacity-100' : 'opacity-0',
+        )} />
+      </div>
+
+      <div
+        ref={contentRef}
+        onScroll={(event) => setScrolled(event.currentTarget.scrollTop > 1)}
+        className="scrollbar-thin min-h-0 w-full min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain pt-3"
+      >
+        <div className="box-border flex w-full min-w-0 flex-col px-5 pb-3 [&>*]:min-w-0 [&>*]:shrink-0">
           {isSearching && (
-            <section className="pt-8">
+            <section>
               <div className="flex items-baseline justify-between gap-3">
                 <h2 className="text-text-primary min-w-0 truncate text-[15px] font-semibold">
                   “{searchedKeyword}” 검색 결과
@@ -246,29 +287,7 @@ export default function MapSidebar({
 
           {!isSearching && (
             <>
-              <section className="pt-4">
-                <SectionLabel>지역으로 둘러보기</SectionLabel>
-                <div
-                  role="group"
-                  aria-label="지역 선택"
-                  className="mt-2 flex flex-wrap gap-x-1.5 gap-y-1.5"
-                >
-                  {/* 지역을 고른 뒤 전국으로 돌아올 길 — 칩을 다시 누르는 건 알아채기 어렵다. */}
-                  <RegionChip selected={!region} onClick={handleResetRegion}>
-                    전체
-                  </RegionChip>
-
-                  {REGIONS.map((item) => (
-                    <RegionChip
-                      key={item}
-                      selected={region === item}
-                      onClick={() => handleRegion(item)}
-                    >
-                      {item}
-                    </RegionChip>
-                  ))}
-                </div>
-
+              <section>
                 <RegionPlaces
                   key={region ?? 'all'}
                   region={region}
@@ -287,8 +306,7 @@ export default function MapSidebar({
               {/* 첫 화면에만 둔다 — 지역을 고르면 그 지역 매거진이 이 자리를 대신한다. */}
               {!region && !exploreAll && (
                 <>
-                  {/* 위 내용과의 최소 간격. mt-auto와 margin이 겹치지 않게 빈 칸으로 벌린다. */}
-                  <div aria-hidden className="h-8 shrink-0" />
+                  <div aria-hidden className="h-10 shrink-0" />
                   <SidebarPicks />
                 </>
               )}
@@ -296,7 +314,7 @@ export default function MapSidebar({
           )}
         </div>
 
-        {/* 목록이 길어도 데스크톱 매거진의 제목·기사 전체가 스크롤에 가려지지 않는다. */}
+        {/* 추천 콘텐츠도 장소 목록과 같은 영역에서 스크롤한다. */}
         {!isSearching && region && !exploreAll && <SidebarMagazine region={region} />}
       </div>
     </div>

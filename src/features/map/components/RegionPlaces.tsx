@@ -4,6 +4,7 @@ import PlaceListSkeleton from '@/features/map/components/PlaceListSkeleton'
 import RegionPlaceCard, { RegionPlaceCardSkeleton } from '@/features/map/components/RegionPlaceCard'
 import SearchResultItem from '@/features/map/components/SearchResultItem'
 import { REGION_PREVIEW_COUNT } from '@/features/map/constants'
+import { SIDEBAR_CARD_TRACK } from './sidebarCardStyles'
 
 import type { OnsenListItem } from '@/features/map/api/map'
 import type { Onsen } from '@/types/onsen'
@@ -105,16 +106,16 @@ function PlaceCarousel({
           event.preventDefault()
           move(event.key === 'ArrowLeft' ? -1 : 1)
         }}
-        className="-mx-5 mt-2 box-border flex w-[calc(100%+2.5rem)] min-w-0 snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto overscroll-x-contain px-5 py-1 outline-none [scrollbar-width:none] focus-visible:ring-2 focus-visible:ring-border-strong focus-visible:ring-inset [&::-webkit-scrollbar]:hidden"
+        className={SIDEBAR_CARD_TRACK}
       >
         {loading
           ? Array.from({ length: REGION_PREVIEW_COUNT }, (_, index) => (
-              <li key={index} className="w-[min(72%,200px)] shrink-0 snap-start">
+              <li key={index} className="min-w-0 snap-start">
                 <RegionPlaceCardSkeleton />
               </li>
             ))
           : onsens.map((onsen) => (
-              <li key={onsen.id} className="w-[min(72%,200px)] shrink-0 snap-start">
+              <li key={onsen.id} className="min-w-0 snap-start">
                 <RegionPlaceCard
                   onsen={onsen}
                   region={region}
@@ -196,7 +197,7 @@ export default function RegionPlaces({
   }
 
   return (
-    <section aria-labelledby={headingId} aria-busy={loading} className="mt-3 w-full min-w-0">
+    <section aria-labelledby={headingId} aria-busy={loading} className="w-full min-w-0">
       <div className="flex min-h-9 items-center justify-between gap-3">
         <h3
           id={headingId}

@@ -7,7 +7,7 @@ import type { OnsenMapPoint } from '@/features/map/types/mapPoint'
 /** 백엔드 MapOnsensResponse(API-301)에서 전국 마커를 만드는 데 필요한 필드만 쓴다. */
 type MapPointsResponse = {
   clustered: boolean
-  markers: { onsenId: number; name: string; lat: number; lng: number }[]
+  markers: { onsenId: number; name: string; lat: number; lng: number; thumbnail?: string | null; markerType?: string }[]
   totalCount: number
 }
 
@@ -29,7 +29,7 @@ async function requestMapPoints(): Promise<OnsenMapPoint[]> {
   if (result.clustered || result.markers.length !== result.totalCount) {
     throw new Error('지도의 장소를 모두 불러오지 못했어요.')
   }
-  return result.markers.map(({ onsenId, name, lat, lng }) => ({ id: onsenId, name, lat, lng }))
+  return result.markers.map(({ onsenId, name, lat, lng, thumbnail, markerType }) => ({ id: onsenId, name, lat, lng, imageUrl: thumbnail ?? undefined, markerType }))
 }
 
 /** 패널·페이지 재진입에도 전국 데이터와 진행 중 요청을 공유한다. 실패는 캐시하지 않는다. */
