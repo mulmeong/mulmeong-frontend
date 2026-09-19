@@ -5,7 +5,7 @@ import { useAuth } from '@/features/auth/hooks/authContext'
 
 import type { ComponentProps } from 'react'
 
-type AuthHeaderProps = Omit<ComponentProps<typeof Header>, 'authLabel' | 'onAuthClick'>
+type AuthHeaderProps = Omit<ComponentProps<typeof Header>, 'authLabel' | 'onAuthClick' | 'showMy'>
 
 /**
  * `Header`(순수 UI)에 로그인 상태를 붙이는 얇은 컨테이너.
@@ -25,5 +25,12 @@ export default function AuthHeader(props: AuthHeaderProps) {
     navigate('/', { replace: true })
   }
 
-  return <Header {...props} authLabel={user ? '로그아웃' : '로그인'} onAuthClick={handleClick} />
+  return (
+    <Header
+      {...props}
+      authLabel={user ? '로그아웃' : '로그인'}
+      onAuthClick={handleClick}
+      showMy={!!user}
+    />
+  )
 }

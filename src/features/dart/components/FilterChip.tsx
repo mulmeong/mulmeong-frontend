@@ -17,7 +17,7 @@ type FilterChipProps = {
  */
 export default function FilterChip({ name, label, selected, onSelect }: FilterChipProps) {
   return (
-    <label className="flex-1 cursor-pointer">
+    <label className="cursor-pointer">
       <input
         type="radio"
         name={name}

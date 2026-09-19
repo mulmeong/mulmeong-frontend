@@ -10,6 +10,8 @@ import {
   mockGetMe,
   mockLogin,
   mockLogout,
+  mockRequestPasswordReset,
+  mockResetPassword,
   mockReissue,
   mockSignup,
 } from './authMock'
@@ -43,6 +45,30 @@ export function signup(body: SignupRequest): Promise<SignupResponse> {
   return api.post<SignupResponse>('/auth/signup', body, { skipAuth: true })
 }
 
+export type PasswordResetRequestResponse = { message: string }
+
+/** AUTH-03. 계정 존재 여부와 무관하게 동일한 성공 응답을 받는다. */
+export function requestPasswordReset(email: string): Promise<PasswordResetRequestResponse> {
+  if (env.useMockAuth) return mockRequestPasswordReset()
+  return api.post<PasswordResetRequestResponse>(
+    '/auth/password/reset-request',
+    { email },
+    { skipAuth: true },
+  )
+}
+
+export type PasswordResetRequest = {
+  token: string
+  newPassword: string
+  newPasswordConfirm: string
+}
+
+/** AUTH-03. 메일 링크의 일회용 토큰으로 비밀번호를 바꾼다. */
+export function resetPassword(body: PasswordResetRequest): Promise<PasswordResetRequestResponse> {
+  if (env.useMockAuth) return mockResetPassword(body)
+  return api.post<PasswordResetRequestResponse>('/auth/password/reset', body, { skipAuth: true })
+}
+
 export type Availability = { available: boolean }
 
 /**
@@ -52,11 +78,11 @@ export type Availability = { available: boolean }
  * ⚠️ 서버 permitAll에 이 경로가 빠져 있어 지금은 비로그인이 401이다(email/check만 열림).
  * BE 수정 대기 중 — 고쳐지면 그대로 통한다.
  */
-export function checkNickname(nickname: string): Promise<Availability> {
+export function checkNickname(nickname: string, authenticated = false): Promise<Availability> {
   if (env.useMockAuth) return mockCheckNickname(nickname)
   return api.get<Availability>('/auth/nickname/check', {
     params: { nickname },
-    skipAuth: true,
+    skipAuth: !authenticated,
   })
 }
 

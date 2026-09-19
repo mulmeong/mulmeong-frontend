@@ -4,19 +4,28 @@ import { useNavigate } from 'react-router-dom'
 import { ApiError } from '@/api'
 import Button from '@/components/ui/Button'
 import Chip from '@/components/ui/Chip'
+import Input from '@/components/ui/Input'
 import Modal from '@/components/ui/Modal'
 import { useFavorites } from '@/features/favorites/FavoritesProvider'
-import Pagination from '@/features/mypage/components/Pagination'
+import { createPamphlet } from '@/features/mypage/api/pamphlets'
 import SavedPlaceItem from '@/features/mypage/components/SavedPlaceItem'
+import { useInfiniteScroll } from '@/features/mypage/hooks/useInfiniteScroll'
 import { useSavedPlaces } from '@/features/mypage/hooks/useSavedPlaces'
 
-import { REGION_GROUPS, type RegionGroupId } from '@/types/region'
+import {
+  PAMPHLET_PARTY_MAX,
+  PAMPHLET_PARTY_MIN,
+  PAMPHLET_PLACE_MAX,
+  PAMPHLET_TITLE_MAX,
+  type Pamphlet,
+} from '@/types/pamphlet'
 import {
   SAVED_CATEGORIES,
-  SAVED_FILTERS,
+  SAVED_PAGE_SIZE,
+  SAVED_SORTS,
   type SavedCategory,
-  type SavedFilter,
   type SavedPlace,
+  type SavedSort,
 } from '@/types/saved'
 
 /** 찜한 장소 · 담당: 예린 */
@@ -24,15 +33,20 @@ export default function MySavedPage() {
   const navigate = useNavigate()
   const favorites = useFavorites()
 
-  const [filter, setFilter] = useState<SavedFilter>('all')
-  const [region, setRegion] = useState<RegionGroupId>('all')
+  const [sort, setSort] = useState<SavedSort>('RECENT')
   const [category, setCategory] = useState<SavedCategory | 'all'>('all')
-  const [page, setPage] = useState(1)
-  const { data, loading, error, reload } = useSavedPlaces(filter, region, category, page)
+  /** 지금까지 펼쳐 보여줄 개수. 바닥에 닿을 때마다 늘어난다. */
+  const [limit, setLimit] = useState(SAVED_PAGE_SIZE)
+  const { data, loading, error, reload } = useSavedPlaces(sort, category, limit)
+
+  const sentinelRef = useInfiniteScroll(
+    () => setLimit((current) => current + SAVED_PAGE_SIZE),
+    Boolean(data?.hasMore) && !loading,
+  )
 
   /**
-   * 팜플렛으로 묶을 장소. 페이지를 넘겨도 유지한다 —
-   * 18곳이 4페이지에 흩어져 있어 한 페이지에서만 고를 수 있으면 쓸모가 없다.
+   * 팜플렛으로 묶을 장소. 조건을 바꿔도 유지한다 —
+   * 고른 곳이 지금 보이는 목록 밖으로 밀려나도 선택은 살아 있어야 한다.
    */
   const [selected, setSelected] = useState<Set<number>>(new Set())
 
@@ -43,23 +57,77 @@ export default function MySavedPage() {
   const [deleteDone, setDeleteDone] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
-  const handleFilter = (next: SavedFilter) => {
-    setFilter(next)
-    // 조건이 바뀌면 3페이지에 있던 항목이 1페이지로 올 수 있어 처음으로 돌린다.
-    setPage(1)
-    // 2단계 칩이 사라지면 골라둔 값을 되돌릴 방법이 없어진다 — 같이 푼다.
-    if (next !== 'region') setRegion('all')
-    if (next !== 'category') setCategory('all')
+  /** 팜플렛 만들기 폼. 제목만 필수다. */
+  const [formOpen, setFormOpen] = useState(false)
+  const [title, setTitle] = useState('')
+  const [partySize, setPartySize] = useState('')
+  const [travelDate, setTravelDate] = useState('')
+  const [creating, setCreating] = useState(false)
+  /** 만들어진 팜플렛. 공유 링크를 보여줄 때만 값이 있다. */
+  const [created, setCreated] = useState<Pamphlet | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  const tooMany = selected.size > PAMPHLET_PLACE_MAX
+  const canSubmit = title.trim().length > 0 && selected.size > 0 && !tooMany
+
+  const openForm = () => {
+    setTitle('')
+    setPartySize('')
+    setTravelDate('')
+    setActionError(undefined)
+    setFormOpen(true)
   }
 
-  const handleRegion = (next: RegionGroupId) => {
-    setRegion(next)
-    setPage(1)
+  const submitPamphlet = async () => {
+    if (!canSubmit) return
+
+    setCreating(true)
+    setActionError(undefined)
+    try {
+      const pamphlet = await createPamphlet({
+        title: title.trim(),
+        // 안 채운 항목은 빈 값 대신 아예 뺀다 — 서버가 400으로 막는다.
+        partySize: partySize ? Number(partySize) : undefined,
+        travelDate: travelDate || undefined,
+        // Set은 넣은 순서를 지킨다. 고른 순서가 그대로 팜플렛 순서가 된다.
+        placeIds: [...selected],
+      })
+      setFormOpen(false)
+      setCreated(pamphlet)
+      setCopied(false)
+      // 만들고 나면 선택을 푼다 — 같은 묶음을 실수로 두 번 만들지 않게.
+      setSelected(new Set())
+    } catch (cause) {
+      setFormOpen(false)
+      setActionError(cause instanceof ApiError ? cause.message : '팜플렛을 만들지 못했습니다.')
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  /** 만들기 응답의 공유 링크. 목록 응답과 타입을 공유해서 없을 수도 있게 열려 있다. */
+  const shareUrl = created?.shareUrl ?? ''
+
+  const copyShareUrl = async () => {
+    if (!shareUrl) return
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      setCopied(true)
+    } catch {
+      // 클립보드는 https나 사용자 동작이 아니면 막힌다. 링크는 화면에 그대로 있다.
+      setCopied(false)
+    }
+  }
+
+  const handleSort = (next: SavedSort) => {
+    setSort(next)
+    // 순서가 바뀌면 지금 펼쳐둔 만큼이 다른 목록이 된다. 처음부터 다시 쌓는다.
+    setLimit(SAVED_PAGE_SIZE)
   }
 
   const handleCategory = (next: SavedCategory | 'all') => {
     setCategory(next)
-    setPage(1)
+    setLimit(SAVED_PAGE_SIZE)
   }
 
   const toggleSelected = (place: SavedPlace) => {
@@ -103,20 +171,29 @@ export default function MySavedPage() {
     }
   }
 
+  /**
+   * 띄울 카테고리 칩. 찜한 장소가 있는 종류만 남긴다.
+   * 고른 종류는 개수가 0이 돼도 남긴다 — 눌린 칩이 사라지면 화면이 뒤집힌다.
+   */
+  const shownCategories = SAVED_CATEGORIES.filter(
+    (option) => (data?.counts[option.id] ?? 0) > 0 || option.id === category,
+  )
+
   const message = error ?? actionError
 
   return (
     <div className="flex flex-col">
-      {/* 내 리뷰 탭과 같은 줄 구성 — 개수 · 1단계 칩 · 오른쪽 끝 동작 버튼. */}
+      {/* 내 리뷰 탭과 같은 줄 구성 — 개수 · 정렬 칩 · 오른쪽 끝 동작 버튼. */}
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-[14px] font-semibold">전체 {data?.totalCount ?? 0}</span>
 
         <div className="flex gap-2">
-          {SAVED_FILTERS.map((option) => (
+          {SAVED_SORTS.map((option) => (
             <Chip
               key={option.id}
-              selected={option.id === filter}
-              onClick={() => handleFilter(option.id)}
+              variant="plain"
+              selected={option.id === sort}
+              onClick={() => handleSort(option.id)}
             >
               {option.label}
             </Chip>
@@ -132,48 +209,52 @@ export default function MySavedPage() {
           선택 해제
         </button>
 
-        {/*
-          같은 줄의 칩(py-2 / 13px)과 높이를 맞춘다 — Button 기본값은 한 단계 커서 혼자 튄다.
-          TODO: 팜플렛 만들기 화면(PAM-01)이 아직 없다.
-        */}
-        <Button disabled={selected.size === 0} className="px-4 py-2 text-[13px]">
+        {/* 같은 줄의 칩(py-2 / 13px)과 높이를 맞춘다 — Button 기본값은 한 단계 커서 혼자 튄다. */}
+        <Button
+          onClick={openForm}
+          disabled={selected.size === 0 || tooMany}
+          className="px-4 py-2 text-[13px]"
+        >
           선택 {selected.size}곳으로 팜플렛 만들기
         </Button>
+
+        {/* 서버가 20곳까지만 받는다. 누르고 나서 400을 보는 것보다 미리 알리는 게 낫다. */}
+        {tooMany && (
+          <p role="alert" className="text-danger w-full text-[12px]">
+            팜플렛에는 {PAMPHLET_PLACE_MAX}곳까지 담을 수 있습니다.{' '}
+            {selected.size - PAMPHLET_PLACE_MAX}
+            곳을 빼주세요.
+          </p>
+        )}
       </div>
 
-      {/* 2단계 칩. 1단계에서 고른 쪽만 나온다. */}
-      {filter === 'region' && (
-        <div className="border-border-default mt-3 flex flex-wrap gap-2 border-t pt-3">
-          {REGION_GROUPS.map((option) => (
-            <Chip
-              key={option.id}
-              selected={option.id === region}
-              onClick={() => handleRegion(option.id)}
-            >
-              {option.label}
-            </Chip>
-          ))}
-        </div>
-      )}
+      {/*
+        카테고리 칩은 찜한 장소가 있는 종류만 나온다. 눌러도 0건인 칩은 띄우지 않는다.
+        칩 옆 숫자는 조건을 걸기 전 기준이라(MY-06 counts) 칩을 눌러도 흔들리지 않는다.
 
-      {filter === 'category' && (
+        한 종류도 없으면 줄 자체를 감춘다 — '전체' 하나만 떠 있어봐야 할 일이 없다.
+        단 카테고리를 골라둔 상태라면 비어 있어도 남긴다. 고른 종류를 모두 지우면
+        목록이 비면서 칩도 같이 사라져, 전체로 돌아갈 길이 없어진다.
+      */}
+      {(shownCategories.length > 0 || category !== 'all') && (
         <div className="border-border-default mt-3 flex flex-wrap gap-2 border-t pt-3">
-          <Chip selected={category === 'all'} onClick={() => handleCategory('all')}>
-            전체
+          <Chip variant="plain" selected={category === 'all'} onClick={() => handleCategory('all')}>
+            전체 {data?.counts.all ?? 0}
           </Chip>
-          {SAVED_CATEGORIES.map((option) => (
+          {shownCategories.map((option) => (
             <Chip
               key={option.id}
+              variant="plain"
               selected={option.id === category}
               onClick={() => handleCategory(option.id)}
             >
-              {option.label}
+              {option.label} {data?.counts[option.id] ?? 0}
             </Chip>
           ))}
         </div>
       )}
 
-      {/* 목록 자리를 미리 잡아둔다 — 불러오는 동안 아래 페이지네이션이 뛰지 않게. */}
+      {/* 목록 자리를 미리 잡아둔다 — 불러오는 동안 아래 문구가 뛰지 않게. */}
       <div className="min-h-[360px]">
         {message ? (
           <p role="alert" className="text-danger py-10 text-center text-[13px]">
@@ -204,14 +285,95 @@ export default function MySavedPage() {
         )}
       </div>
 
-      {data && (
-        <div className="mt-6 flex flex-col items-center gap-3">
-          <Pagination page={data.page} totalPages={data.totalPages} onChange={setPage} />
-          <p className="text-text-secondary text-[12px]">
-            찜한 장소를 골라 팜플렛으로 만들어 보세요.
+      {/*
+        바닥 표식. 여기가 화면에 들어오면 다음 묶음을 펼친다.
+        목록 안이 아니라 밖에 둬서 divide 선이 하나 더 그어지지 않게 한다.
+      */}
+      {data?.hasMore && <div ref={sentinelRef} aria-hidden="true" className="h-px" />}
+
+      <div className="mt-6 flex flex-col items-center gap-3">
+        {data?.hasMore && (
+          <p role="status" className="text-text-secondary text-[12px]">
+            불러오는 중…
           </p>
-        </div>
-      )}
+        )}
+        <p className="text-text-secondary text-[12px]">
+          찜한 장소를 골라 팜플렛으로 만들어 보세요.
+        </p>
+      </div>
+
+      {/*
+        Modal은 children을 받지 않아 입력 칸을 description으로 넘긴다.
+        TODO: 명세에 '팜플렛 화면이 수정될 수 있음'이라 적혀 있다. 전용 화면이
+        확정되면 이 모달 대신 그쪽으로 옮긴다.
+      */}
+      <Modal
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        kicker="팜플렛 만들기"
+        title={`선택한 ${selected.size}곳으로`}
+        description={
+          <span className="mt-2 flex flex-col gap-4 text-left">
+            <Input
+              label="제목"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              maxLength={PAMPHLET_TITLE_MAX}
+              placeholder="경북 온천 여행"
+              hint={`${title.length} / ${PAMPHLET_TITLE_MAX}자`}
+            />
+            <Input
+              label="인원 (선택)"
+              type="number"
+              inputMode="numeric"
+              min={PAMPHLET_PARTY_MIN}
+              max={PAMPHLET_PARTY_MAX}
+              value={partySize}
+              onChange={(event) => setPartySize(event.target.value)}
+              placeholder="2"
+            />
+            <Input
+              label="여행일 (선택)"
+              type="date"
+              value={travelDate}
+              onChange={(event) => setTravelDate(event.target.value)}
+            />
+          </span>
+        }
+        primaryAction={{
+          label: creating ? '만드는 중…' : '만들기',
+          onClick: () => void submitPamphlet(),
+          disabled: !canSubmit || creating,
+        }}
+        secondaryAction={{ label: '취소', onClick: () => setFormOpen(false) }}
+      />
+
+      <Modal
+        open={created !== null}
+        onClose={() => setCreated(null)}
+        kicker="팜플렛 완성"
+        title={created?.title ?? ''}
+        description={
+          <span className="mt-2 flex flex-col gap-3 text-left">
+            <span className="text-text-secondary text-[13px]">
+              장소 {created?.placeCount ?? 0}곳이 담겼습니다.
+              {shareUrl ? ' 링크로 공유해 보세요.' : ' 팜플렛 탭에서 볼 수 있습니다.'}
+            </span>
+            {/* 링크를 화면에도 그대로 둔다 — 클립보드가 막힌 환경에서도 직접 복사할 수 있게. */}
+            {shareUrl && (
+              <span className="bg-surface-dim text-text-primary rounded-sm px-3 py-2 text-[12px] break-all">
+                {shareUrl}
+              </span>
+            )}
+          </span>
+        }
+        primaryAction={{
+          label: copied ? '복사했습니다' : '링크 복사',
+          onClick: () => void copyShareUrl(),
+          disabled: !shareUrl,
+        }}
+        secondaryAction={{ label: '닫기', onClick: () => setCreated(null) }}
+      />
 
       <Modal
         open={pendingDelete !== null}

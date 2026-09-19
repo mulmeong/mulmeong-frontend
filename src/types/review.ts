@@ -62,6 +62,20 @@ export type CreateReviewResult = {
   reward: ReviewReward
 }
 
+/* 아래는 REV-07 온천별 리뷰 목록(GET /onsens/{id}/reviews)에서 쓴다. */
+
+/**
+ * 같은 API를 지도(ReviewSection)와 다트(OnsenReviews)가 각각 붙이면서 이름이 갈렸다.
+ * 정렬 키는 동일하고 표기만 다르다 — 화면을 합칠 때 한쪽으로 정리한다.
+ */
+export const ONSEN_REVIEW_SORTS = {
+  RECENT: '최신순',
+  RATING_DESC: '별점순',
+  PHOTO_FIRST: '사진순',
+} as const
+
+export type OnsenReviewSort = keyof typeof ONSEN_REVIEW_SORTS
+
 export const REVIEW_SORTS = ['RECENT', 'RATING_DESC', 'PHOTO_FIRST'] as const
 export type ReviewSort = (typeof REVIEW_SORTS)[number]
 
@@ -71,32 +85,46 @@ export const REVIEW_SORT_LABELS: Record<ReviewSort, string> = {
   PHOTO_FIRST: '사진 먼저',
 }
 
-export type PublicReviewAuthor = {
+/**
+ * 공개 프로필. 사용자 PK·이메일·실명은 오지 않는다.
+ * 탈퇴 회원은 nickname이 '탈퇴한 사용자'이고 나머지가 전부 null이다.
+ */
+export type ReviewAuthor = {
   nickname: string
   level?: number | null
   title?: string | null
   profileShareToken?: string | null
 }
 
-export type PublicReview = {
+export type OnsenReview = {
   reviewId: number
-  author: PublicReviewAuthor
+  author: ReviewAuthor
   rating: number
+  /** YYYY-MM-DD */
   visitedAt: string
   isRevisit: boolean
   spec: ReviewSpec
+  /** 본문은 0자를 허용한다 — 빈 문자열일 수 있다. */
   body: string
+  /** CloudFront 원본 URL. 썸네일은 아직 없다. */
   images: string[]
   isMine: boolean
+  /** 작성 후 고친 적이 있다. */
   isEdited: boolean
   createdAt: string
 }
 
-export type ReviewPage = {
-  content: PublicReview[]
+/** 지도 쪽에서 쓰던 이름. 같은 응답이라 별칭으로 둔다. */
+export type PublicReviewAuthor = ReviewAuthor
+export type PublicReview = OnsenReview
+
+export type OnsenReviewPage = {
+  content: OnsenReview[]
   page: number
   size: number
   totalElements: number
   totalPages: number
   last: boolean
 }
+
+export type ReviewPage = OnsenReviewPage
