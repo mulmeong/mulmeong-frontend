@@ -12,6 +12,8 @@ import MagazinePage from '@/pages/MagazinePage'
 import MapPage from '@/pages/MapPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 import LoginPage from '@/pages/auth/LoginPage'
+import PasswordResetPage from '@/pages/auth/PasswordResetPage'
+import ResetPasswordPage from '@/pages/auth/ResetPasswordPage'
 import SignupDonePage from '@/pages/auth/SignupDonePage'
 import SignupPage from '@/pages/auth/SignupPage'
 import MyAccountPage from '@/pages/mypage/MyAccountPage'
@@ -29,6 +31,8 @@ export const router = createBrowserRouter([
       // 홈은 히어로 위에 헤더를 띄워야 해서 Header를 직접 렌더링한다.
       { path: '/', element: <HomePage /> },
       { path: '/login', element: <LoginPage /> },
+      { path: '/password-reset', element: <PasswordResetPage /> },
+      { path: '/reset-password', element: <ResetPasswordPage /> },
       { path: '/signup', element: <SignupPage /> },
       { path: '/signup/done', element: <SignupDonePage /> },
       // 지도는 화면을 꽉 채우는 레이아웃이라 RootLayout 밖에 둔다 (헤더는 페이지가 직접 렌더).

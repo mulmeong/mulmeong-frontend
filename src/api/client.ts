@@ -104,6 +104,17 @@ async function send(
 
 async function request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
   let response = await send(method, path, options)
+  let data = await parseBody(response)
+
+  // 비밀번호 확인 실패도 401이다. 이 업무 오류는 세션 만료가 아니다.
+  const isSessionUnauthorized = () =>
+    response.status === 401 &&
+    !(
+      typeof data === 'object' &&
+      data !== null &&
+      'code' in data &&
+      data.code === 'CURRENT_PASSWORD_MISMATCH'
+    )
 
   /*
    * Access Token이 만료됐다. 쿠키로 재발급받아 원요청을 한 번만 다시 보낸다.
@@ -112,16 +123,15 @@ async function request<T>(method: string, path: string, options: RequestOptions 
    * 부르면 무한 루프가 된다 (명세 비고). FormData는 이미 소비돼 재전송할 수 없다.
    */
   const retriable =
-    response.status === 401 && !options.skipAuth && !(options.body instanceof FormData)
+    isSessionUnauthorized() && !options.skipAuth && !(options.body instanceof FormData)
 
   if (retriable && (await reissueOnce())) {
     response = await send(method, path, options)
+    data = await parseBody(response)
   }
 
-  const data = await parseBody(response)
-
   // 재발급까지 실패했다. 토큰을 남겨두면 이후 요청마다 401을 반복한다.
-  if (response.status === 401 && !options.skipAuth) {
+  if (isSessionUnauthorized() && !options.skipAuth) {
     tokenStorage.clear()
     window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
   }
