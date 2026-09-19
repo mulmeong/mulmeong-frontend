@@ -98,10 +98,13 @@ export default function MySavedPage() {
     }
   }
 
+  /** 만들기 응답의 공유 링크. 목록 응답과 타입을 공유해서 없을 수도 있게 열려 있다. */
+  const shareUrl = created?.shareUrl ?? ''
+
   const copyShareUrl = async () => {
-    if (!created) return
+    if (!shareUrl) return
     try {
-      await navigator.clipboard.writeText(created.shareUrl)
+      await navigator.clipboard.writeText(shareUrl)
       setCopied(true)
     } catch {
       // 클립보드는 https나 사용자 동작이 아니면 막힌다. 링크는 화면에 그대로 있다.
@@ -338,17 +341,21 @@ export default function MySavedPage() {
         description={
           <span className="mt-2 flex flex-col gap-3 text-left">
             <span className="text-text-secondary text-[13px]">
-              장소 {created?.placeCount ?? 0}곳이 담겼습니다. 링크로 공유해 보세요.
+              장소 {created?.placeCount ?? 0}곳이 담겼습니다.
+              {shareUrl ? ' 링크로 공유해 보세요.' : ' 팜플렛 탭에서 볼 수 있습니다.'}
             </span>
             {/* 링크를 화면에도 그대로 둔다 — 클립보드가 막힌 환경에서도 직접 복사할 수 있게. */}
-            <span className="bg-surface-dim text-text-primary rounded-sm px-3 py-2 text-[12px] break-all">
-              {created?.shareUrl}
-            </span>
+            {shareUrl && (
+              <span className="bg-surface-dim text-text-primary rounded-sm px-3 py-2 text-[12px] break-all">
+                {shareUrl}
+              </span>
+            )}
           </span>
         }
         primaryAction={{
           label: copied ? '복사했습니다' : '링크 복사',
           onClick: () => void copyShareUrl(),
+          disabled: !shareUrl,
         }}
         secondaryAction={{ label: '닫기', onClick: () => setCreated(null) }}
       />
