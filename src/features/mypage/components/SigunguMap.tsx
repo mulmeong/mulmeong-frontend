@@ -1,3 +1,4 @@
+import { tipAtPointer, type MapTip } from '@/features/mypage/components/MapTooltip'
 import { densityFill, MAP_STROKE, type SidoRegion } from '@/features/mypage/myMap/sidoRegions'
 import { SIGUNGU_MAPS } from '@/features/mypage/myMap/sigunguPaths'
 
@@ -7,6 +8,8 @@ type SigunguMapProps = {
   sido: SidoRegion
   /** 그 시·도의 시군구별 방문 기록. 방문 0인 곳도 들어 있다. */
   regions: GrapeRegion[]
+  /** 말풍선에 띄울 내용. null이면 감춘다. */
+  onHover?: (tip: MapTip | null) => void
 }
 
 /**
@@ -17,7 +20,7 @@ type SigunguMapProps = {
  * TODO: 이름-코드 대응표를 붙이고 regionCode 기준으로 바꿀 것. 명세에도
  * '프론트·백 합의 필요'로 올라와 있는 항목이다.
  */
-export default function SigunguMap({ sido, regions }: SigunguMapProps) {
+export default function SigunguMap({ sido, regions, onHover }: SigunguMapProps) {
   const map = SIGUNGU_MAPS[sido.code]
 
   if (!map) {
@@ -39,6 +42,8 @@ export default function SigunguMap({ sido, regions }: SigunguMapProps) {
     >
       {map.paths.map((path) => {
         const visit = visitOf(path.name)
+        // 이름표를 도형 위에 얹으면 작은 구에서는 삐져나온다 — 말풍선으로 띄운다.
+        const tipText = `${path.name} ${visit?.visitCount ?? 0}회`
 
         return (
           <path
@@ -48,10 +53,10 @@ export default function SigunguMap({ sido, regions }: SigunguMapProps) {
             stroke={MAP_STROKE}
             strokeWidth={1.5}
             strokeLinejoin="round"
-          >
-            {/* 이름표를 도형 위에 얹으면 작은 구에서는 삐져나온다 — 툴팁으로 둔다. */}
-            <title>{`${path.name} ${visit?.visitCount ?? 0}회`}</title>
-          </path>
+            aria-label={tipText}
+            onMouseMove={onHover && ((event) => onHover(tipAtPointer(event, tipText)))}
+            onMouseLeave={onHover && (() => onHover(null))}
+          />
         )
       })}
     </svg>

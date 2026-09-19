@@ -1,12 +1,19 @@
 import { useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 
+import MapTooltip, { type MapTip } from '@/features/mypage/components/MapTooltip'
 import SidoMap from '@/features/mypage/components/SidoMap'
 import SigunguMap from '@/features/mypage/components/SigunguMap'
 import { useGrapeMap } from '@/features/mypage/hooks/useGrapeMap'
 import { useMyReviews } from '@/features/mypage/hooks/useMyReviews'
-import { regionGrowStyle, type SidoRegion } from '@/features/mypage/myMap/sidoRegions'
+import {
+  regionGrowStyle,
+  SIDO_REGIONS,
+  type SidoRegion,
+} from '@/features/mypage/myMap/sidoRegions'
 import { cn } from '@/lib/cn'
+
+import { regionGroupOf } from '@/types/region'
 
 import type { MyReview } from '@/types/myReview'
 
@@ -43,29 +50,38 @@ export default function MyMapPage() {
   /** 고른 시·도. null이면 전국 지도를 크게 보여준다. */
   const [selected, setSelected] = useState<SidoRegion | null>(null)
 
+  /** 커서를 따라다니는 말풍선. null이면 감춘다. */
+  const [tip, setTip] = useState<MapTip | null>(null)
+
+  // 지도를 갈아끼울 때는 말풍선을 지운다 — 가리키던 도형이 사라져 버린다.
+  const handleSelect = (region: SidoRegion) => {
+    setSelected(region)
+    setTip(null)
+  }
+
+  const handleBack = () => {
+    setSelected(null)
+    setTip(null)
+  }
+
   const nation = useGrapeMap('SIDO')
   const sigungu = useGrapeMap('SIGUNGU', selected?.code)
 
   // 오른쪽 패널의 리뷰. 포도알 응답에는 리뷰가 없어 목록 API를 그대로 쓴다.
   const { data: reviewPage } = useMyReviews('recent', 1, 'all')
 
-  if (nation.loading) {
-    return <p className="text-text-secondary py-20 text-center text-[13px]">불러오는 중…</p>
-  }
-
-  if (nation.error || !nation.data) {
-    return (
-      <p role="alert" className="text-danger py-20 text-center text-[13px]">
-        {nation.error ?? '내 지도를 불러오지 못했습니다.'}
-      </p>
-    )
-  }
-
+  /**
+   * 방문 기록을 못 받아와도 지도는 그린다.
+   * 도형은 프론트가 들고 있는 정적 데이터이고 서버는 색칠할 횟수만 준다 —
+   * 횟수가 없다고 지도까지 없앨 이유는 없다. 색이 전부 0단계로 나올 뿐이다.
+   */
   const map = nation.data
-  const totalVisits = map.regions.reduce((sum, region) => sum + region.visitCount, 0)
+  const regions = map?.regions ?? []
+
+  const totalVisits = regions.reduce((sum, region) => sum + region.visitCount, 0)
 
   const selectedVisits = selected
-    ? (map.regions.find((region) => region.regionCode === selected.code)?.visitCount ?? 0)
+    ? (regions.find((region) => region.regionCode === selected.code)?.visitCount ?? 0)
     : 0
 
   // 고른 지역이 있으면 그 지역 리뷰만 추린다.
@@ -81,11 +97,21 @@ export default function MyMapPage() {
   return (
     <div className="flex flex-col gap-4 lg:flex-row">
       <div className="border-border-default relative flex flex-1 flex-col items-center rounded-sm border p-4">
-        <p className="text-text-secondary text-center text-[12px]">
-          {selected
-            ? `${selected.name}의 시군구 · 왼쪽 아래 지도를 누르면 전국으로 돌아가요`
-            : `리뷰를 남긴 시·도의 포도알이 진해져요 · 지금까지 ${map.totalVisitedRegions} / ${map.totalRegions}곳 방문`}
-        </p>
+        {nation.error ? (
+          // 지도는 그대로 두고 사유만 얹는다. 색이 왜 다 옅은지 알 수 있어야 한다.
+          <p role="alert" className="text-danger text-center text-[12px]">
+            {nation.error} · 방문 기록 없이 지도만 보여드려요
+          </p>
+        ) : (
+          <p className="text-text-secondary text-center text-[12px]">
+            {selected
+              ? `${selected.name}의 시군구 · 왼쪽 아래 지도를 누르면 전국으로 돌아가요`
+              : nation.loading
+                ? '방문 기록을 불러오는 중…'
+                : // '0 / 17'만 적으면 온천 개수로 읽힌다. 무엇을 세는 수인지 앞에 붙인다.
+                  `전국 시·도 ${map?.totalRegions ?? SIDO_REGIONS.length}곳 중 ${map?.totalVisitedRegions ?? 0}곳 방문 · 리뷰를 남기면 그 지역 포도알이 진해져요`}
+          </p>
+        )}
 
         {/*
           전국 지도와 시군구 지도가 같은 상자를 겹쳐 쓴다.
@@ -101,7 +127,11 @@ export default function MyMapPage() {
               style={regionGrowStyle(selected) as CSSProperties}
               className="animate-region-grow absolute inset-0 motion-reduce:animate-none"
             >
-              <SigunguMap sido={selected} regions={sigungu.data?.regions ?? []} />
+              <SigunguMap
+                sido={selected}
+                regions={sigungu.data?.regions ?? []}
+                onHover={setTip}
+              />
             </div>
           )}
 
@@ -114,10 +144,13 @@ export default function MyMapPage() {
             )}
           >
             <SidoMap
-              regions={map.regions}
+              regions={regions}
               selectedCode={selected?.code ?? null}
               // 줄어든 뒤에는 개별 시·도를 고르지 못한다 — 통째로 돌아가기 버튼이 된다.
-              onSelect={selected ? undefined : setSelected}
+              onSelect={selected ? undefined : handleSelect}
+              // 작아진 지도 위에서는 말풍선을 띄우지 않는다. 도형이 너무 작아
+              // 어디를 가리키는지 알아볼 수 없고, 시군구 말풍선과도 엉킨다.
+              onHover={selected ? undefined : setTip}
             />
           </div>
 
@@ -127,7 +160,7 @@ export default function MyMapPage() {
           */}
           <button
             type="button"
-            onClick={() => setSelected(null)}
+            onClick={handleBack}
             aria-label="전국 지도로 돌아가기"
             aria-hidden={!selected}
             tabIndex={selected ? 0 : -1}
@@ -139,6 +172,8 @@ export default function MyMapPage() {
               !selected && 'pointer-events-none opacity-0',
             )}
           />
+
+          <MapTooltip tip={tip} />
         </div>
       </div>
 
@@ -182,7 +217,11 @@ export default function MyMapPage() {
           <p className="text-text-secondary mt-3 text-[12px]">아직 남긴 리뷰가 없어요.</p>
         )}
 
-        <Link to="/my/reviews" className="mt-auto pt-6 text-[12px] font-semibold">
+        {/* 고른 지역이 있으면 내 리뷰 탭의 지역 칩이 눌린 상태로 열린다. */}
+        <Link
+          to={selected ? `/my/reviews?region=${regionGroupOf(selected.name)}` : '/my/reviews'}
+          className="mt-auto pt-6 text-[12px] font-semibold"
+        >
           {selected ? '이 지역 리뷰 전체 보기' : '전체 리뷰 보기'} →
         </Link>
       </aside>

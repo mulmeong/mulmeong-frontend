@@ -6,6 +6,7 @@ import {
   sidoPath,
   type SidoRegion,
 } from '@/features/mypage/myMap/sidoRegions'
+import { tipAtPointer, tipAtShape, type MapTip } from '@/features/mypage/components/MapTooltip'
 import { cn } from '@/lib/cn'
 
 import type { GrapeRegion } from '@/types/myMap'
@@ -17,9 +18,16 @@ type SidoMapProps = {
   selectedCode?: string | null
   /** 넘기지 않으면 고를 수 없는 지도가 된다 — 왼쪽 아래로 줄어든 지도가 그 경우다. */
   onSelect?: (region: SidoRegion) => void
+  /** 말풍선에 띄울 내용. null이면 감춘다. onSelect가 없으면 부르지 않는다. */
+  onHover?: (tip: MapTip | null) => void
 }
 
-export default function SidoMap({ regions, selectedCode = null, onSelect }: SidoMapProps) {
+export default function SidoMap({
+  regions,
+  selectedCode = null,
+  onSelect,
+  onHover,
+}: SidoMapProps) {
   // 시·도 코드는 응답의 regionCode 2자리와 그대로 맞는다.
   const visitOf = (code: string) => regions.find((region) => region.regionCode === code)
 
@@ -34,6 +42,7 @@ export default function SidoMap({ regions, selectedCode = null, onSelect }: Sido
         const visit = visitOf(region.code)
         const count = visit?.visitCount ?? 0
         const selected = region.code === selectedCode
+        const tipText = `${region.name} ${count}회`
 
         return (
           <path
@@ -50,6 +59,10 @@ export default function SidoMap({ regions, selectedCode = null, onSelect }: Sido
             aria-pressed={onSelect ? selected : undefined}
             aria-label={onSelect ? `${region.name}, ${count}회 방문` : undefined}
             onClick={onSelect && (() => onSelect(region))}
+            onMouseMove={onHover && ((event) => onHover(tipAtPointer(event, tipText)))}
+            onMouseLeave={onHover && (() => onHover(null))}
+            onFocus={onHover && ((event) => onHover(tipAtShape(event, tipText)))}
+            onBlur={onHover && (() => onHover(null))}
             onKeyDown={
               onSelect &&
               ((event) => {
@@ -64,10 +77,7 @@ export default function SidoMap({ regions, selectedCode = null, onSelect }: Sido
               Boolean(onSelect) &&
                 'cursor-pointer transition-[stroke-width,opacity] duration-150 hover:opacity-80 focus-visible:opacity-80 motion-reduce:transition-none',
             )}
-          >
-            {/* 호버하면 방문 횟수가 뜬다(MY-02). */}
-            <title>{`${region.name} ${count}회`}</title>
-          </path>
+          />
         )
       })}
     </svg>

@@ -58,10 +58,16 @@ export function sidoPath(region: SidoRegion): string {
 export const MAP_VIEW_BOX = '0 55 300 320'
 
 /**
- * 농도 양 끝. 안 간 곳은 surface-dim, 가장 많이 간 곳은 inverse다.
- * 둘 다 @theme에 있는 값이라 지도만 혼자 다른 색을 쓰지 않는다.
+ * 농도 양 끝. 가장 많이 간 곳은 inverse(#1c1b18)다.
+ *
+ * 안 간 곳은 surface-dim(#f7f7f5)을 쓰다가 한 단계 낮췄다. 카드 배경이 흰색이라
+ * 지도인지 여백인지 구분이 안 됐다. border-default(#c9c8c2)까지 내리면 이번엔
+ * 안 간 곳이 '옅게 칠한 곳'처럼 보여서, 그 둘 사이에 세웠다.
+ *
+ * TODO: @theme에 없는 값이다. 지도에만 쓰는 색이라 여기 뒀는데, 다른 화면에서도
+ * 필요해지면 토큰으로 올릴지 팀과 정할 것.
  */
-const FILL_EMPTY = [0xf7, 0xf7, 0xf5]
+const FILL_EMPTY = [0xe6, 0xe5, 0xe0]
 const FILL_FULL = [0x1c, 0x1b, 0x18]
 
 /** 경계선. 진한 지역 위에서도 구분되도록 흰색(surface)을 쓴다. */
