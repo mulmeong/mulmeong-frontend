@@ -4,7 +4,6 @@ import { env } from '@/lib/env'
 import {
   mockDeleteReview,
   mockGetMyReviews,
-  mockGetRegionReviews,
   mockGetReviewDetail,
   mockUpdateReview,
 } from './reviewsMock'
@@ -13,46 +12,31 @@ import { toMyReviewsPage, type MyReviewsResponse } from './reviewsDto'
 import type {
   MyReviewDetail,
   MyReviewFormValues,
+  MyReviewQuery,
   MyReviewsPage,
-  ReviewRegion,
-  ReviewSort,
 } from '@/types/myReview'
 
-/**
- * 목록 탭이 쓰는 호출. 아직 명세(MY-04)와 계약이 어긋난다 —
- * 정렬 값(recent/region/rating vs RECENT/OLDEST/RATING_DESC), 0부터 세는 page,
- * 권역 대신 regionCode. 탭의 칩 구조까지 같이 바꿔야 해서 따로 진행한다.
- *
- * TODO: 탭을 명세로 옮기면 아래 getRegionReviews와 합쳐 이 함수를 없앤다.
- */
-export function getMyReviews(
-  sort: ReviewSort,
-  page: number,
-  region: ReviewRegion,
-): Promise<MyReviewsPage> {
-  if (env.useMock) return mockGetMyReviews(sort, page, region)
-  return api.get<MyReviewsPage>('/users/me/reviews', {
-    // '전국'은 조건이 없는 것과 같으므로 보내지 않는다.
-    params: { sort, page, region: region === 'all' ? undefined : region },
-  })
-}
+/** 목록 한 페이지에 담을 수. 명세 기본값은 10, 최대 30이다. */
+export const REVIEW_PAGE_SIZE = 5
 
 /**
- * 한 지역의 최신 리뷰 몇 건. 내 지도 오른쪽 패널이 쓴다.
+ * 내 리뷰 목록(MY-04). 목록 탭과 내 지도 오른쪽 패널이 같이 쓴다.
  *
- * regionCode를 서버에 그대로 넘긴다 — 시·도 코드가 곧 명세의 2자리 코드다.
- * 받아온 목록을 화면에서 주소 앞글자로 거르던 방식을 대신한다. 표기가
- * '충북'이냐 '충청북도'냐에 따라 결과가 갈리던 문제가 없어진다.
+ * regionCode는 서버에 그대로 넘긴다 — 시·도 코드가 곧 명세의 2자리 코드다.
+ * 받아온 목록을 화면에서 주소 앞글자로 거르던 방식을 대신하므로, 표기가
+ * '충북'이냐 '충청북도'냐에 따라 결과가 갈리지 않는다.
  */
-export function getRegionReviews(
-  regionCode: string | undefined,
-  size: number,
-): Promise<MyReviewsPage> {
-  if (env.useMock) return mockGetRegionReviews(regionCode, size)
+export function getMyReviews({
+  regionCode,
+  sort = 'RECENT',
+  page = 1,
+  size = REVIEW_PAGE_SIZE,
+}: MyReviewQuery = {}): Promise<MyReviewsPage> {
+  if (env.useMock) return mockGetMyReviews({ regionCode, sort, page, size })
   return api
     .get<MyReviewsResponse>('/users/me/reviews', {
-      // 전국이면 regionCode를 빼고 부른다. page는 0부터다.
-      params: { regionCode, sort: 'RECENT', page: 0, size },
+      // 전국이면 regionCode를 빼고 부른다. 서버의 page는 0부터다.
+      params: { regionCode, sort, page: page - 1, size },
     })
     .then(toMyReviewsPage)
 }

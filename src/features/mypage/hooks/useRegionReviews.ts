@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import { ApiError } from '@/api/ApiError'
-import { getRegionReviews } from '@/features/mypage/api/reviews'
+import { getMyReviews } from '@/features/mypage/api/reviews'
 
 import type { MyReviewsPage } from '@/types/myReview'
 
@@ -24,7 +24,7 @@ export function useRegionReviews(regionCode: string | undefined, size: number) {
 
     const load = async () => {
       try {
-        const data = await getRegionReviews(regionCode, size)
+        const data = await getMyReviews({ regionCode, size })
         if (!cancelled) setLoaded({ key, data })
       } catch (cause) {
         if (cancelled) return

@@ -13,8 +13,6 @@ import {
 } from '@/features/mypage/myMap/sidoRegions'
 import { cn } from '@/lib/cn'
 
-import { regionGroupOf } from '@/types/region'
-
 import type { MyReview } from '@/types/myReview'
 
 /** 오른쪽 패널에 띄울 리뷰 수. 지도가 주인공이라 맛보기만 둔다. */
@@ -214,7 +212,7 @@ export default function MyMapPage() {
 
         {/* 고른 지역이 있으면 내 리뷰 탭의 지역 칩이 눌린 상태로 열린다. */}
         <Link
-          to={selected ? `/my/reviews?region=${regionGroupOf(selected.name)}` : '/my/reviews'}
+          to={selected ? `/my/reviews?regionCode=${selected.code}` : '/my/reviews'}
           className="mt-auto pt-6 text-[12px] font-semibold"
         >
           {selected ? '이 지역 리뷰 전체 보기' : '전체 리뷰 보기'} →

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import { ApiError } from '@/api'
@@ -11,24 +11,35 @@ import ReviewFormPanel from '@/features/mypage/components/ReviewFormPanel'
 import ReviewItem from '@/features/mypage/components/ReviewItem'
 import { useMyReviews } from '@/features/mypage/hooks/useMyReviews'
 
-import { REGION_GROUPS, toRegionGroupId } from '@/types/region'
-import { REVIEW_SORTS, type MyReview, type ReviewRegion, type ReviewSort } from '@/types/myReview'
+import { SIDO_REGIONS } from '@/features/mypage/myMap/sidoRegions'
+
+import type { ReviewRegionFilter } from '@/features/mypage/api/reviewsDto'
+import { REVIEW_SORTS, type MyReview, type ReviewSort } from '@/types/myReview'
+
+/**
+ * 칩에 쓸 짧은 이름. 서버는 '충청북도'처럼 정식 명칭을 주는데 그대로 쓰면
+ * 칩이 길어져 줄이 넘어간다. 보내는 값은 코드라 표기는 바꿔도 안전하다.
+ * 시군구 코드(5자리)는 대응표가 없어 서버 이름을 그대로 쓴다.
+ */
+function shortRegionName(filter: ReviewRegionFilter): string {
+  return SIDO_REGIONS.find((region) => region.code === filter.regionCode)?.name ?? filter.name
+}
 
 /** 내 리뷰 · 담당: 예린 */
 export default function MyReviewsPage() {
   /**
-   * 내 지도에서 '이 지역 리뷰 전체 보기'로 넘어오면 ?region=gangwon이 붙는다.
+   * 내 지도에서 '이 지역 리뷰 전체 보기'로 넘어오면 ?regionCode=42가 붙는다.
    * 처음 값만 주소에서 읽고, 그 뒤 칩 조작은 state로만 다룬다 — 주소를 계속
    * 맞춰 쓰면 뒤로 가기가 칩 한 번 누른 만큼씩 되감겨 되레 불편해진다.
    */
   const [searchParams] = useSearchParams()
-  const [initialRegion] = useState(() => toRegionGroupId(searchParams.get('region')))
+  const [initialRegion] = useState(() => searchParams.get('regionCode') ?? undefined)
 
-  // 지역을 지정해 들어왔으면 지역 칩이 보여야 하므로 '지역별'로 연다.
-  const [sort, setSort] = useState<ReviewSort>(initialRegion ? 'region' : 'recent')
-  const [region, setRegion] = useState<ReviewRegion>(initialRegion ?? 'all')
+  const [sort, setSort] = useState<ReviewSort>('RECENT')
+  /** 고른 지역 코드. undefined면 전국이다. */
+  const [regionCode, setRegionCode] = useState<string | undefined>(initialRegion)
   const [page, setPage] = useState(1)
-  const { data, loading, error, reload } = useMyReviews(sort, page, region)
+  const { data, loading, error, reload } = useMyReviews(sort, page, regionCode)
 
   const [actionError, setActionError] = useState<string>()
 
@@ -63,12 +74,10 @@ export default function MyReviewsPage() {
     setPage(1)
     // 목록이 새로 그려지므로 펼친 것도 닫는다.
     setExpandedId(null)
-    // 지역별에서 벗어나면 골라둔 지역도 푼다 — 칩이 사라져 되돌릴 방법이 없어진다.
-    if (next !== 'region') setRegion('all')
   }
 
-  const handleRegion = (next: ReviewRegion) => {
-    setRegion(next)
+  const handleRegion = (next: string | undefined) => {
+    setRegionCode(next)
     setPage(1)
     setExpandedId(null)
   }
@@ -104,6 +113,15 @@ export default function MyReviewsPage() {
     reload()
   }
 
+  /**
+   * 지역 칩 목록. 불러오는 동안에는 직전 것을 그대로 쓴다 —
+   * 칩을 누를 때마다 응답이 올 때까지 칩 줄이 통째로 사라졌다 나타난다.
+   * 값이 같으면 덮어써도 결과가 같아 렌더 중에 담아둬도 안전하다.
+   */
+  const regionsRef = useRef<ReviewRegionFilter[]>([])
+  if (data?.regions) regionsRef.current = data.regions
+  const regions = regionsRef.current
+
   const message = error ?? actionError
 
   return (
@@ -131,18 +149,25 @@ export default function MyReviewsPage() {
       </div>
 
       {/*
-        지역 칩은 '지역별'을 골랐을 때만 나온다.
-        17개 시·도를 다 늘어놓으면 두 줄이 넘어가서 시안대로 권역으로 묶었다.
+        지역 칩은 서버가 준 목록으로 그린다(MY-04 filters.regions).
+        내가 리뷰를 쓴 지역만 오므로 눌러도 0건인 칩이 생기지 않는다.
+
+        한 건도 없으면 칩 줄을 감춘다 — '전국' 하나만 떠 있어봐야 할 일이 없다.
+        단 지역을 골라둔 상태라면 비어 있어도 남긴다. 고른 지역의 리뷰를 모두
+        지우면 목록이 비면서 칩도 같이 사라져, 전국으로 돌아갈 길이 없어진다.
       */}
-      {sort === 'region' && (
-        <div className="border-border-default mt-3 flex flex-wrap gap-2 border-t pt-3">
-          {REGION_GROUPS.map((option) => (
+      {(regions.length > 0 || regionCode !== undefined) && (
+        <div className="border-border-default mt-3 flex flex-wrap items-center gap-2 border-t pt-3">
+          <Chip selected={regionCode === undefined} onClick={() => handleRegion(undefined)}>
+            전국
+          </Chip>
+          {regions.map((option) => (
             <Chip
-              key={option.id}
-              selected={option.id === region}
-              onClick={() => handleRegion(option.id)}
+              key={option.regionCode}
+              selected={option.regionCode === regionCode}
+              onClick={() => handleRegion(option.regionCode)}
             >
-              {option.label}
+              {shortRegionName(option)} {option.count}
             </Chip>
           ))}
         </div>

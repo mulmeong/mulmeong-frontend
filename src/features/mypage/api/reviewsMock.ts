@@ -1,13 +1,13 @@
 import { ApiError } from '@/api/ApiError'
 import { SIDO_REGIONS } from '@/features/mypage/myMap/sidoRegions'
-import { matchesRegionGroup } from '@/types/region'
 import { RATING_MAX, RATING_MIN, VISIT_TIMES } from '@/types/review'
 
+import type { ReviewRegionFilter } from './reviewsDto'
 import type {
   MyReview,
   MyReviewDetail,
+  MyReviewQuery,
   MyReviewsPage,
-  ReviewRegion,
   ReviewSort,
 } from '@/types/myReview'
 
@@ -134,57 +134,64 @@ function delay<T>(value: T): Promise<T> {
 
 function sortReviews(reviews: MyReview[], sort: ReviewSort): MyReview[] {
   const sorted = [...reviews]
-  if (sort === 'rating') return sorted.sort((a, b) => b.rating - a.rating)
-  if (sort === 'region') return sorted.sort((a, b) => a.onsenAddress.localeCompare(b.onsenAddress))
+  if (sort === 'RATING_DESC') return sorted.sort((a, b) => b.rating - a.rating)
+  if (sort === 'OLDEST') return sorted.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
   return sorted.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 }
 
-export function mockGetMyReviews(
-  sort: ReviewSort,
-  page: number,
-  region: ReviewRegion,
-): Promise<MyReviewsPage> {
-  const filtered = sortReviews(
-    MOCK_REVIEWS.filter((review) => matchesRegionGroup(review.onsenAddress, region)),
-    sort,
-  )
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  // 필터를 좁혀 페이지 수가 줄면 현재 페이지가 범위를 넘을 수 있다.
-  const safePage = Math.min(page, totalPages)
-  const start = (safePage - 1) * PAGE_SIZE
-
-  return delay({
-    items: filtered.slice(start, start + PAGE_SIZE),
-    totalCount: filtered.length,
-    page: safePage,
-    totalPages,
-  })
+/** 표본 주소는 '경북 울진'처럼 짧은 이름이라, 코드를 이름으로 바꿔 앞부분을 대조한다. */
+function matchesRegionCode(review: MyReview, regionCode: string | undefined): boolean {
+  if (!regionCode) return true
+  const name = SIDO_REGIONS.find((region) => region.code === regionCode)?.name
+  return review.onsenAddress.startsWith(name ?? regionCode)
 }
 
 /**
- * 한 지역의 최신 리뷰 몇 건.
+ * 지역 칩. 서버는 내가 리뷰를 쓴 지역만, 많이 쓴 순으로 내려준다.
  *
- * 실제 서버는 regionCode로 거르지만 표본 주소는 '경북 울진'처럼 짧은 이름이라,
- * 코드를 시·도 이름으로 바꿔 앞부분을 대조한다.
+ * 지금 고른 지역과 무관하게 늘 전체를 만든다 — 거른 결과로 칩을 만들면
+ * 충북을 고르는 순간 다른 칩이 사라져 되돌아갈 방법이 없어진다.
  */
-export function mockGetRegionReviews(
-  regionCode: string | undefined,
-  size: number,
-): Promise<MyReviewsPage> {
-  const name = SIDO_REGIONS.find((region) => region.code === regionCode)?.name
-  const filtered = regionCode
-    ? MOCK_REVIEWS.filter((review) => review.onsenAddress.startsWith(name ?? regionCode))
-    : MOCK_REVIEWS
+function regionFilters(): ReviewRegionFilter[] {
+  const counts = new Map<string, number>()
 
-  const sorted = sortReviews(filtered, 'recent')
+  for (const review of MOCK_REVIEWS) {
+    const region = SIDO_REGIONS.find((item) => review.onsenAddress.startsWith(item.name))
+    if (region) counts.set(region.code, (counts.get(region.code) ?? 0) + 1)
+  }
+
+  return [...counts]
+    .map(([regionCode, count]) => ({
+      regionCode,
+      // 실제 서버는 '충청북도'처럼 정식 명칭을 준다. 화면에서 줄여 쓰는지 확인하려고 맞춰 둔다.
+      name: SIDO_REGIONS.find((item) => item.code === regionCode)?.name ?? regionCode,
+      count,
+    }))
+    .sort((a, b) => b.count - a.count)
+}
+
+export function mockGetMyReviews({
+  regionCode,
+  sort = 'RECENT',
+  page = 1,
+  size = PAGE_SIZE,
+}: MyReviewQuery = {}): Promise<MyReviewsPage> {
+  const filtered = sortReviews(
+    MOCK_REVIEWS.filter((review) => matchesRegionCode(review, regionCode)),
+    sort,
+  )
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / size))
+  // 필터를 좁혀 페이지 수가 줄면 현재 페이지가 범위를 넘을 수 있다.
+  const safePage = Math.min(page, totalPages)
+  const start = (safePage - 1) * size
 
   return delay({
-    items: sorted.slice(0, size),
-    // 잘라내기 전 개수다 — 화면의 '이 지역 리뷰 N'이 실제 수를 보여야 한다.
-    totalCount: sorted.length,
-    page: 1,
-    totalPages: Math.max(1, Math.ceil(sorted.length / size)),
+    items: filtered.slice(start, start + size),
+    totalCount: filtered.length,
+    page: safePage,
+    totalPages,
+    regions: regionFilters(),
   })
 }
 
