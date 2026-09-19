@@ -59,8 +59,8 @@ export function toResultOnsen(place: ResultPlaceLike, detail?: OnsenDetail): Ons
     lng: place.lng,
 
     // 추첨 결과에만 있는 값 — 상세로 덮어쓰지 않는다.
-    tags: [place.accessLabel, place.hasLodging ? '숙박 가능' : ''].filter(
-      (tag): tag is string => Boolean(tag),
+    tags: [place.accessLabel, place.hasLodging ? '숙박 가능' : ''].filter((tag): tag is string =>
+      Boolean(tag),
     ),
     transitAccessible: place.accessLevel === 'WALKABLE' || undefined,
 

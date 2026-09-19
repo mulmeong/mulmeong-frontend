@@ -44,10 +44,7 @@ function Problem({ problem }: { problem: SharedDartProblem }) {
     <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
       <p className="text-[24px] font-bold tracking-[-0.03em] text-[#0E1513]">{title}</p>
       <p className="text-[13.5px] leading-[1.8] text-[#5D6764]">{body}</p>
-      <Link
-        to="/dart"
-        className="mt-2 bg-[#0E1513] px-5 py-3.5 text-[14px] font-bold text-white"
-      >
+      <Link to="/dart" className="mt-2 bg-[#0E1513] px-5 py-3.5 text-[14px] font-bold text-white">
         다트 던지러 가기
       </Link>
     </div>

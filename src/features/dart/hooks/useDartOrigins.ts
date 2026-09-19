@@ -30,9 +30,7 @@ export function useDartOrigins() {
         if (!cancelled) setOrigins(data)
       } catch (cause) {
         if (cancelled) return
-        setError(
-          cause instanceof ApiError ? cause.message : '추천 출발지를 불러오지 못했습니다.',
-        )
+        setError(cause instanceof ApiError ? cause.message : '추천 출발지를 불러오지 못했습니다.')
       } finally {
         if (!cancelled) setLoading(false)
       }
