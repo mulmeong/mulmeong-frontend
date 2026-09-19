@@ -77,6 +77,7 @@ declare namespace kakao.maps {
 
   /** 마커 위에 이름표를 얹는다 — Marker로는 텍스트를 못 그린다. */
   class CustomOverlay {
+    setZIndex(zIndex: number): void
     constructor(options: {
       position: LatLng
       content: string | HTMLElement
@@ -101,7 +102,7 @@ declare namespace kakao.maps {
       calculator?: number[]
       styles?: Record<string, string>[]
     })
-    addMarkers(markers: Marker[]): void
+    addMarkers(markers: (Marker | CustomOverlay)[]): void
     clear(): void
   }
 

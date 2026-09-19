@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import { cn } from '@/lib/cn'
+import { SIDEBAR_CARD_IMAGE as IMAGE_FRAME } from './sidebarCardStyles'
 import FavoriteButton from '@/features/favorites/FavoriteButton'
 
 import type { OnsenListItem } from '@/features/map/api/map'
@@ -11,9 +12,6 @@ type RegionPlaceCardProps = {
   selected: boolean
   onClick: () => void
 }
-
-const IMAGE_FRAME =
-  'bg-surface-dim relative flex aspect-[16/9] items-center justify-center overflow-hidden rounded-[2px]'
 
 /** 실제 카드와 사진·텍스트 행 높이를 공유해 로딩 전후 위치를 유지한다. */
 export function RegionPlaceCardSkeleton() {
@@ -101,8 +99,13 @@ export default function RegionPlaceCard({
           {description}
         </span>
       </button>
+      {/* 사진 위 오버레이라 기본 크기(32px)는 카드에 비해 커 보인다. */}
       <div className="absolute top-2 right-2 rounded-sm bg-white/85">
-        <FavoriteButton target={{ placeId: onsen.id }} name={name} />
+        <FavoriteButton
+          target={{ placeId: onsen.id }}
+          name={name}
+          className="size-7 [&>svg]:size-4"
+        />
       </div>
     </div>
   )

@@ -36,3 +36,10 @@ export type PoiResult = {
   category: PoiCategory
   places: Poi[]
 }
+
+/** API 그룹의 카테고리를 개별 지도 마커까지 전달한다. */
+export type MapPoi = Poi & { category: PoiCategory }
+
+export function poiKey(poi: MapPoi) {
+  return `${poi.category}:${poi.externalId}`
+}
