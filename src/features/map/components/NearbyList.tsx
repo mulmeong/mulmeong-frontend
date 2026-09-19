@@ -15,7 +15,12 @@ function formatDistance(m: number) {
 }
 
 function PlaceRow({ place }: { place: NearbyPlace }) {
-  const meta = `${place.categoryLabel} · ${formatDistance(place.distanceM)}`
+  const meta = [
+    place.categoryLabel,
+    place.distanceM != null ? formatDistance(place.distanceM) : undefined,
+  ]
+    .filter(Boolean)
+    .join(' · ')
   const category =
     place.category === 'RESTAURANT' ||
     place.category === 'CAFE' ||
@@ -58,7 +63,7 @@ function PlaceRow({ place }: { place: NearbyPlace }) {
         <p className="text-text-primary text-[14px] leading-[1.5] font-semibold break-keep [overflow-wrap:anywhere]">
           {place.name}
         </p>
-        <p className="text-text-secondary text-[12px] leading-5">{meta}</p>
+        {meta && <p className="text-text-secondary text-[12px] leading-5">{meta}</p>}
         {place.description && (
           <p className="text-text-secondary line-clamp-2 text-[12px] leading-[1.65] [overflow-wrap:anywhere]">
             {place.description}
@@ -82,7 +87,7 @@ function PlaceRow({ place }: { place: NearbyPlace }) {
       ) : (
         <div className="flex min-w-0 flex-1 items-start gap-3 py-4">{body}</div>
       )}
-      <FavoriteButton target={target} name={place.name} />
+      <FavoriteButton target={target} name={place.name} className="size-7 [&>svg]:size-4" />
     </div>
   )
 }

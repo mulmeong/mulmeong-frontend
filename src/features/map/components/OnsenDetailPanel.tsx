@@ -130,7 +130,7 @@ function OnsenDetailContent({
         <span className="text-text-secondary text-[11px]">장소 상세</span>
       </div>
 
-      <div className="flex items-start justify-between gap-3 pt-1">
+      <div className="flex items-start gap-3 pt-1">
         <div className="min-w-0 flex-1">
           <h2 className="text-text-primary text-[20px] leading-[1.4] font-semibold tracking-tight break-keep [overflow-wrap:anywhere]">
             {name}
@@ -139,7 +139,6 @@ function OnsenDetailContent({
             {address}
           </p>
         </div>
-        <FavoriteButton target={{ placeId: onsen.id }} name={name} className="-mt-0.5" />
       </div>
 
       {imageUrl ? (
