@@ -20,6 +20,7 @@ type MapCanvasProps = {
   onsens: OnsenMapPoint[]
   selectedId?: number
   loading?: boolean
+  favoriteMarkers?: boolean
   onNationalViewChange?: (national: boolean) => void
   onSelect?: (onsen: OnsenMapPoint) => void
   /** MAP-03 이 지역 재검색 — 팬·줌이 멎으면 보이는 영역을 알린다. */
@@ -61,6 +62,9 @@ const ONSEN_MARKER = svgMarker(onsenMarker())
 const ONSEN_MARKER_SELECTED = svgMarker(onsenMarker(true))
 const ONSEN_MARKER_SIZE = 36
 const ONSEN_SELECTED_SIZE = 48
+const FAVORITE_MARKER = svgMarker(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="14" fill="#1C1B18" stroke="white" stroke-width="1.5"/><path d="M18 25 10.8 18a4.5 4.5 0 0 1 7.2-5.3 4.5 4.5 0 0 1 7.2 5.3Z" fill="white"/></svg>',
+)
 
 /** 개수 구간은 시각 크기만 결정한다. 지도 격자와 클러스터 묶음 기준은 그대로 둔다. */
 const CLUSTER_STYLES = [34, 38, 42].map((size) => ({
@@ -96,6 +100,8 @@ const POI_MARKER_SIZE = 20
 
 /** 이름표는 HTML로 그린다 — Marker는 텍스트를 못 올린다. */
 function labelHtml(text: string, tone: 'onsen' | 'poi') {
+  const label = document.createElement('span')
+  label.textContent = text
   const style =
     tone === 'onsen'
       ? 'background:#1A1A1A;color:#FFFFFF;font-weight:600;'
@@ -103,7 +109,7 @@ function labelHtml(text: string, tone: 'onsen' | 'poi') {
   return (
     `<div style="${style}padding:2px 7px;border-radius:9px;font-size:11px;` +
     `line-height:1.5;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.18);` +
-    `font-family:system-ui,sans-serif;">${text}</div>`
+    `font-family:system-ui,sans-serif;">${label.innerHTML}</div>`
   )
 }
 
@@ -126,6 +132,7 @@ export default function MapCanvas({
   onsens,
   selectedId,
   loading = false,
+  favoriteMarkers = false,
   onNationalViewChange,
   onSelect,
   onBoundsChange,
@@ -263,7 +270,7 @@ export default function MapCanvas({
       const size = chosen ? ONSEN_SELECTED_SIZE : ONSEN_MARKER_SIZE
       // 원의 중심이 장소 좌표를 가리키도록 이미지 중앙에 고정한다.
       const image = new maps.MarkerImage(
-        chosen ? ONSEN_MARKER_SELECTED : ONSEN_MARKER,
+        favoriteMarkers ? FAVORITE_MARKER : chosen ? ONSEN_MARKER_SELECTED : ONSEN_MARKER,
         new maps.Size(size, size),
         { offset: new maps.Point(size / 2, size / 2) },
       )
@@ -283,7 +290,7 @@ export default function MapCanvas({
 
     // 결과 전체에 범위를 맞추지 않는다 — MAP-03이 보이는 영역 기준이라 서로 싸운다.
     // selectedId가 바뀌면 선택 마커 모양도 바뀌므로 다시 그린다.
-  }, [onsens, ready, onSelect, selectedId])
+  }, [onsens, ready, onSelect, selectedId, favoriteMarkers])
 
   // MAP-04: POI는 클러스터러에 넣지 않는다 — 온천 클러스터 숫자가 오염된다.
   useEffect(() => {

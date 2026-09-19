@@ -1,6 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 import AuthHeader from '@/features/auth/components/AuthHeader'
+import { useAuth } from '@/features/auth/hooks/authContext'
+import { useFavorites } from '@/features/favorites/FavoritesProvider'
+import FavoriteButton from '@/features/favorites/FavoriteButton'
+import type { Favorite } from '@/features/favorites/api'
+import { useOnsenDetail } from '@/features/map/hooks/useOnsenDetail'
+import { onsenFromDetail } from '@/features/map/utils/onsenFromDetail'
 import DirectionsPanel from '@/features/map/components/DirectionsPanel'
 import MapCanvas from '@/features/map/components/MapCanvas'
 import MapSidebar from '@/features/map/components/MapSidebar'
@@ -26,12 +33,24 @@ const SINGLE_RESULT_LEVEL = 5
 type SearchFilters = { keyword?: string; region?: string }
 
 export default function MapPage() {
+  const { user } = useAuth()
+  const favorites = useFavorites()
+  const [searchParams] = useSearchParams()
+  const [savedMode, setSavedMode] = useState(searchParams.get('saved') === '1')
+  const fitSaved = useRef(searchParams.get('saved') === '1')
+  const showingSaved = savedMode && !!user
+  const linkedId = Number(searchParams.get('onsen')) || undefined
+  const linkedDetail = useOnsenDetail(linkedId)
+  const linkedOnsen = useMemo(() => linkedDetail.detail ? onsenFromDetail(linkedDetail.detail) : undefined, [linkedDetail.detail])
+  const handledLink = useRef('')
   const { onsens, loading, error, load } = useOnsens(REGION_PREVIEW_COUNT)
   const nationalMap = useOnsenMapPoints()
   const [selectedId, setSelectedId] = useState<number>()
+  const [selectedPoint, setSelectedPoint] = useState<OnsenMapPoint>()
+  const [externalPlace, setExternalPlace] = useState<Favorite>()
   const [detailClosing, setDetailClosing] = useState(false)
   const [detailEntered, setDetailEntered] = useState(false)
-  const detailEnterFrame = useRef<number>()
+  const detailEnterFrame = useRef<number | undefined>(undefined)
   const [nationalView, setNationalView] = useState(true)
 
   const [mode, setMode] = useState<'search' | 'directions'>('search')
@@ -55,8 +74,12 @@ export default function MapPage() {
   )
   const handleSelect = useCallback(
     (onsen: OnsenMapPoint) => {
+      const savedPlace = favorites.items.find((place) => place.placeId === onsen.id)
+      if (showingSaved && !savedPlace) setSavedMode(false)
       if (modeRef.current === 'directions') setDestination(onsen)
       else {
+        setSelectedPoint(onsen)
+        setExternalPlace(savedPlace?.placeType !== 'ONSEN' ? savedPlace : undefined)
         const opening = selectedId === undefined
         if (detailEnterFrame.current !== undefined) {
           cancelAnimationFrame(detailEnterFrame.current)
@@ -75,7 +98,7 @@ export default function MapPage() {
         }
       }
     },
-    [selectedId, setDestination],
+    [selectedId, setDestination, showingSaved, favorites.items],
   )
 
   useEffect(() => {
@@ -105,9 +128,26 @@ export default function MapPage() {
   const [hasFilter, setHasFilter] = useState(false)
   const [focus, setFocus] = useState<MapView>()
 
+  useEffect(() => {
+    const key = searchParams.toString()
+    if (handledLink.current === key) return
+    if (linkedOnsen) {
+      handledLink.current = key
+      handleSelect(linkedOnsen)
+    } else if (searchParams.has('lat') && searchParams.has('lng')) {
+      const lat = Number(searchParams.get('lat'))
+      const lng = Number(searchParams.get('lng'))
+      if (Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+        handledLink.current = key
+        setFocus({ lat, lng, level: SINGLE_RESULT_LEVEL })
+      }
+    }
+  }, [searchParams, linkedOnsen, handleSelect])
+
   const handleSearch = useCallback(
     async (filters: SearchFilters) => {
       filtersRef.current = filters
+      setSavedMode(false)
       setHasFilter(Boolean(filters.keyword || filters.region))
       setSelectedId(undefined)
       setDetailClosing(false)
@@ -157,17 +197,51 @@ export default function MapPage() {
    */
   const handleBoundsChange = useCallback(
     (bounds: MapBounds) => {
-      if (!hasFilter || modeRef.current !== 'search') return
+      if (showingSaved || !hasFilter || modeRef.current !== 'search') return
       void load({ ...filtersRef.current, bounds })
     },
-    [load, hasFilter],
+    [load, hasFilter, showingSaved],
   )
 
-  const mapOnsens = hasFilter ? onsens : nationalMap.points
+  const savedPoints = useMemo(() => favorites.items.map((place) => ({
+    id: place.placeId, name: place.name, lat: place.lat, lng: place.lng, address: place.address ?? undefined,
+  })), [favorites.items])
+  const basePoints = showingSaved ? savedPoints : hasFilter ? onsens : nationalMap.points
+  const mapOnsens = useMemo(() => !showingSaved && linkedOnsen && !basePoints.some((place) => place.id === linkedOnsen.id)
+    ? [...basePoints, linkedOnsen] : basePoints, [showingSaved, linkedOnsen, basePoints])
   // 첫 화면의 미리보기에 없는 마커도 선택할 수 있다. 상세는 선택한 id로 조회한다.
   const selected =
     onsens.find((onsen) => onsen.id === selectedId) ??
-    mapOnsens.find((onsen) => onsen.id === selectedId)
+    mapOnsens.find((onsen) => onsen.id === selectedId) ??
+    (selectedPoint?.id === selectedId ? selectedPoint : undefined)
+  const externalSelected = externalPlace?.placeId === selectedId ? externalPlace : undefined
+
+  function toggleSavedMap() {
+    const next = !showingSaved
+    filtersRef.current = { ...filtersRef.current }
+    fitSaved.current = next
+    setSavedMode(next)
+    setSelectedId(undefined)
+    setDetailClosing(false)
+    setDetailEntered(false)
+    if (!next) setFocus({ initial: true })
+  }
+
+  useEffect(() => {
+    if (!showingSaved || !fitSaved.current || favorites.loading || favorites.error) return
+    fitSaved.current = false
+    const points = savedPoints
+    if (points.length === 1) {
+      setFocus({ lat: points[0].lat, lng: points[0].lng, level: SINGLE_RESULT_LEVEL })
+    } else if (points.length > 1) {
+      setFocus({ bounds: {
+        swLat: Math.min(...points.map((point) => point.lat)),
+        swLng: Math.min(...points.map((point) => point.lng)),
+        neLat: Math.max(...points.map((point) => point.lat)),
+        neLng: Math.max(...points.map((point) => point.lng)),
+      } })
+    }
+  }, [showingSaved, favorites.loading, favorites.error, savedPoints])
 
   /**
    * MAP-07 리스트 뷰 토글. 시안에 버튼이 없어 형태는 우리가 정했다 —
@@ -277,10 +351,24 @@ export default function MapPage() {
                 )}
               >
                 <div className="h-full min-h-0 w-full">
-                  <OnsenDetailPanel
+                  {externalSelected ? (
+                    <div className="bg-surface h-full overflow-y-auto px-4 py-6">
+                      <p className="text-text-secondary text-[12px]">{externalSelected.placeTypeLabel}</p>
+                      <div className="mt-3 flex items-center justify-between gap-2">
+                        <h2 className="text-[20px] font-semibold">{externalSelected.name}</h2>
+                        <FavoriteButton target={{ placeId: externalSelected.placeId }} name={externalSelected.name} />
+                      </div>
+                      <p className="text-text-secondary mt-2 text-[13px] leading-6">{externalSelected.address}</p>
+                      {externalSelected.thumbnail && <img src={externalSelected.thumbnail} alt="" className="mt-5 aspect-video w-full rounded-sm object-cover" />}
+                      {externalSelected.subText && <p className="mt-4 text-[13px]">{externalSelected.subText}</p>}
+                      {externalSelected.kakaoPlaceUrl && /^https?:\/\//i.test(externalSelected.kakaoPlaceUrl) && (
+                        <a href={externalSelected.kakaoPlaceUrl} target="_blank" rel="noopener noreferrer" className="mt-5 inline-block text-[13px] underline underline-offset-4">카카오맵에서 보기</a>
+                      )}
+                    </div>
+                  ) : <OnsenDetailPanel
                     onsen={selected}
                     onDirections={() => openDirections(selected)}
-                  />
+                  />}
                 </div>
               </div>
             </div>
@@ -305,7 +393,8 @@ export default function MapPage() {
           <MapCanvas
             onsens={mapOnsens}
             selectedId={selectedId}
-            loading={mode === 'search' && (loading || (!hasFilter && nationalMap.loading))}
+            loading={mode === 'search' && (showingSaved ? favorites.loading : loading || (!hasFilter && nationalMap.loading))}
+            favoriteMarkers={showingSaved}
             onNationalViewChange={setNationalView}
             onSelect={handleSelect}
             onBoundsChange={handleBoundsChange}
@@ -316,7 +405,13 @@ export default function MapPage() {
             route={mode === 'directions' ? directions.selectedRoute : undefined}
           />
 
-          {!hasFilter && mode === 'search' && !nationalMap.loading && nationalMap.error && (
+          {showingSaved && !favorites.loading && (favorites.error || favorites.items.length === 0) && (
+            <div role="status" className="bg-surface/95 absolute bottom-5 left-1/2 z-[100] -translate-x-1/2 rounded-sm px-4 py-3 text-center text-[13px]">
+              {favorites.error ?? '아직 찜한 장소가 없어요.'}
+              {favorites.error && <button type="button" onClick={() => void favorites.reload()} className="ml-2 underline">다시 시도</button>}
+            </div>
+          )}
+          {!showingSaved && !hasFilter && mode === 'search' && !nationalMap.loading && nationalMap.error && (
             <div className="bg-surface/95 absolute bottom-5 left-1/2 z-[100] max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-sm px-4 py-3 text-center text-[12px]">
               <p role="alert" className="text-text-secondary">
                 지도에 장소를 표시하지 못했어요.
@@ -350,7 +445,7 @@ export default function MapPage() {
                     전국 보기
                   </button>
                 )}
-                <MapSavedControls />
+                <MapSavedControls showingSaved={showingSaved} onToggleSaved={toggleSavedMap} />
               </div>
             </>
           )}

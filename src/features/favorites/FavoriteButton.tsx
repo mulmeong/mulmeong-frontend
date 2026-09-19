@@ -26,7 +26,7 @@ export default function FavoriteButton({ target, name, label, className, onSaved
 
   async function toggle() {
     if (!user) { setLoginOpen(true); return }
-    if (favorites.error) { await favorites.reload(); return }
+    if (favorites.error) { setError(favorites.error); await favorites.reload(); return }
     try {
       const added = await favorites.toggle(target)
       if (added) onSaved?.()

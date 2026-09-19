@@ -8,7 +8,10 @@ const ACTIONS = [
   { id: 'saved', label: '찜', to: '/my/saved', description: '로그인하면 마음에 드는 장소를 찜할 수 있어요.' },
 ] as const
 
-export default function MapSavedControls() {
+export default function MapSavedControls({ showingSaved = false, onToggleSaved }: {
+  showingSaved?: boolean
+  onToggleSaved: () => void
+}) {
   const { user, loading } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState<string>()
@@ -22,7 +25,8 @@ export default function MapSavedControls() {
     if (!loading && user) {
       const action = ACTIONS.find((item) => item.id === open)
       setOpen(undefined)
-      if (action) navigate(action.to)
+      if (action?.id === 'saved') onToggleSaved()
+      else if (action) navigate(action.to)
       return
     }
     const outside = (event: PointerEvent) => {
@@ -39,7 +43,7 @@ export default function MapSavedControls() {
       document.removeEventListener('pointerdown', outside)
       document.removeEventListener('keydown', escape)
     }
-  }, [open, loading, user, navigate])
+  }, [open, loading, user, navigate, onToggleSaved])
 
   return (
     <nav
@@ -55,18 +59,20 @@ export default function MapSavedControls() {
             <button
               type="button"
               aria-expanded={visible}
+              aria-pressed={action.id === 'saved' ? showingSaved : undefined}
               aria-controls={visible ? `${id}-${action.id}` : undefined}
               onClick={(event) => {
                 if (user && !loading) {
-                  navigate(action.to)
+                  if (action.id === 'saved') onToggleSaved()
+                  else navigate(action.to)
                   return
                 }
                 triggerRef.current = event.currentTarget
                 setOpen((current) => current === action.id ? undefined : action.id)
               }}
-              className={`text-text-primary inline-flex h-full items-center justify-center gap-1 px-2.5 text-[12px] leading-4 whitespace-nowrap hover:bg-surface-dim focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${index === 0 ? 'rounded-l-md' : 'rounded-r-md'}`}
+              className={`text-text-primary inline-flex h-full items-center justify-center gap-1 px-2.5 text-[12px] leading-4 whitespace-nowrap hover:bg-surface-dim focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${index === 0 ? 'rounded-l-md' : 'rounded-r-md'} ${action.id === 'saved' && showingSaved ? 'bg-surface-dim font-semibold' : ''}`}
             >
-              {action.id === 'saved' && <span aria-hidden="true">♡</span>}
+              {action.id === 'saved' && <span aria-hidden="true">{showingSaved ? '♥' : '♡'}</span>}
               {action.label}
             </button>
             {visible && (
@@ -83,7 +89,7 @@ export default function MapSavedControls() {
                 </p>
                 <Link
                   to="/login"
-                  state={{ from: action.to }}
+                  state={{ from: action.id === 'saved' ? '/map?saved=1' : action.to }}
                   className="border-border-default text-text-primary mt-3 inline-flex h-8 items-center rounded-sm border px-3 text-[12px] font-medium hover:bg-surface-dim focus-visible:outline focus-visible:outline-2"
                 >
                   로그인
