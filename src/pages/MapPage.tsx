@@ -502,7 +502,11 @@ export default function MapPage() {
             <>
               <div className="pointer-events-none absolute inset-x-0 top-3 z-[100] flex items-center gap-3 px-3">
                 <div className="min-w-0 flex-1">
-                  <PoiFilter selected={categories} onToggle={handleToggleCategory} />
+                  <PoiFilter
+                    selected={categories}
+                    onToggle={handleToggleCategory}
+                    disabled={nationalView && selectedId === undefined}
+                  />
                 </div>
                 {(!nationalView || selectedId !== undefined || hasFilter) && (
                   <button
