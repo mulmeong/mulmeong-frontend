@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useOutletContext, useSearchParams } from 'react-router-dom'
 
 import { ApiError } from '@/api'
 import Button from '@/components/ui/Button'
@@ -12,6 +12,8 @@ import ReviewItem from '@/features/mypage/components/ReviewItem'
 import { useMyReviews } from '@/features/mypage/hooks/useMyReviews'
 
 import { SIDO_REGIONS } from '@/features/mypage/myMap/sidoRegions'
+
+import type { MyPageOutletContext } from '@/features/mypage/components/MyPageLayout'
 
 import type { ReviewRegionFilter } from '@/features/mypage/api/reviewsDto'
 import { REVIEW_SORTS, type MyReview, type ReviewSort } from '@/types/myReview'
@@ -27,6 +29,8 @@ function shortRegionName(filter: ReviewRegionFilter): string {
 
 /** 내 리뷰 · 담당: 예린 */
 export default function MyReviewsPage() {
+  const { reloadProfile } = useOutletContext<MyPageOutletContext>()
+
   /**
    * 내 지도에서 '이 지역 리뷰 전체 보기'로 넘어오면 ?regionCode=42가 붙는다.
    * 처음 값만 주소에서 읽고, 그 뒤 칩 조작은 state로만 다룬다 — 주소를 계속
@@ -97,6 +101,9 @@ export default function MyReviewsPage() {
       setPendingDelete(null)
       setDeleteDone(true)
       reload()
+      // 삭제는 방문 인증 취소다 — 방문 온천 수·리뷰 수·레벨이 서버에서 다시
+      // 계산된다(REV-05). 헤더가 탭 바깥이라 여기서 불러주지 않으면 옛 숫자가 남는다.
+      reloadProfile()
     } catch (cause) {
       // 실패하면 확인 모달을 닫고 목록 위에 사유를 보여준다.
       setPendingDelete(null)
@@ -241,7 +248,8 @@ export default function MyReviewsPage() {
             <span className="block">정말 삭제하시겠습니까?</span>
           </>
         }
-        description="삭제한 리뷰는 되돌릴 수 없습니다. 해당 온천의 내 지도 색도 함께 옅어집니다."
+        // 삭제는 방문 인증 취소라 레벨이 내려갈 수 있다. 명세(REV-05)가 미리 알리라고 짚는다.
+        description="삭제한 리뷰는 되돌릴 수 없습니다. 방문 기록이 취소되어 내 지도 색이 옅어지고, 레벨이 내려갈 수 있습니다."
         primaryAction={{
           label: deleting ? '삭제 중…' : '삭제하기',
           onClick: confirmDelete,
