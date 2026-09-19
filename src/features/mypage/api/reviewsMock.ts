@@ -215,7 +215,7 @@ export function mockGetReviewDetail(reviewId: number): Promise<MyReviewDetail> {
     onsenId: review.onsenId,
     onsenName: review.onsenName,
     onsenAddress: review.onsenAddress,
-    onsenCategory: '온천',
+    updatedAt: null,
     spec: {
       visitTime: VISIT_TIMES[reviewId % VISIT_TIMES.length],
       // 전체 만족도 언저리에서 흔들리게 두되 허용 범위를 벗어나지 않게 자른다.

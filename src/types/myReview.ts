@@ -79,13 +79,15 @@ export const SPEC_FIELDS: { key: SpecScoreKey; label: string; low: string; high:
 ]
 
 /**
- * 수정 폼이 보내는 값. 작성 계약과 같은 모양이라 그대로 쓴다.
- * 방문일은 작성에서만 선택이고 수정에서는 이미 값이 있으므로 필수로 좁힌다.
+ * 수정 폼이 보내는 값 (REV-05).
+ *
+ * **방문일은 없다.** 서버가 수정을 막는다 — 방문 인증 날짜이자 하루 한 번
+ * 제한의 기준이라 바꾸면 인증이 어긋난다. 고치려면 지우고 다시 써야 한다.
  */
-export type MyReviewFormValues = Omit<CreateReviewBody, 'visitedAt'> & { visitedAt: string }
+export type MyReviewFormValues = Omit<CreateReviewBody, 'visitedAt'>
 
 /**
- * 수정 화면이 받아오는 리뷰 한 건.
+ * 수정 화면이 받아오는 리뷰 한 건 (MY-05).
  * 목록(MyReview)에는 없는 폼 값까지 들어 있다 — 목록 응답을 무겁게 하지 않으려고 나눴다.
  */
 export type MyReviewDetail = MyReviewFormValues & {
@@ -93,6 +95,8 @@ export type MyReviewDetail = MyReviewFormValues & {
   onsenId: number
   onsenName: string
   onsenAddress: string
-  /** 장소 종류 — 시안 부제의 '온천 · 인천 남동구' 앞부분. */
-  onsenCategory: string
+  /** 보여주기만 한다. 수정해서 보낼 수 없다. */
+  visitedAt: string
+  /** 고친 적이 없으면 null. */
+  updatedAt: string | null
 }

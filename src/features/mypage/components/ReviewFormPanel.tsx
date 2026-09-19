@@ -123,7 +123,8 @@ export default function ReviewFormPanel({ reviewId, onClose, onSaved }: ReviewFo
             <>
               <h3 className="text-[18px] font-bold">{detail.onsenName}</h3>
               <p className="text-text-secondary mt-1 mb-5 text-[12px]">
-                {detail.onsenCategory} · {detail.onsenAddress}
+                {/* 온천 리뷰만 있는 화면이라 종류는 고정이다 — 응답에도 없는 값이다. */}
+                온천 · {detail.onsenAddress}
               </p>
 
               <MyReviewEditForm detail={detail} onCancel={onClose} onUpdated={onSaved} />
