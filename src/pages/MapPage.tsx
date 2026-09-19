@@ -11,6 +11,7 @@ import { onsenFromDetail } from '@/features/map/utils/onsenFromDetail'
 import DirectionsPanel from '@/features/map/components/DirectionsPanel'
 import MapCanvas from '@/features/map/components/MapCanvas'
 import MapSidebar from '@/features/map/components/MapSidebar'
+import MapSidebarLayout from '@/features/map/components/MapSidebarLayout'
 import MapSavedControls from '@/features/map/components/MapSavedControls'
 import OnsenDetailPanel from '@/features/map/components/OnsenDetailPanel'
 import PoiFilter from '@/features/map/components/PoiFilter'
@@ -311,21 +312,20 @@ export default function MapPage() {
             selected ? 'hidden lg:flex' : 'flex',
           )}
         >
-          <div className={cn('h-full min-h-0', mode !== 'search' && 'hidden')}>
-            <MapSidebar
-              key={sidebarVersion}
-              onsens={onsens}
-              loading={loading}
-              error={error}
-              selectedId={selectedId}
-              onSelect={handleSelect}
-              onSearch={handleSearch}
-              onDirections={() => openDirections()}
-            />
-          </div>
-          {mode === 'directions' && (
-            <DirectionsPanel directions={directions} onSearchTab={openSearch} />
-          )}
+          <MapSidebarLayout mode={mode} onSearch={openSearch} onDirections={() => openDirections()}>
+            <div className={cn('h-full min-h-0', mode !== 'search' && 'hidden')}>
+              <MapSidebar
+                key={sidebarVersion}
+                onsens={onsens}
+                loading={loading}
+                error={error}
+                selectedId={selectedId}
+                onSelect={handleSelect}
+                onSearch={handleSearch}
+              />
+            </div>
+            {mode === 'directions' && <DirectionsPanel directions={directions} />}
+          </MapSidebarLayout>
         </aside>
 
         {/* 접기 손잡이 — 패널 경계에 붙여 지도를 최대한 넓게 쓸 수 있게 한다. */}

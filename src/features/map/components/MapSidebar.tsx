@@ -1,7 +1,6 @@
 import { useId, useState, type FormEvent, type KeyboardEvent } from 'react'
 
 import Input from '@/components/ui/Input'
-import Tab from '@/components/ui/Tab'
 import PlaceListSkeleton from '@/features/map/components/PlaceListSkeleton'
 import RegionPlaces from '@/features/map/components/RegionPlaces'
 import SearchResultItem from '@/features/map/components/SearchResultItem'
@@ -22,7 +21,6 @@ type MapSidebarProps = {
   selectedId?: number
   onSelect: (onsen: Onsen) => void
   onSearch: (filters: { keyword?: string; region?: string }) => void
-  onDirections: () => void
 }
 
 function SectionLabel({ children }: { children: string }) {
@@ -67,7 +65,6 @@ export default function MapSidebar({
   selectedId,
   onSelect,
   onSearch,
-  onDirections,
 }: MapSidebarProps) {
   const [keyword, setKeyword] = useState('')
   const [region, setRegion] = useState<string>()
@@ -158,16 +155,11 @@ export default function MapSidebar({
   }
 
   return (
-    <div className="bg-surface box-border flex h-full w-full min-h-0 min-w-0 max-w-full flex-col overflow-hidden py-3">
+    <div className="bg-surface box-border flex h-full w-full min-h-0 min-w-0 max-w-full flex-col overflow-hidden pb-3">
       {/* 모바일은 한 흐름으로 스크롤한다. 데스크톱에서는 매거진 높이를 먼저 확보한다. */}
       <div className="scrollbar-thin flex w-full min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain lg:overflow-clip">
         <div className="scrollbar-thin box-border flex w-full min-w-0 shrink-0 flex-col overflow-x-hidden px-5 pb-3 lg:min-h-0 lg:shrink lg:overflow-y-auto lg:overscroll-contain [&>*]:min-w-0 [&>*]:shrink-0">
-          <div role="tablist" className="flex gap-5 pt-4">
-            <Tab selected>장소 검색</Tab>
-            <Tab onClick={onDirections}>길찾기</Tab>
-          </div>
-
-          <form onSubmit={handleSubmit} className="relative pt-2">
+          <form onSubmit={handleSubmit} className="relative">
             <Input
               variant="search"
               placeholder="온천·사우나 검색"
