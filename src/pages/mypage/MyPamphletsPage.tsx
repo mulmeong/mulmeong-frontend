@@ -165,7 +165,9 @@ export default function MyPamphletsPage() {
                       aria-haspopup="dialog"
                       aria-label={`${pamphlet.title}, ${pamphlet.places.length}곳, 팜플렛 펼치기`}
                     >
-                      <PamphletCover pamphlet={pamphlet} />
+                      <PamphletCover
+                        pamphlet={{ ...pamphlet, placeCount: pamphlet.places.length }}
+                      />
                     </button>
                     <Link
                       to={{ pathname: '/my/pamphlets', search: params.toString() }}

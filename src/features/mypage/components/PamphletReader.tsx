@@ -333,14 +333,14 @@ export default function PamphletReader({
               </div>
               <div className="pamphlet-reader-back" aria-hidden="true">
                 <div className="pamphlet-reader-snapshot">
-                  <PamphletCover pamphlet={pamphlet} />
+                  <PamphletCover pamphlet={{ ...pamphlet, placeCount: pamphlet.places.length }} />
                 </div>
               </div>
             </div>
           </div>
           <div className="pamphlet-reader-mobile-cover" aria-hidden="true">
             <div className="pamphlet-reader-snapshot">
-              <PamphletCover pamphlet={pamphlet} />
+              <PamphletCover pamphlet={{ ...pamphlet, placeCount: pamphlet.places.length }} />
             </div>
           </div>
         </div>
