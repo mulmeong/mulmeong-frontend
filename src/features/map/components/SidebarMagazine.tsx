@@ -44,7 +44,7 @@ export default function SidebarMagazine({ region }: { region?: string }) {
         <div role="status" className="mt-2">
           <span className="sr-only">매거진을 불러오는 중…</span>
           <div aria-hidden="true" className="flex h-24 gap-3 motion-safe:animate-pulse">
-            <div className="bg-surface-dim size-24 shrink-0 rounded-sm" />
+            <div className="bg-surface-dim size-24 shrink-0 rounded-[2px]" />
             <div className="flex min-w-0 flex-1 flex-col py-1">
               <div className="bg-border-default/30 h-2 w-24 rounded-full" />
               <div className="bg-border-default/40 mt-3 h-3 w-full rounded-full" />
@@ -59,7 +59,7 @@ export default function SidebarMagazine({ region }: { region?: string }) {
             to={`/magazine/${story.magazineId}`}
             className="group mt-2 flex h-24 gap-3 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-border-strong focus-visible:ring-offset-2"
           >
-            <MagazineImage src={story.thumbnailUrl} className="size-24 shrink-0 rounded-sm" />
+            <MagazineImage src={story.thumbnailUrl} className="size-24 shrink-0 rounded-[2px]" />
             <div className="flex min-w-0 flex-1 flex-col py-0.5">
               <p className="text-text-secondary truncate text-[10px] leading-4">
                 {story.categoryLabel}

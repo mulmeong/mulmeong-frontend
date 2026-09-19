@@ -20,4 +20,11 @@ export const env = {
    * 값이 없으면 전역 `useMock`을 따르므로 기존 동작은 그대로다.
    */
   useMockAuth: mockFlag(import.meta.env.VITE_USE_MOCK_AUTH),
+  useMockMagazine: mockFlag(import.meta.env.VITE_USE_MOCK_MAGAZINE),
+  useMockSuggest: mockFlag(import.meta.env.VITE_USE_MOCK_SUGGEST),
+  useMockOnsenList: mockFlag(import.meta.env.VITE_USE_MOCK_ONSEN_LIST),
+  useMockNearby: mockFlag(import.meta.env.VITE_USE_MOCK_NEARBY),
+  useMockRoutePlaces: mockFlag(import.meta.env.VITE_USE_MOCK_ROUTE_PLACES),
+  useMockMapPoints: mockFlag(import.meta.env.VITE_USE_MOCK_MAP_POINTS),
+  useMockOnsenDetail: mockFlag(import.meta.env.VITE_USE_MOCK_ONSEN_DETAIL),
 }

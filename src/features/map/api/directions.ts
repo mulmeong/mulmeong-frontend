@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import { api, ApiError } from '@/api'
 import { mockDirections, mockRoutePlaces } from '@/features/map/api/directionsMock'
-import { searchOnsens } from '@/features/map/api/map'
+import { searchOnsensByKeyword } from '@/features/map/api/map'
 import { env } from '@/lib/env'
 
 import type {
@@ -48,12 +48,12 @@ function cacheKey(query: DirectionsQuery) {
 export async function searchRoutePlaces(keyword: string): Promise<RoutePlace[]> {
   const trimmed = keyword.trim()
   if (!trimmed) return []
-  if (env.useMock) return mockRoutePlaces(trimmed)
-  const places = await searchOnsens({ keyword: trimmed })
-  return places.map(({ id, name, address, lat, lng }) => ({
-    id: `onsen-${id}`,
+  if (env.useMockRoutePlaces) return mockRoutePlaces(trimmed)
+  const places = await searchOnsensByKeyword(trimmed)
+  return places.map(({ onsenId, name, address, lat, lng }) => ({
+    id: `onsen-${onsenId}`,
     name,
-    address,
+    address: address ?? '',
     lat,
     lng,
   }))

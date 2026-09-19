@@ -105,7 +105,7 @@ function PlaceCarousel({
           event.preventDefault()
           move(event.key === 'ArrowLeft' ? -1 : 1)
         }}
-        className="-mx-5 mt-2 flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto overscroll-x-contain px-5 py-1 outline-none [scrollbar-width:none] focus-visible:ring-2 focus-visible:ring-border-strong focus-visible:ring-inset [&::-webkit-scrollbar]:hidden"
+        className="-mx-5 mt-2 box-border flex w-[calc(100%+2.5rem)] min-w-0 snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto overscroll-x-contain px-5 py-1 outline-none [scrollbar-width:none] focus-visible:ring-2 focus-visible:ring-border-strong focus-visible:ring-inset [&::-webkit-scrollbar]:hidden"
       >
         {loading
           ? Array.from({ length: REGION_PREVIEW_COUNT }, (_, index) => (
@@ -124,7 +124,7 @@ function PlaceCarousel({
               </li>
             ))}
       </ul>
-      <div className="flex h-9 justify-end">
+      <div className="mt-2 flex h-9 w-full items-center justify-end">
         {!loading && hasOverflow && (
           <div role="group" aria-label="장소 카드 이동" className="flex gap-1">
             <button
@@ -196,7 +196,7 @@ export default function RegionPlaces({
   }
 
   return (
-    <section aria-labelledby={headingId} aria-busy={loading} className="mt-3">
+    <section aria-labelledby={headingId} aria-busy={loading} className="mt-3 w-full min-w-0">
       <div className="flex min-h-9 items-center justify-between gap-3">
         <h3
           id={headingId}

@@ -4,6 +4,7 @@ import { Outlet } from 'react-router-dom'
 import { UNAUTHORIZED_EVENT } from '@/api'
 import { login as loginRequest, logout as logoutRequest, reissue } from '@/features/auth/api/auth'
 import { AuthContext } from '@/features/auth/hooks/authContext'
+import FavoritesProvider from '@/features/favorites/FavoritesProvider'
 
 import type { LoginRequest } from '@/features/auth/schemas'
 import type { AuthUser } from '@/types/user'
@@ -59,7 +60,9 @@ export default function AuthProvider() {
 
   return (
     <AuthContext value={value}>
-      <Outlet />
+      <FavoritesProvider>
+        <Outlet />
+      </FavoritesProvider>
     </AuthContext>
   )
 }

@@ -40,7 +40,7 @@ export function fetchMagazines(params: MagazineListParams = {}): Promise<Magazin
   if (existing) return existing
   const version = revision
   const request = (
-    env.useMock
+    env.useMockMagazine
       ? mockFetchMagazines(normalized)
       : api.get<MagazineList>('/magazines', { params: normalized })
   )
@@ -54,12 +54,12 @@ export function fetchMagazines(params: MagazineListParams = {}): Promise<Magazin
 }
 export async function fetchMagazine(id: number): Promise<MagazineDetail> {
   if (!Number.isSafeInteger(id) || id <= 0) throw new ApiError(404, '글을 찾을 수 없습니다.')
-  if (env.useMock) return mockFetchMagazine(id)
+  if (env.useMockMagazine) return mockFetchMagazine(id)
   return api.get<MagazineDetail>(`/magazines/${id}`)
 }
 export async function setMagazineLike(id: number, liked: boolean): Promise<void> {
   try {
-    if (env.useMock) await mockSetMagazineLike(id, liked)
+    if (env.useMockMagazine) await mockSetMagazineLike(id, liked)
     else if (liked) await api.post<void>(`/magazines/${id}/like`)
     else await api.delete<void>(`/magazines/${id}/like`)
   } finally {

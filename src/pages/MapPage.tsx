@@ -1,9 +1,17 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 import AuthHeader from '@/features/auth/components/AuthHeader'
+import { useAuth } from '@/features/auth/hooks/authContext'
+import { useFavorites } from '@/features/favorites/FavoritesProvider'
+import FavoriteButton from '@/features/favorites/FavoriteButton'
+import type { Favorite } from '@/features/favorites/api'
+import { useOnsenDetail } from '@/features/map/hooks/useOnsenDetail'
+import { onsenFromDetail } from '@/features/map/utils/onsenFromDetail'
 import DirectionsPanel from '@/features/map/components/DirectionsPanel'
 import MapCanvas from '@/features/map/components/MapCanvas'
 import MapSidebar from '@/features/map/components/MapSidebar'
+import MapSavedControls from '@/features/map/components/MapSavedControls'
 import OnsenDetailPanel from '@/features/map/components/OnsenDetailPanel'
 import PoiFilter from '@/features/map/components/PoiFilter'
 import { REGION_PREVIEW_COUNT } from '@/features/map/constants'
@@ -25,9 +33,28 @@ const SINGLE_RESULT_LEVEL = 5
 type SearchFilters = { keyword?: string; region?: string }
 
 export default function MapPage() {
+  const { user } = useAuth()
+  const favorites = useFavorites()
+  const [searchParams] = useSearchParams()
+  const [savedMode, setSavedMode] = useState(searchParams.get('saved') === '1')
+  const fitSaved = useRef(searchParams.get('saved') === '1')
+  const showingSaved = savedMode && !!user
+  const linkedId = Number(searchParams.get('onsen')) || undefined
+  const linkedDetail = useOnsenDetail(linkedId)
+  const linkedOnsen = useMemo(
+    () => (linkedDetail.detail ? onsenFromDetail(linkedDetail.detail) : undefined),
+    [linkedDetail.detail],
+  )
+  const handledLink = useRef('')
   const { onsens, loading, error, load } = useOnsens(REGION_PREVIEW_COUNT)
   const nationalMap = useOnsenMapPoints()
   const [selectedId, setSelectedId] = useState<number>()
+  const [selectedPoint, setSelectedPoint] = useState<OnsenMapPoint>()
+  const [externalPlace, setExternalPlace] = useState<Favorite>()
+  const [detailClosing, setDetailClosing] = useState(false)
+  const [detailEntered, setDetailEntered] = useState(false)
+  const detailEnterFrame = useRef<number | undefined>(undefined)
+  const [nationalView, setNationalView] = useState(true)
 
   const [mode, setMode] = useState<'search' | 'directions'>('search')
   const modeRef = useRef(mode)
@@ -50,16 +77,45 @@ export default function MapPage() {
   )
   const handleSelect = useCallback(
     (onsen: OnsenMapPoint) => {
+      const savedPlace = favorites.items.find((place) => place.placeId === onsen.id)
+      if (showingSaved && !savedPlace) setSavedMode(false)
       if (modeRef.current === 'directions') setDestination(onsen)
-      else setSelectedId(onsen.id)
+      else {
+        setSelectedPoint(onsen)
+        setExternalPlace(savedPlace?.placeType !== 'ONSEN' ? savedPlace : undefined)
+        const opening = selectedId === undefined
+        if (detailEnterFrame.current !== undefined) {
+          cancelAnimationFrame(detailEnterFrame.current)
+          detailEnterFrame.current = undefined
+        }
+        setDetailClosing(false)
+        setDetailEntered(!opening)
+        setSelectedId(onsen.id)
+        if (opening) {
+          detailEnterFrame.current = requestAnimationFrame(() => {
+            detailEnterFrame.current = requestAnimationFrame(() => {
+              setDetailEntered(true)
+              detailEnterFrame.current = undefined
+            })
+          })
+        }
+      }
     },
-    [setDestination],
+    [selectedId, setDestination, showingSaved, favorites.items],
   )
+
+  useEffect(() => {
+    return () => {
+      if (detailEnterFrame.current !== undefined) cancelAnimationFrame(detailEnterFrame.current)
+    }
+  }, [])
 
   function openDirections(onsen?: OnsenMapPoint) {
     modeRef.current = 'directions'
     setMode('directions')
     setSelectedId(undefined)
+    setDetailClosing(false)
+    setDetailEntered(false)
     setCollapsed(false)
     if (onsen) setDestination(onsen)
   }
@@ -75,11 +131,35 @@ export default function MapPage() {
   const [hasFilter, setHasFilter] = useState(false)
   const [focus, setFocus] = useState<MapView>()
 
+  useEffect(() => {
+    const key = searchParams.toString()
+    if (handledLink.current === key) return
+    if (linkedOnsen) {
+      handledLink.current = key
+      handleSelect(linkedOnsen)
+    } else if (searchParams.has('lat') && searchParams.has('lng')) {
+      const lat = Number(searchParams.get('lat'))
+      const lng = Number(searchParams.get('lng'))
+      if (
+        Number.isFinite(lat) &&
+        Number.isFinite(lng) &&
+        Math.abs(lat) <= 90 &&
+        Math.abs(lng) <= 180
+      ) {
+        handledLink.current = key
+        setFocus({ lat, lng, level: SINGLE_RESULT_LEVEL })
+      }
+    }
+  }, [searchParams, linkedOnsen, handleSelect])
+
   const handleSearch = useCallback(
     async (filters: SearchFilters) => {
       filtersRef.current = filters
+      setSavedMode(false)
       setHasFilter(Boolean(filters.keyword || filters.region))
       setSelectedId(undefined)
+      setDetailClosing(false)
+      setDetailEntered(false)
 
       if (!filters.keyword && !filters.region) {
         setFocus({ initial: true })
@@ -125,23 +205,80 @@ export default function MapPage() {
    */
   const handleBoundsChange = useCallback(
     (bounds: MapBounds) => {
-      if (!hasFilter || modeRef.current !== 'search') return
+      if (showingSaved || !hasFilter || modeRef.current !== 'search') return
       void load({ ...filtersRef.current, bounds })
     },
-    [load, hasFilter],
+    [load, hasFilter, showingSaved],
   )
 
-  const mapOnsens = hasFilter ? onsens : nationalMap.points
+  const savedPoints = useMemo(
+    () =>
+      favorites.items.map((place) => ({
+        id: place.placeId,
+        name: place.name,
+        lat: place.lat,
+        lng: place.lng,
+        address: place.address ?? undefined,
+      })),
+    [favorites.items],
+  )
+  const basePoints = showingSaved ? savedPoints : hasFilter ? onsens : nationalMap.points
+  const mapOnsens = useMemo(
+    () =>
+      !showingSaved && linkedOnsen && !basePoints.some((place) => place.id === linkedOnsen.id)
+        ? [...basePoints, linkedOnsen]
+        : basePoints,
+    [showingSaved, linkedOnsen, basePoints],
+  )
   // 첫 화면의 미리보기에 없는 마커도 선택할 수 있다. 상세는 선택한 id로 조회한다.
   const selected =
     onsens.find((onsen) => onsen.id === selectedId) ??
-    mapOnsens.find((onsen) => onsen.id === selectedId)
+    mapOnsens.find((onsen) => onsen.id === selectedId) ??
+    (selectedPoint?.id === selectedId ? selectedPoint : undefined)
+  const externalSelected = externalPlace?.placeId === selectedId ? externalPlace : undefined
+
+  function toggleSavedMap() {
+    const next = !showingSaved
+    filtersRef.current = { ...filtersRef.current }
+    fitSaved.current = next
+    setSavedMode(next)
+    setSelectedId(undefined)
+    setDetailClosing(false)
+    setDetailEntered(false)
+    if (!next) setFocus({ initial: true })
+  }
+
+  useEffect(() => {
+    if (!showingSaved || !fitSaved.current || favorites.loading || favorites.error) return
+    fitSaved.current = false
+    const points = savedPoints
+    if (points.length === 1) {
+      setFocus({ lat: points[0].lat, lng: points[0].lng, level: SINGLE_RESULT_LEVEL })
+    } else if (points.length > 1) {
+      setFocus({
+        bounds: {
+          swLat: Math.min(...points.map((point) => point.lat)),
+          swLng: Math.min(...points.map((point) => point.lng)),
+          neLat: Math.max(...points.map((point) => point.lat)),
+          neLng: Math.max(...points.map((point) => point.lng)),
+        },
+      })
+    }
+  }, [showingSaved, favorites.loading, favorites.error, savedPoints])
 
   /**
    * MAP-07 리스트 뷰 토글. 시안에 버튼이 없어 형태는 우리가 정했다 —
    * 패널 경계의 손잡이로 접고 편다. 모바일은 45dvh 스트립이라 접는 의미가 없어 데스크탑만.
    */
   const [collapsed, setCollapsed] = useState(false)
+  const [sidebarVersion, setSidebarVersion] = useState(0)
+
+  function handleNationalView() {
+    setCollapsed(false)
+    setCategories([])
+    setSidebarVersion((version) => version + 1)
+    void handleSearch({})
+  }
 
   // MAP-04 카테고리 POI — 켜진 것만 지도 중심 기준으로 불러온다.
   const [categories, setCategories] = useState<PoiCategory[]>([])
@@ -171,11 +308,12 @@ export default function MapPage() {
             'border-border-default h-[45dvh] w-full min-w-0 shrink-0 flex-col border-b',
             'lg:h-auto lg:border-r lg:border-b-0',
             collapsed ? 'lg:w-0 lg:overflow-hidden lg:border-r-0' : 'lg:flex lg:w-[380px]',
-            selected ? 'hidden' : 'flex',
+            selected ? 'hidden lg:flex' : 'flex',
           )}
         >
           <div className={cn('h-full min-h-0', mode !== 'search' && 'hidden')}>
             <MapSidebar
+              key={sidebarVersion}
               onsens={onsens}
               loading={loading}
               error={error}
@@ -215,12 +353,87 @@ export default function MapPage() {
 
         {/* 검색 패널을 교체하지 않고 그 오른쪽에 더한다 — 지도는 남은 폭을 쓴다. */}
         {selected && (
-          <aside className="border-border-default flex h-[45dvh] w-full min-w-0 shrink-0 flex-col border-b lg:h-auto lg:w-[347px] lg:border-r lg:border-b-0">
-            <OnsenDetailPanel
-              onsen={selected}
-              onClose={() => setSelectedId(undefined)}
-              onDirections={() => openDirections(selected)}
-            />
+          <aside
+            className={cn(
+              'map-detail-panel border-border-default relative z-[110] flex min-w-0 shrink-0 flex-col border-b lg:border-r lg:border-b-0',
+            )}
+            onAnimationEnd={() => {
+              if (!detailClosing) return
+              setSelectedId(undefined)
+              setDetailClosing(false)
+              setDetailEntered(false)
+            }}
+          >
+            <div className="h-full min-h-0 w-full overflow-hidden">
+              <div
+                className={cn(
+                  'map-detail-surface h-full min-h-0 w-full',
+                  detailClosing
+                    ? 'map-detail-surface-exit'
+                    : detailEntered && 'map-detail-surface-enter',
+                )}
+              >
+                <div className="h-full min-h-0 w-full">
+                  {externalSelected ? (
+                    <div className="bg-surface h-full overflow-y-auto px-4 py-6">
+                      <p className="text-text-secondary text-[12px]">
+                        {externalSelected.placeTypeLabel}
+                      </p>
+                      <div className="mt-3 flex items-center justify-between gap-2">
+                        <h2 className="text-[20px] font-semibold">{externalSelected.name}</h2>
+                        <FavoriteButton
+                          target={{ placeId: externalSelected.placeId }}
+                          name={externalSelected.name}
+                        />
+                      </div>
+                      <p className="text-text-secondary mt-2 text-[13px] leading-6">
+                        {externalSelected.address}
+                      </p>
+                      {externalSelected.thumbnail && (
+                        <img
+                          src={externalSelected.thumbnail}
+                          alt=""
+                          className="mt-5 aspect-video w-full rounded-sm object-cover"
+                        />
+                      )}
+                      {externalSelected.subText && (
+                        <p className="mt-4 text-[13px]">{externalSelected.subText}</p>
+                      )}
+                      {externalSelected.kakaoPlaceUrl &&
+                        /^https?:\/\//i.test(externalSelected.kakaoPlaceUrl) && (
+                          <a
+                            href={externalSelected.kakaoPlaceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-5 inline-block text-[13px] underline underline-offset-4"
+                          >
+                            카카오맵에서 보기
+                          </a>
+                        )}
+                    </div>
+                  ) : (
+                    <OnsenDetailPanel
+                      onsen={selected}
+                      onDirections={() => openDirections(selected)}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setDetailEntered(false)
+                setDetailClosing(true)
+              }}
+              aria-label="장소 상세 닫기"
+              title="장소 상세 닫기"
+              className="border-border-default bg-surface text-text-secondary hover:text-text-primary absolute top-full right-3 flex h-[23px] w-[51px] items-center justify-center rounded-b-md border border-t-0 text-[11px] transition-colors outline-none focus-visible:ring-1 focus-visible:ring-inverse lg:top-1/2 lg:right-auto lg:left-full lg:h-[51px] lg:w-[23px] lg:-translate-y-1/2 lg:rounded-none lg:rounded-r-md lg:border-t lg:border-l-0"
+            >
+              <span aria-hidden="true" className="rotate-90 lg:rotate-0">
+                ‹
+              </span>
+            </button>
           </aside>
         )}
 
@@ -228,6 +441,12 @@ export default function MapPage() {
           <MapCanvas
             onsens={mapOnsens}
             selectedId={selectedId}
+            loading={
+              mode === 'search' &&
+              (showingSaved ? favorites.loading : loading || (!hasFilter && nationalMap.loading))
+            }
+            favoriteMarkers={showingSaved}
+            onNationalViewChange={setNationalView}
             onSelect={handleSelect}
             onBoundsChange={handleBoundsChange}
             pois={pois}
@@ -237,37 +456,66 @@ export default function MapPage() {
             route={mode === 'directions' ? directions.selectedRoute : undefined}
           />
 
-          {!hasFilter && mode === 'search' && (nationalMap.loading || nationalMap.error) && (
-            <div className="bg-surface/95 absolute bottom-5 left-1/2 z-[100] max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-sm px-4 py-3 text-center text-[12px]">
-              {nationalMap.loading ? (
-                <p role="status" className="text-text-secondary">
-                  지도에서 장소를 찾는 중…
-                </p>
-              ) : (
-                <>
-                  <p role="alert" className="text-text-secondary">
-                    지도에 장소를 표시하지 못했어요.
-                  </p>
+          {showingSaved &&
+            !favorites.loading &&
+            (favorites.error || favorites.items.length === 0) && (
+              <div
+                role="status"
+                className="bg-surface/95 absolute bottom-5 left-1/2 z-[100] -translate-x-1/2 rounded-sm px-4 py-3 text-center text-[13px]"
+              >
+                {favorites.error ?? '아직 찜한 장소가 없어요.'}
+                {favorites.error && (
                   <button
                     type="button"
-                    onClick={nationalMap.retry}
-                    className="text-text-primary mt-2 min-h-9 underline underline-offset-4"
+                    onClick={() => void favorites.reload()}
+                    className="ml-2 underline"
                   >
                     다시 시도
                   </button>
-                </>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
+          {!showingSaved &&
+            !hasFilter &&
+            mode === 'search' &&
+            !nationalMap.loading &&
+            nationalMap.error && (
+              <div className="bg-surface/95 absolute bottom-5 left-1/2 z-[100] max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-sm px-4 py-3 text-center text-[12px]">
+                <p role="alert" className="text-text-secondary">
+                  지도에 장소를 표시하지 못했어요.
+                </p>
+                <button
+                  type="button"
+                  onClick={nationalMap.retry}
+                  className="text-text-primary mt-2 min-h-9 underline underline-offset-4"
+                >
+                  다시 시도
+                </button>
+              </div>
+            )}
 
           {/*
             지도 위에 띄운다 — 컨테이너는 클릭을 통과시켜 팬·줌을 막지 않는다.
             카카오맵이 타일·컨트롤에 자체 z-index를 써서, 값을 넉넉히 올려야 가려지지 않는다.
           */}
           {mode === 'search' && (
-            <div className="pointer-events-none absolute inset-x-0 top-1.5 z-[100]">
-              <PoiFilter selected={categories} onToggle={handleToggleCategory} />
-            </div>
+            <>
+              <div className="pointer-events-none absolute inset-x-0 top-3 z-[100] flex items-center gap-3 px-3">
+                <div className="min-w-0 flex-1">
+                  <PoiFilter selected={categories} onToggle={handleToggleCategory} />
+                </div>
+                {(!nationalView || selectedId !== undefined || hasFilter) && (
+                  <button
+                    type="button"
+                    onClick={handleNationalView}
+                    className="border-border-default/70 bg-surface text-text-secondary pointer-events-auto mr-1 inline-flex h-8 shrink-0 items-center justify-center rounded-md border px-2.5 text-[11px] leading-4 whitespace-nowrap hover:bg-surface-dim hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                  >
+                    전국 보기
+                  </button>
+                )}
+                <MapSavedControls showingSaved={showingSaved} onToggleSaved={toggleSavedMap} />
+              </div>
+            </>
           )}
         </main>
       </div>

@@ -1,16 +1,15 @@
-import { limitMapNorth } from '@/features/map/utils/limitMapNorth'
-
-/** 강원 북부·서해 도서·제주와 마라도·동해안·독도를 감싸는 끝점들. */
+/** 남한 본토와 제주가 잘리지 않는 선에서 바다 여백을 줄이는 전국 뷰 기준점들. */
 const NATIONAL_EXTENT = [
-  [38.65, 128.4],
-  [37.96, 124.55],
-  [34.05, 125.1],
+  [38.55, 128.6],
+  [37.65, 125.35],
+  [34.05, 125.55],
   [33.05, 126.15],
-  [33.6, 127.0],
-  [35.1, 129.65],
-  [37.24, 131.95],
+  [33.35, 127.3],
+  [35.1, 129.45],
+  [37.6, 129.4],
 ] as const
-const EDGE_PADDING = 20
+const EDGE_PADDING = 12
+const WEST_SHIFT_MAX_PX = 72
 const ROAD_MAP_MAX_LEVEL = 14
 
 export type NationalMapView = { center: kakao.maps.LatLng; level: number }
@@ -33,9 +32,16 @@ export function getNationalMapView(map: kakao.maps.Map, container: HTMLElement):
     Math.log2(Math.max((right - left) / width, (bottom - top) / height)),
   )
   const level = Math.max(1, Math.min(ROAD_MAP_MAX_LEVEL, map.getLevel() + levelChange))
-  // 남한·제주를 맞춘 뒤, 남는 북쪽 여백이 제한선을 넘으면 남쪽으로 배치한다.
-  const center = projection.coordsFromContainerPoint(
-    new maps.Point((left + right) / 2, (top + bottom) / 2),
-  )
-  return { center: limitMapNorth(map, container, center, level), level }
+  const scale = 2 ** (level - map.getLevel())
+  const halfWidth = (container.clientWidth / 2 - EDGE_PADDING) * scale
+  const halfHeight = (container.clientHeight / 2 - EDGE_PADDING) * scale
+  // 동쪽 섬까지 남기는 범위에서 서쪽으로 치우쳐 일본 노출을 줄인다.
+  const westShift = Math.min(WEST_SHIFT_MAX_PX, container.clientWidth * 0.08) * scale
+  const centerX = Math.max(right - halfWidth, (left + right) / 2 - westShift)
+  // 북쪽 끝점을 상단 여백에 맞춘다. 위에서 높이도 맞췄으므로 제주·마라도는 유지된다.
+  const centerY = top + halfHeight
+  return {
+    center: projection.coordsFromContainerPoint(new maps.Point(centerX, centerY)),
+    level,
+  }
 }
