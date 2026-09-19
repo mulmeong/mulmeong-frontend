@@ -20,7 +20,7 @@ export function useDartThrow() {
   /** 지금까지 뽑힌 후보. 서버 상한을 넘지 않게 최근 것만 남긴다. */
   const excluded = useRef<number[]>([])
   /** 다시 던지기가 같은 조건을 쓰도록 마지막 요청을 들고 있는다. */
-  const lastBody = useRef<DartThrowBody>()
+  const lastBody = useRef<DartThrowBody | undefined>(undefined)
 
   const run = async (body: DartThrowBody, reroll = false) => {
     setLoading(true)
