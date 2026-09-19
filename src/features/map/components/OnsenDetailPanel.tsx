@@ -157,7 +157,8 @@ function OnsenDetailContent({
               target={{ placeId: onsen.id }}
               name={name}
               label="저장"
-              className="h-9 w-full text-[12px] font-medium"
+              /* 옆의 공유·길찾기 아이콘(size-4)과 크기를 맞춘다. */
+              className="h-9 w-full text-[12px] font-medium [&>svg]:size-4"
             />
           ) : (
             <button
