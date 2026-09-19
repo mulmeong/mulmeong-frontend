@@ -34,3 +34,19 @@ export function matchesRegionGroup(address: string, region: RegionGroupId): bool
   if (!group || group.prefixes.length === 0) return true
   return group.prefixes.some((prefix) => address.startsWith(prefix))
 }
+
+/**
+ * 시·도 이름이 속한 권역. 내 지도에서 고른 지역을 목록 필터로 넘길 때 쓴다.
+ * 권역 하나가 시·도 여럿을 묶으므로 '경북'을 넘기면 '경북·대구'가 나온다.
+ */
+export function regionGroupOf(sidoName: string): RegionGroupId {
+  const group = REGION_GROUPS.find((item) =>
+    item.prefixes.some((prefix) => prefix === sidoName),
+  )
+  return group?.id ?? 'all'
+}
+
+/** 주소창에서 받은 값이 실제 권역인지. 아무 문자열이나 state로 들어가지 않게 거른다. */
+export function toRegionGroupId(value: string | null): RegionGroupId | undefined {
+  return REGION_GROUPS.find((item) => item.id === value)?.id
+}
