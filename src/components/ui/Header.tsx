@@ -10,6 +10,7 @@ type HeaderProps = {
   /** standard 전용. 로그인/로그아웃 등 */
   authLabel?: string
   onAuthClick?: () => void
+  showMy?: boolean
   /** detail 전용. 좌측 뒤로가기 라벨과 이동 경로. */
   backLabel?: ReactNode
   backTo?: string
@@ -29,6 +30,7 @@ export default function Header({
   type = 'standard',
   authLabel = '로그인',
   onAuthClick,
+  showMy = false,
   backLabel = 'MAGAZINE',
   backTo = '/magazine',
   trailing,
@@ -45,7 +47,7 @@ export default function Header({
 
         {isStandard ? (
           <nav className="flex items-center gap-7">
-            {NAV_ITEMS.map((item) => (
+            {NAV_ITEMS.filter((item) => item.to !== '/my' || showMy).map((item) => (
               <NavItem key={item.to} to={item.to}>
                 {item.label}
               </NavItem>
