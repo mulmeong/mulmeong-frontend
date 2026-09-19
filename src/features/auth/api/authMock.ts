@@ -4,17 +4,22 @@ import { tokenStorage } from '@/api/token'
 import type { LoginRequest, SignupRequest } from '@/features/auth/schemas'
 import type { AuthUser, MyProfile } from '@/types/user'
 
-import type { Availability, LoginResponse, SignupResponse } from './auth'
+import type { Availability, LoginResponse, PasswordResetRequest, SignupResponse } from './auth'
 
 const MOCK_DELAY_MS = 400
 
 /** 이 계정으로만 로그인이 성공한다. */
-const MOCK_ACCOUNT = { email: 'test@mulmeong.kr', password: 'mulmeong1234' }
+export const MOCK_ACCOUNT = { email: 'test@mulmeong.kr', password: 'mulmeong1234' }
 
 /** 로그인·재발급이 내려주는 최소 프로필. 이메일은 없다 (명세). */
-const MOCK_USER: AuthUser = { userId: 1, nickname: '물멍러1234', level: 2, title: '물 좀 아는' }
+export const MOCK_USER: AuthUser = {
+  userId: 1,
+  nickname: '물멍러1234',
+  level: 2,
+  title: '물 좀 아는',
+}
 
-const MOCK_PROFILE: MyProfile = {
+export const MOCK_PROFILE: MyProfile = {
   ...MOCK_USER,
   email: MOCK_ACCOUNT.email,
   visitedOnsenCount: 12,
@@ -76,7 +81,7 @@ export async function mockGetMe(): Promise<MyProfile> {
   if (tokenStorage.get() !== MOCK_TOKEN) {
     throw new ApiError(401, '로그인이 필요합니다.', { code: 'UNAUTHORIZED' })
   }
-  return MOCK_PROFILE
+  return { ...MOCK_PROFILE }
 }
 
 /** 서버가 Refresh 쿠키를 지우는 것에 대응한다. */
@@ -102,4 +107,23 @@ export function mockCheckEmail(email: string): Promise<Availability> {
 
 export function mockCheckNickname(nickname: string): Promise<Availability> {
   return delay({ available: !TAKEN_NICKNAMES.includes(nickname) })
+}
+
+export function mockRequestPasswordReset(): Promise<{ message: string }> {
+  return delay({ message: '입력하신 이메일로 재설정 링크를 보냈습니다.' })
+}
+
+export async function mockResetPassword({
+  token,
+  newPassword,
+  newPasswordConfirm,
+}: PasswordResetRequest) {
+  await delay(null)
+  if (!token)
+    throw new ApiError(400, '재설정 링크가 유효하지 않습니다.', { code: 'RESET_TOKEN_INVALID' })
+  if (newPassword !== newPasswordConfirm) {
+    throw new ApiError(400, '비밀번호가 일치하지 않습니다.', { code: 'PASSWORD_MISMATCH' })
+  }
+  MOCK_ACCOUNT.password = newPassword
+  return { message: '비밀번호가 변경되었습니다. 다시 로그인해 주세요.' }
 }
