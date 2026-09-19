@@ -58,11 +58,7 @@ export default function SidebarPicks() {
   if (error || (!loading && magazines.length === 0)) return null
 
   return (
-    <section
-      aria-label="추천 매거진"
-      aria-busy={loading}
-      className="w-full min-w-0 shrink-0"
-    >
+    <section aria-label="추천 매거진" aria-busy={loading} className="w-full min-w-0 shrink-0">
       <div className="flex items-baseline justify-between gap-3">
         {/* 카드가 큰 만큼 제목도 키워 위계를 맞춘다 (다른 섹션 라벨은 11px 유지). */}
         <h2 className="text-text-primary text-[13px] font-medium">지금 이런 곳은 어때요</h2>
@@ -74,12 +70,7 @@ export default function SidebarPicks() {
         </Link>
       </div>
 
-      <ul
-        id={trackId}
-        ref={trackRef}
-        aria-label="추천 매거진 목록"
-        className={SIDEBAR_CARD_TRACK}
-      >
+      <ul id={trackId} ref={trackRef} aria-label="추천 매거진 목록" className={SIDEBAR_CARD_TRACK}>
         {loading
           ? // 자리를 먼저 잡아 목록이 밀려 올라가지 않게 한다.
             Array.from({ length: VISIBLE_COUNT }, (_, index) => (
@@ -94,10 +85,7 @@ export default function SidebarPicks() {
                   to={`/magazine/${magazine.magazineId}`}
                   className="group block outline-none focus-visible:underline focus-visible:underline-offset-4"
                 >
-                  <MagazineImage
-                    src={magazine.thumbnailUrl}
-                    className={SIDEBAR_CARD_IMAGE}
-                  />
+                  <MagazineImage src={magazine.thumbnailUrl} className={SIDEBAR_CARD_IMAGE} />
                   <p className="text-text-primary mt-2 truncate text-[13px] group-hover:underline">
                     {magazine.title}
                   </p>

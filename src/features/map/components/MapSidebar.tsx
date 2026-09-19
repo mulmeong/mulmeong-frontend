@@ -165,64 +165,67 @@ export default function MapSidebar({
   return (
     <div className="bg-surface box-border flex h-full w-full min-h-0 min-w-0 max-w-full flex-col overflow-hidden pb-3">
       <div className="relative z-20 w-full min-w-0 shrink-0 bg-white px-5 pb-5">
-          <form onSubmit={handleSubmit} className="relative">
-            <Input
-              variant="search"
-              placeholder="온천·사우나 검색"
-              value={keyword}
-              onChange={(e) => {
-                setKeyword(e.target.value)
-                setActiveIndex(-1)
-              }}
-              onFocus={() => setFocused(true)}
-              onBlur={() => setFocused(false)}
-              onKeyDown={handleKeyDown}
-              aria-label="온천·사우나 검색"
-              role="combobox"
-              aria-expanded={isOpen}
-              aria-controls={isOpen ? listboxId : undefined}
-              aria-activedescendant={activeIndex >= 0 ? optionId(activeIndex) : undefined}
-              aria-autocomplete="list"
+        <form onSubmit={handleSubmit} className="relative">
+          <Input
+            variant="search"
+            placeholder="온천·사우나 검색"
+            value={keyword}
+            onChange={(e) => {
+              setKeyword(e.target.value)
+              setActiveIndex(-1)
+            }}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            onKeyDown={handleKeyDown}
+            aria-label="온천·사우나 검색"
+            role="combobox"
+            aria-expanded={isOpen}
+            aria-controls={isOpen ? listboxId : undefined}
+            aria-activedescendant={activeIndex >= 0 ? optionId(activeIndex) : undefined}
+            aria-autocomplete="list"
+          />
+          {isOpen && (
+            <SearchSuggestions
+              suggestions={suggestions}
+              activeIndex={activeIndex}
+              listboxId={listboxId}
+              optionId={optionId}
+              onPick={handlePick}
+              keyword={keyword.trim()}
             />
-            {isOpen && (
-              <SearchSuggestions
-                suggestions={suggestions}
-                activeIndex={activeIndex}
-                listboxId={listboxId}
-                optionId={optionId}
-                onPick={handlePick}
-                keyword={keyword.trim()}
-              />
-            )}
-          </form>
-
-          {!isSearching && (
-            <section className="pt-4">
-              <SectionLabel>지역으로 둘러보기</SectionLabel>
-              <div
-                role="group"
-                aria-label="지역 선택"
-                className="mt-2 flex flex-wrap gap-x-1.5 gap-y-1.5"
-              >
-                <RegionChip selected={!region} onClick={handleResetRegion}>
-                  전체
-                </RegionChip>
-                {REGIONS.map((item) => (
-                  <RegionChip
-                    key={item}
-                    selected={region === item}
-                    onClick={() => handleRegion(item)}
-                  >
-                    {item}
-                  </RegionChip>
-                ))}
-              </div>
-            </section>
           )}
-        <span aria-hidden="true" className={cn(
-          'pointer-events-none absolute inset-x-0 top-full h-3 bg-linear-to-b from-white to-transparent transition-opacity duration-150 motion-reduce:transition-none',
-          scrolled ? 'opacity-100' : 'opacity-0',
-        )} />
+        </form>
+
+        {!isSearching && (
+          <section className="pt-4">
+            <SectionLabel>지역으로 둘러보기</SectionLabel>
+            <div
+              role="group"
+              aria-label="지역 선택"
+              className="mt-2 flex flex-wrap gap-x-1.5 gap-y-1.5"
+            >
+              <RegionChip selected={!region} onClick={handleResetRegion}>
+                전체
+              </RegionChip>
+              {REGIONS.map((item) => (
+                <RegionChip
+                  key={item}
+                  selected={region === item}
+                  onClick={() => handleRegion(item)}
+                >
+                  {item}
+                </RegionChip>
+              ))}
+            </div>
+          </section>
+        )}
+        <span
+          aria-hidden="true"
+          className={cn(
+            'pointer-events-none absolute inset-x-0 top-full h-3 bg-linear-to-b from-white to-transparent transition-opacity duration-150 motion-reduce:transition-none',
+            scrolled ? 'opacity-100' : 'opacity-0',
+          )}
+        />
       </div>
 
       <div

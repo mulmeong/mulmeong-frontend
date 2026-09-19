@@ -22,7 +22,10 @@ export function usePoiLoadingIndicator(loading: boolean, requestKey: string, ena
         }, LOADING_DELAY_MS)
       }
     } else if (visibleKey === requestKey) {
-      timer = setTimeout(() => setVisibleKey(undefined), Math.max(0, MIN_VISIBLE_MS - (Date.now() - shownAt.current)))
+      timer = setTimeout(
+        () => setVisibleKey(undefined),
+        Math.max(0, MIN_VISIBLE_MS - (Date.now() - shownAt.current)),
+      )
     } else {
       setVisibleKey(undefined)
     }

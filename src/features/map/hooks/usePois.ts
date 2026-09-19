@@ -17,7 +17,10 @@ export function usePois(
   const lat = center?.lat
   const lng = center?.lng
   const locationKey = lat !== undefined && lng !== undefined ? `${lat},${lng}` : ''
-  const active = useMemo(() => locationKey && categoryKey ? categoryKey.split(',') as PoiCategory[] : [], [locationKey, categoryKey])
+  const active = useMemo(
+    () => (locationKey && categoryKey ? (categoryKey.split(',') as PoiCategory[]) : []),
+    [locationKey, categoryKey],
+  )
 
   useEffect(() => {
     if (!active.length || lat === undefined || lng === undefined) return
@@ -53,7 +56,8 @@ export function usePois(
 
   const pois = useMemo(() => {
     const seen = new Set<string>()
-    return active.flatMap((category) => entries[`${locationKey}|${category}`]?.places ?? [])
+    return active
+      .flatMap((category) => entries[`${locationKey}|${category}`]?.places ?? [])
       .filter((place) => {
         if (seen.has(place.externalId)) return false
         seen.add(place.externalId)
@@ -65,6 +69,14 @@ export function usePois(
     const entry = entries[`${locationKey}|${category}`]
     return !entry?.places && !entry?.error
   })
-  const error = failed.length ? `${failed.map((category) => POI_CATEGORY_LABELS[category]).join(' · ')} 장소를 불러오지 못했어요.` : undefined
-  return { pois, loading, error, requestKey: `${locationKey}|${categoryKey}|${attempt}`, retry: () => setAttempt((value) => value + 1) }
+  const error = failed.length
+    ? `${failed.map((category) => POI_CATEGORY_LABELS[category]).join(' · ')} 장소를 불러오지 못했어요.`
+    : undefined
+  return {
+    pois,
+    loading,
+    error,
+    requestKey: `${locationKey}|${categoryKey}|${attempt}`,
+    retry: () => setAttempt((value) => value + 1),
+  }
 }

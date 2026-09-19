@@ -14,7 +14,10 @@ export type PoiParams = {
   size?: number
 }
 
-export function fetchPoi({ category, lat, lng, radius, size }: PoiParams, signal?: AbortSignal): Promise<PoiResult> {
+export function fetchPoi(
+  { category, lat, lng, radius, size }: PoiParams,
+  signal?: AbortSignal,
+): Promise<PoiResult> {
   if (env.useMock) return mockPoi(category, lat, lng)
   return api.get<PoiResult>('/external/places/category', {
     params: { category, lat, lng, radius, size },
