@@ -9,6 +9,7 @@ const PLACE_CONTEXT: Record<SavedPlace['category'], string> = {
   restaurant: '이번 여행에서 식사 장소로 엮어둔 곳입니다.',
   cafe: '여행 중 쉬어갈 카페로 엮어둔 곳입니다.',
   attraction: '이번 여행에서 둘러볼 장소로 엮어둔 곳입니다.',
+  etc: '이번 여행에 함께 엮어둔 곳입니다.',
 }
 
 export function PamphletIntro({ pamphlet }: { pamphlet: PamphletPreview }) {
@@ -81,7 +82,7 @@ export function PamphletPlace({ place, index }: { place: SavedPlace; index: numb
           aria-label={`평점 ${place.rating.toFixed(1)}, 리뷰 ${place.reviewCount}개`}
         >
           <span aria-hidden="true">★</span> {place.rating.toFixed(1)}
-          <span>({place.reviewCount.toLocaleString('ko-KR')})</span>
+          <span>({(place.reviewCount ?? 0).toLocaleString('ko-KR')})</span>
         </p>
       )}
     </article>
