@@ -5,7 +5,7 @@ import MapTooltip, { type MapTip } from '@/features/mypage/components/MapTooltip
 import SidoMap from '@/features/mypage/components/SidoMap'
 import SigunguMap from '@/features/mypage/components/SigunguMap'
 import { useGrapeMap } from '@/features/mypage/hooks/useGrapeMap'
-import { useMyReviews } from '@/features/mypage/hooks/useMyReviews'
+import { useRegionReviews } from '@/features/mypage/hooks/useRegionReviews'
 import {
   regionGrowStyle,
   SIDO_REGIONS,
@@ -67,8 +67,9 @@ export default function MyMapPage() {
   const nation = useGrapeMap('SIDO')
   const sigungu = useGrapeMap('SIGUNGU', selected?.code)
 
-  // 오른쪽 패널의 리뷰. 포도알 응답에는 리뷰가 없어 목록 API를 그대로 쓴다.
-  const { data: reviewPage } = useMyReviews('recent', 1, 'all')
+  // 오른쪽 패널의 리뷰. 포도알 응답에는 리뷰가 없어 목록 API(MY-04)를 따로 부른다.
+  // 지역과 개수를 서버에 넘기므로 받아온 걸 화면에서 다시 거르지 않는다.
+  const { data: reviewPage } = useRegionReviews(selected?.code, ASIDE_REVIEW_MAX)
 
   /**
    * 방문 기록을 못 받아와도 지도는 그린다.
@@ -84,15 +85,9 @@ export default function MyMapPage() {
     ? (regions.find((region) => region.regionCode === selected.code)?.visitCount ?? 0)
     : 0
 
-  // 고른 지역이 있으면 그 지역 리뷰만 추린다.
-  // TODO: 지금은 받아온 최신 목록에서 거른다. 지역별 리뷰는 따로 받아와야 할 수 있다.
-  const allReviews = reviewPage?.items ?? []
-  const matched = selected
-    ? allReviews.filter((review) => review.onsenAddress.startsWith(selected.name))
-    : allReviews
-
-  // 맛보기 셋만 보여준다. 나머지는 아래 '전체 보기'로 넘긴다.
-  const reviews = matched.slice(0, ASIDE_REVIEW_MAX)
+  // 이미 지역·개수를 서버가 맞춰 보내준다. totalCount는 자르기 전 전체 수다.
+  const reviews = reviewPage?.items ?? []
+  const reviewCount = reviewPage?.totalCount ?? 0
 
   return (
     <div className="flex flex-col gap-4 lg:flex-row">
@@ -204,7 +199,7 @@ export default function MyMapPage() {
         )}
 
         <p className="border-border-default text-text-secondary mt-4 border-t pt-4 text-[12px]">
-          {selected ? `이 지역 리뷰 ${matched.length}` : '최신 리뷰'}
+          {selected ? `이 지역 리뷰 ${reviewCount}` : '최신 리뷰'}
         </p>
 
         {reviews.length > 0 ? (
