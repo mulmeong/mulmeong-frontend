@@ -1,4 +1,6 @@
 import { getAllFavorites, type Favorite } from '@/features/favorites/api'
+import { SAVED_PAGE_SIZE } from '@/types/saved'
+
 import type { SavedCounts, SavedPlace, SavedPlacesPage, SavedQuery } from '@/types/saved'
 
 const CATEGORY = {
@@ -31,10 +33,17 @@ function countByCategory(items: SavedPlace[]): SavedCounts {
   return counts
 }
 
+/**
+ * 조건을 걸고 앞에서부터 limit개만 잘라낸다.
+ *
+ * 쪽을 나누지 않고 한 덩어리로 자르는 이유는 무한 스크롤이라서다 — 더 볼 때마다
+ * 뒤를 이어 붙이는 게 아니라 자르는 지점만 뒤로 민다. 전체 목록을
+ * FavoritesProvider가 이미 들고 있어서 받아올 것도 없다.
+ */
 export function selectSavedPlaces(
   favorites: Favorite[],
   query: SavedQuery,
-  page: number,
+  limit: number,
 ): SavedPlacesPage {
   const all: SavedPlace[] = favorites.map((item) => ({
     // 목록 선택과 삭제 모두 favoriteId가 아닌 placeId를 사용한다.
@@ -56,17 +65,15 @@ export function selectSavedPlaces(
   // RECENT는 서버가 준 순서 그대로다(찜한 순). 이름순만 여기서 다시 세운다.
   if (query.sort === 'NAME') items.sort((a, b) => a.name.localeCompare(b.name, 'ko'))
 
-  const totalPages = Math.max(1, Math.ceil(items.length / 20))
-  const safePage = Math.max(1, Math.min(page, totalPages))
+  const shown = Math.max(SAVED_PAGE_SIZE, limit)
   return {
-    items: items.slice((safePage - 1) * 20, safePage * 20),
+    items: items.slice(0, shown),
     totalCount: items.length,
-    page: safePage,
-    totalPages,
+    hasMore: items.length > shown,
     counts: countByCategory(all),
   }
 }
 
-export async function getSavedPlaces(query: SavedQuery, page: number) {
-  return selectSavedPlaces(await getAllFavorites(), query, page)
+export async function getSavedPlaces(query: SavedQuery, limit = SAVED_PAGE_SIZE) {
+  return selectSavedPlaces(await getAllFavorites(), query, limit)
 }
