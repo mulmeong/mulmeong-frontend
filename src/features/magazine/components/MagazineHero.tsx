@@ -36,23 +36,25 @@ export default function MagazineHero() {
       onBlurCapture={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false)
       }}
-      className="border-border-default grid overflow-hidden border-y md:grid-cols-2"
+      className="border-border-default grid overflow-hidden border-y md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
     >
-      <div className="flex flex-col items-start py-8 md:py-12 md:pr-10">
+      <div className="flex flex-col items-start py-7 md:py-9 md:pr-10">
         <p className="text-text-secondary text-[11px] tracking-[0.18em]">
           EDITOR’S PICK · {magazine.categoryLabel}
         </p>
-        <h2 className="mt-5 text-[29px] leading-[1.3] font-medium tracking-tight md:text-[38px]">
+        <h2 className="mt-4 text-[29px] leading-[1.25] font-medium tracking-tight md:text-[36px]">
           {magazine.title}
         </h2>
-        <p className="text-text-secondary mt-4 text-[13px] leading-6">{magazine.subtitle}</p>
+        <p className="text-text-secondary mt-3 line-clamp-3 text-[13px] leading-6">
+          {magazine.subtitle}
+        </p>
         <Link
           to={`/magazine/${magazine.magazineId}`}
-          className="border-text-primary mt-7 border-b pb-1 text-[13px]"
+          className="border-text-primary mt-5 border-b pb-1 text-[13px]"
         >
           이야기 읽기 ↗<span className="sr-only">: {magazine.title}</span>
         </Link>
-        <div className="mt-8 flex w-full items-center gap-4 pt-4 text-[12px] md:mt-auto">
+        <div className="mt-7 flex w-full items-center gap-4 text-[12px] md:mt-auto md:pt-6">
           <span className="mr-auto tabular-nums">
             {String(currentIndex + 1).padStart(2, '0')}{' '}
             <span className="text-text-secondary">
@@ -93,8 +95,9 @@ export default function MagazineHero() {
       >
         <MagazineImage
           src={magazine.heroImageUrl}
+          seed={magazine.magazineId}
           eager
-          className="aspect-[4/3] md:h-full md:min-h-[430px]"
+          className="aspect-[4/3] md:h-full md:min-h-[400px]"
         />
       </Link>
     </section>
