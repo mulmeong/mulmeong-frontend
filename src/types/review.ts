@@ -61,3 +61,42 @@ export type CreateReviewResult = {
   createdAt: string
   reward: ReviewReward
 }
+
+export const REVIEW_SORTS = ['RECENT', 'RATING_DESC', 'PHOTO_FIRST'] as const
+export type ReviewSort = (typeof REVIEW_SORTS)[number]
+
+export const REVIEW_SORT_LABELS: Record<ReviewSort, string> = {
+  RECENT: '최신순',
+  RATING_DESC: '별점순',
+  PHOTO_FIRST: '사진 먼저',
+}
+
+export type PublicReviewAuthor = {
+  nickname: string
+  level?: number | null
+  title?: string | null
+  profileShareToken?: string | null
+}
+
+export type PublicReview = {
+  reviewId: number
+  author: PublicReviewAuthor
+  rating: number
+  visitedAt: string
+  isRevisit: boolean
+  spec: ReviewSpec
+  body: string
+  images: string[]
+  isMine: boolean
+  isEdited: boolean
+  createdAt: string
+}
+
+export type ReviewPage = {
+  content: PublicReview[]
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+  last: boolean
+}
