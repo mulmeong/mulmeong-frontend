@@ -210,7 +210,15 @@ export default function DirectionsPanel({
             </ul>
             {selectedRoute && selectedRoute.path.length < 2 && (
               <p className="text-text-secondary mt-3 text-[12px]">
-                경로선 정보가 없어 출발지와 도착지만 표시합니다.
+                지도에는 출발지와 도착지만 표시됩니다.
+                <a
+                  href={kakaoDirectionsUrl(result)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-text-primary mt-2 block underline underline-offset-4"
+                >
+                  카카오맵에서 실제 경로 확인
+                </a>
               </p>
             )}
             {selectedRoute && (
