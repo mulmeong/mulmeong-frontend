@@ -1,6 +1,6 @@
 import { api } from '@/api'
 
-import type { CreatePamphletBody, Pamphlet } from '@/types/pamphlet'
+import type { CreatePamphletBody, Pamphlet, PamphletDetail, PamphletPage } from '@/types/pamphlet'
 
 /**
  * 팜플렛 만들기(PAM-08).
@@ -10,4 +10,22 @@ import type { CreatePamphletBody, Pamphlet } from '@/types/pamphlet'
  */
 export function createPamphlet(body: CreatePamphletBody): Promise<Pamphlet> {
   return api.post<Pamphlet>('/pamphlets', body)
+}
+
+/** 내 팜플렛 목록(MY-12). page는 0부터다 — 화면의 1-based와 다르니 호출부에서 맞춘다. */
+export function fetchPamphlets(page: number, size: number): Promise<PamphletPage> {
+  return api.get<PamphletPage>('/pamphlets', { params: { page, size } })
+}
+
+export function fetchPamphletDetail(pamphletId: number): Promise<PamphletDetail> {
+  return api.get<PamphletDetail>(`/pamphlets/${pamphletId}`)
+}
+
+/** 공유 링크로 여는 팜플렛. 비로그인도 볼 수 있다 (AUTH-02). */
+export function fetchSharedPamphlet(shareToken: string): Promise<PamphletDetail> {
+  return api.get<PamphletDetail>(`/pamphlets/share/${shareToken}`, { skipAuth: true })
+}
+
+export function deletePamphlet(pamphletId: number): Promise<void> {
+  return api.delete<void>(`/pamphlets/${pamphletId}`)
 }

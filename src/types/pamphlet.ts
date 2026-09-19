@@ -46,6 +46,21 @@ export type PamphletDetail = Omit<Pamphlet, 'placeCount' | 'regionName'> & {
   isMine: boolean
   places: PamphletPlace[]
   summary?: { onsenCount: number; placeCount: number; regionName?: string | null } | null
+  /** 공유 화면의 서명. 남의 팜플렛을 열면 서버가 작성자만 내려준다. */
+  author?: { nickname: string } | null
+}
+
+/** 만들기 직후 화면이 쓰는 값. 상세가 도착하기 전 표지를 그리는 데 필요하다. */
+export type CreatedPamphlet = Pamphlet
+
+/**
+ * 공유 링크. 현재 오리진으로 만든다 — 로컬·배포에서 호스트가 달라 하드코딩할 수 없다.
+ *
+ * 서버도 shareUrl을 내려주는데, 어떤 오리진으로 만들어 주는지 확인되지 않아
+ * 아직 쓰지 않는다. 확인되면 그쪽을 우선하도록 바꾼다.
+ */
+export function shareLinkOf(shareToken: string): string {
+  return `${window.location.origin}/p/${shareToken}`
 }
 
 /* 아래는 만들기(POST /pamphlets)에만 쓰는 값이다. 목록·상세는 위 타입을 쓴다. */

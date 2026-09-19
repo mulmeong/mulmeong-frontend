@@ -11,6 +11,7 @@ import MagazineDetailPage from '@/pages/MagazineDetailPage'
 import MagazinePage from '@/pages/MagazinePage'
 import MapPage from '@/pages/MapPage'
 import NotFoundPage from '@/pages/NotFoundPage'
+import SharedPamphletPage from '@/pages/SharedPamphletPage'
 import LoginPage from '@/pages/auth/LoginPage'
 import PasswordResetPage from '@/pages/auth/PasswordResetPage'
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage'
@@ -43,6 +44,8 @@ export const router = createBrowserRouter([
         path: '/',
         element: <RootLayout />,
         children: [
+          // 공유 링크는 로그인 없이 열린다 (AUTH-02).
+          { path: 'p/:token', element: <SharedPamphletPage /> },
           { path: 'magazine', element: <MagazinePage /> },
           { path: 'magazine/archive', element: <MagazineArchivePage /> },
           { path: 'magazine/:id', element: <MagazineDetailPage /> },
