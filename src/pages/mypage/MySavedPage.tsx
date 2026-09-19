@@ -109,39 +109,38 @@ export default function MySavedPage() {
 
   return (
     <div className="flex flex-col">
+      {/* 내 리뷰 탭과 같은 줄 구성 — 개수 · 1단계 칩 · 오른쪽 끝 동작 버튼. */}
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-[14px] font-semibold">전체 {data?.totalCount ?? 0}</span>
 
-        <div className="ml-auto flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setSelected(new Set())}
-            disabled={selected.size === 0}
-            className="text-text-secondary hover:text-text-primary text-[13px] disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            선택 해제
-          </button>
-
-          {/*
-            같은 줄의 칩(py-2 / 13px)과 높이를 맞춘다 — Button 기본값은 한 단계 커서 혼자 튄다.
-            TODO: 팜플렛 만들기 화면(PAM-01)이 아직 없다.
-          */}
-          <Button disabled={selected.size === 0} className="px-4 py-2 text-[13px]">
-            선택 {selected.size}곳으로 팜플렛 만들기
-          </Button>
+        <div className="flex gap-2">
+          {SAVED_FILTERS.map((option) => (
+            <Chip
+              key={option.id}
+              selected={option.id === filter}
+              onClick={() => handleFilter(option.id)}
+            >
+              {option.label}
+            </Chip>
+          ))}
         </div>
-      </div>
 
-      <div className="mt-3 flex gap-2">
-        {SAVED_FILTERS.map((option) => (
-          <Chip
-            key={option.id}
-            selected={option.id === filter}
-            onClick={() => handleFilter(option.id)}
-          >
-            {option.label}
-          </Chip>
-        ))}
+        <button
+          type="button"
+          onClick={() => setSelected(new Set())}
+          disabled={selected.size === 0}
+          className="text-text-secondary hover:text-text-primary ml-auto text-[13px] disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          선택 해제
+        </button>
+
+        {/*
+          같은 줄의 칩(py-2 / 13px)과 높이를 맞춘다 — Button 기본값은 한 단계 커서 혼자 튄다.
+          TODO: 팜플렛 만들기 화면(PAM-01)이 아직 없다.
+        */}
+        <Button disabled={selected.size === 0} className="px-4 py-2 text-[13px]">
+          선택 {selected.size}곳으로 팜플렛 만들기
+        </Button>
       </div>
 
       {/* 2단계 칩. 1단계에서 고른 쪽만 나온다. */}
