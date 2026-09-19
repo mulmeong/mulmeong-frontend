@@ -23,18 +23,26 @@ function formatDate(iso: string): string {
   return `${date.getFullYear()}.${month}.${day}`
 }
 
-function ReviewRow({ review }: { review: MyReview }) {
+function ReviewRow({ review, to }: { review: MyReview; to: string }) {
   return (
-    <li className="flex flex-col gap-1">
-      <div className="flex items-baseline gap-2">
-        <span className="text-[13px] font-bold">{review.onsenName}</span>
-        <span className="text-text-secondary text-[11px]">{formatDate(review.createdAt)}</span>
-      </div>
-      {/* 별을 하나씩 늘어놓으면 스크린 리더가 '별 별 별'로 읽는다 — 숫자로 대신 읽힌다. */}
-      <p aria-label={`5점 만점에 ${review.rating}점`} className="text-[11px] tracking-[1px]">
-        <span aria-hidden="true">{'★'.repeat(review.rating)}</span>
-      </p>
-      <p className="text-text-secondary line-clamp-2 text-[12px] leading-[1.6]">{review.content}</p>
+    <li>
+      {/* 누르면 내 리뷰 탭에서 이 리뷰가 펼쳐진 채로 열린다. */}
+      <Link
+        to={to}
+        className="hover:bg-surface-dim -mx-2 flex flex-col gap-1 rounded-sm px-2 py-1.5"
+      >
+        <div className="flex items-baseline gap-2">
+          <span className="text-[13px] font-bold">{review.onsenName}</span>
+          <span className="text-text-secondary text-[11px]">{formatDate(review.createdAt)}</span>
+        </div>
+        {/* 별을 하나씩 늘어놓으면 스크린 리더가 '별 별 별'로 읽는다 — 숫자로 대신 읽힌다. */}
+        <p aria-label={`5점 만점에 ${review.rating}점`} className="text-[11px] tracking-[1px]">
+          <span aria-hidden="true">{'★'.repeat(review.rating)}</span>
+        </p>
+        <p className="text-text-secondary line-clamp-2 text-[12px] leading-[1.6]">
+          {review.content}
+        </p>
+      </Link>
     </li>
   )
 }
@@ -82,6 +90,16 @@ export default function MyMapPage() {
   // 이미 지역·개수를 서버가 맞춰 보내준다. totalCount는 자르기 전 전체 수다.
   const reviews = reviewPage?.items ?? []
   const reviewCount = reviewPage?.totalCount ?? 0
+
+  /**
+   * 내 리뷰 탭에서 이 리뷰를 펼친 채로 여는 주소.
+   * 고른 지역을 같이 넘겨야 칩도 같은 상태로 열리고, 리뷰를 찾는 범위도 좁아진다.
+   */
+  const reviewLink = (reviewId: number) => {
+    const params = new URLSearchParams({ reviewId: String(reviewId) })
+    if (selected) params.set('regionCode', selected.code)
+    return `/my/reviews?${params.toString()}`
+  }
 
   return (
     <div className="flex flex-col gap-4 lg:flex-row">
@@ -184,9 +202,9 @@ export default function MyMapPage() {
         </p>
 
         {reviews.length > 0 ? (
-          <ul className="mt-3 flex flex-col gap-4">
+          <ul className="mt-3 flex flex-col gap-3">
             {reviews.map((review) => (
-              <ReviewRow key={review.id} review={review} />
+              <ReviewRow key={review.id} review={review} to={reviewLink(review.id)} />
             ))}
           </ul>
         ) : (

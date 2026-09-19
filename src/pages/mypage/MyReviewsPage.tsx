@@ -1,11 +1,11 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useOutletContext, useSearchParams } from 'react-router-dom'
 
 import { ApiError } from '@/api'
 import Button from '@/components/ui/Button'
 import Chip from '@/components/ui/Chip'
 import Modal from '@/components/ui/Modal'
-import { deleteReview } from '@/features/mypage/api/reviews'
+import { deleteReview, findReviewPage } from '@/features/mypage/api/reviews'
 import Pagination from '@/features/mypage/components/Pagination'
 import ReviewFormPanel from '@/features/mypage/components/ReviewFormPanel'
 import ReviewWritePanel from '@/features/mypage/components/ReviewWritePanel'
@@ -40,6 +40,15 @@ export default function MyReviewsPage() {
   const [searchParams] = useSearchParams()
   const [initialRegion] = useState(() => searchParams.get('regionCode') ?? undefined)
 
+  /**
+   * 내 지도에서 리뷰 한 건을 눌러 넘어오면 ?reviewId=501이 함께 붙는다.
+   * 그 리뷰를 펼친 채로 연다. 몇 페이지에 있는지는 아래 effect가 찾는다.
+   */
+  const [initialReviewId] = useState(() => {
+    const value = Number(searchParams.get('reviewId'))
+    return Number.isInteger(value) && value > 0 ? value : null
+  })
+
   const [sort, setSort] = useState<ReviewSort>('RECENT')
   /** 고른 지역 코드. undefined면 전국이다. */
   const [regionCode, setRegionCode] = useState<string | undefined>(initialRegion)
@@ -62,13 +71,40 @@ export default function MyReviewsPage() {
    * 아래로 펼친 리뷰. 하나만 연다 — 숫자 하나로 두면 다른 걸 여는 순간
    * 이전 것이 저절로 닫힌다.
    */
-  const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [expandedId, setExpandedId] = useState<number | null>(initialReviewId)
 
   /**
    * 수정 후 펼쳐둔 상세를 다시 받아오게 하는 값.
    * 상세는 펼칠 때 한 번만 받아오므로, 항목을 새로 그려야 바뀐 내용이 보인다.
    */
   const [detailVersion, setDetailVersion] = useState(0)
+
+  /**
+   * 내 지도에서 지목해 온 리뷰가 몇 페이지에 있는지 찾아 그 페이지를 연다.
+   *
+   * 첫 페이지에 있으면 이미 보이는 채로 시작하므로 페이지를 건드리지 않는다.
+   * 지운 리뷰라 못 찾으면(null) 그냥 목록을 보여준다 — 따로 알리지 않는다.
+   * 주소로 들어온 한 번만 하면 되므로 마운트 때만 돈다.
+   */
+  useEffect(() => {
+    if (initialReviewId === null) return
+
+    let cancelled = false
+
+    const locate = async () => {
+      const found = await findReviewPage(initialReviewId, { regionCode: initialRegion })
+      if (!cancelled && found !== null && found > 1) setPage(found)
+    }
+
+    // state 변경은 await 뒤에서 일어난다 — effect 본문에서 동기로 부르지 않는다.
+    void locate().catch(() => {
+      // 못 찾아도 목록 자체는 멀쩡하다. 펼침만 안 될 뿐이다.
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [initialReviewId, initialRegion])
 
   const toggleExpanded = (review: MyReview) => {
     setExpandedId((current) => (current === review.id ? null : review.id))
@@ -151,6 +187,7 @@ export default function MyReviewsPage() {
           {REVIEW_SORTS.map((option) => (
             <Chip
               key={option.id}
+              variant="plain"
               selected={option.id === sort}
               onClick={() => handleSort(option.id)}
             >
@@ -178,12 +215,17 @@ export default function MyReviewsPage() {
       */}
       {(regions.length > 0 || regionCode !== undefined) && (
         <div className="border-border-default mt-3 flex flex-wrap items-center gap-2 border-t pt-3">
-          <Chip selected={regionCode === undefined} onClick={() => handleRegion(undefined)}>
+          <Chip
+            variant="plain"
+            selected={regionCode === undefined}
+            onClick={() => handleRegion(undefined)}
+          >
             전국
           </Chip>
           {regions.map((option) => (
             <Chip
               key={option.regionCode}
+              variant="plain"
               selected={option.regionCode === regionCode}
               onClick={() => handleRegion(option.regionCode)}
             >

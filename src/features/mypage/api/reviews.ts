@@ -46,6 +46,26 @@ export function getMyReviews({
     .then(toMyReviewsPage)
 }
 
+/**
+ * 리뷰 한 건이 몇 페이지에 있는지 찾는다. 없으면 null.
+ *
+ * 목록 API는 '이 리뷰가 몇 번째냐'를 알려주지 않는다. 그래서 같은 조건으로
+ * 앞에서부터 훑는다 — 마지막 페이지까지 보고 없으면 포기한다.
+ *
+ * 내 지도에서 리뷰를 눌러 넘어올 때 쓴다. 대개 첫 페이지에서 끝나지만,
+ * 목록 크기나 정렬이 달라지면 뒤 페이지에 있을 수 있어 숫자에 기대지 않는다.
+ */
+export async function findReviewPage(
+  reviewId: number,
+  { regionCode, sort = 'RECENT', size = REVIEW_PAGE_SIZE }: Omit<MyReviewQuery, 'page'> = {},
+): Promise<number | null> {
+  for (let page = 1; ; page += 1) {
+    const result = await getMyReviews({ regionCode, sort, page, size })
+    if (result.items.some((review) => review.id === reviewId)) return page
+    if (page >= result.totalPages) return null
+  }
+}
+
 export function deleteReview(reviewId: number): Promise<void> {
   if (env.useMock) return mockDeleteReview()
   return api.delete<void>(`/reviews/${reviewId}`)
