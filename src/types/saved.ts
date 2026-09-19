@@ -1,4 +1,3 @@
-import type { RegionGroupId } from '@/types/region'
 import type { FavoriteCategory } from '@/features/favorites/api'
 
 /**
@@ -28,13 +27,17 @@ export type SavedPlace = {
   imageUrl?: string
 }
 
-/** 시안의 1단계 칩 세 가지. */
-export type SavedFilter = 'all' | 'region' | 'category'
+/**
+ * 정렬 기준. 명세(MY-06)의 enum을 그대로 쓴다.
+ *
+ * RECENT는 서버가 준 순서 그대로다 — 찜한 순으로 내려온다.
+ * NAME은 화면에서 정렬한다. 전체 목록이 이미 손에 있어 다시 받아올 이유가 없다.
+ */
+export type SavedSort = 'RECENT' | 'NAME'
 
-export const SAVED_FILTERS: { id: SavedFilter; label: string }[] = [
-  { id: 'all', label: '전체' },
-  { id: 'region', label: '지역별' },
-  { id: 'category', label: '카테고리별' },
+export const SAVED_SORTS: { id: SavedSort; label: string }[] = [
+  { id: 'RECENT', label: '찜한순' },
+  { id: 'NAME', label: '이름순' },
 ]
 
 /**
@@ -59,20 +62,23 @@ export function categoryLabel(category: SavedCategory): string {
   return SAVED_CATEGORIES.find((item) => item.id === category)?.label ?? category
 }
 
+/**
+ * 카테고리별 개수. 칩 옆 숫자에 쓴다(MY-06 counts).
+ * 'all'은 전체 찜 개수다. 조건을 걸기 전 기준이라 칩을 눌러도 값이 바뀌지 않는다.
+ */
+export type SavedCounts = Record<SavedCategory | 'all', number>
+
 export type SavedPlacesPage = {
   items: SavedPlace[]
-  /** 전체 찜 개수. 목록 위 '전체 N'에 쓴다. */
+  /** 조건에 걸린 개수. 목록 위 '전체 N'에 쓴다. */
   totalCount: number
   page: number
   totalPages: number
+  counts: SavedCounts
 }
 
-/**
- * 목록에 거는 조건.
- * 1단계에서 '전체'를 고르면 2단계 칩이 없으므로 region·category 둘 다 기본값이다.
- */
+/** 목록에 거는 조건. 'all'이면 카테고리를 거르지 않는다. */
 export type SavedQuery = {
-  filter: SavedFilter
-  region: RegionGroupId
+  sort: SavedSort
   category: SavedCategory | 'all'
 }

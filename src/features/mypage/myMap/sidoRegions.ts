@@ -14,8 +14,8 @@ import { KOREA_PATHS } from '@/features/dart/koreaMap/paths'
  * code는 행정구역 시·도 코드다. 팀원 리뷰 작성 응답(ReviewReward.sidoCode)이
  * 이 값을 주므로 이름 표기(경북/경상북도)가 달라도 어긋나지 않는다.
  *
- * TODO: 강원(42)과 전북(45)은 특별자치도 전환 후 51·52를 쓰기도 한다.
- * BE가 어느 쪽을 주는지 확인 필요.
+ * 강원은 51, 전북은 52다. 특별자치도 전환 후의 값으로, BE가 이쪽을 쓴다고
+ * 확인받았다(42·45가 아니다). sigunguPaths.ts의 키도 같은 값이어야 한다.
  */
 export type SidoRegion = {
   code: string
@@ -29,10 +29,10 @@ export const SIDO_REGIONS: readonly SidoRegion[] = [
   { code: '48', name: '경남', pathIndex: 1 },
   { code: '47', name: '경북', pathIndex: 2 },
   { code: '46', name: '전남', pathIndex: 3 },
-  { code: '45', name: '전북', pathIndex: 4 },
+  { code: '52', name: '전북', pathIndex: 4 },
   { code: '44', name: '충남', pathIndex: 5 },
   { code: '43', name: '충북', pathIndex: 6 },
-  { code: '42', name: '강원', pathIndex: 7 },
+  { code: '51', name: '강원', pathIndex: 7 },
   { code: '41', name: '경기', pathIndex: 8 },
   { code: '36', name: '세종', pathIndex: 9 },
   { code: '31', name: '울산', pathIndex: 10 },
