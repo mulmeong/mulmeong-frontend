@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 import { cn } from '@/lib/cn'
@@ -36,6 +36,11 @@ export default function PoiMarkers({
   onSelect: (key?: string) => void
 }) {
   const [hosts, setHosts] = useState<Host[]>([])
+  /**
+   * 마커는 지도 idle마다 다시 만든다(위치 재계산). 그때까지 애니메이션하면 팬·줌 중에
+   * 계속 깜빡이므로, 표시할 장소 자체가 바뀐 첫 빌드에서만 등장 효과를 준다.
+   */
+  const animateKeyRef = useRef<string | undefined>(undefined)
   const [hoveredKey, setHoveredKey] = useState<string>()
   const [expandedKey, setExpandedKey] = useState<string>()
   const labelKey = hoveredKey ?? selectedKey
@@ -60,9 +65,17 @@ export default function PoiMarkers({
         if (group) group.members.push(poi)
         else groups.push({ poi, members: [poi], x: point.x, y: point.y })
       }
-      next = groups.map(({ poi, members }) => {
+      const poiKeys = pois.map(poiKey).join('|')
+      const entering = animateKeyRef.current !== poiKeys
+      animateKeyRef.current = poiKeys
+      next = groups.map(({ poi, members }, index) => {
         const node = document.createElement('div')
         node.style.cssText = 'width:40px;height:40px;position:relative;overflow:visible;'
+        if (entering) {
+          node.classList.add('map-marker-enter')
+          // 30ms 간격으로 순차 등장. 많아도 총 대기가 길어지지 않게 상한을 둔다.
+          node.style.animationDelay = `${Math.min(index * 30, 300)}ms`
+        }
         const overlay = new window.kakao.maps.CustomOverlay({
           position: new window.kakao.maps.LatLng(poi.lat, poi.lng),
           content: node,
@@ -79,7 +92,18 @@ export default function PoiMarkers({
     rebuild()
     window.kakao.maps.event.addListener(map, 'idle', rebuild)
     return () => {
-      next.forEach(({ overlay }) => overlay.setMap(null))
+      // 곧바로 떼면 툭 사라진다. 짧게 흐려지고 나서 제거한다.
+      const leaving = next
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      if (reduced) leaving.forEach(({ overlay }) => overlay.setMap(null))
+      else {
+        leaving.forEach(({ node }) => {
+          node.classList.remove('map-marker-enter')
+          node.style.animationDelay = '0ms'
+          node.classList.add('map-marker-exit')
+        })
+        window.setTimeout(() => leaving.forEach(({ overlay }) => overlay.setMap(null)), 130)
+      }
       window.kakao.maps.event.removeListener(map, 'idle', rebuild)
     }
   }, [map, pois])

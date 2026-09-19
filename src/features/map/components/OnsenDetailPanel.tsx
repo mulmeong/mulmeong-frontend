@@ -1,4 +1,4 @@
-import { useId, useState, type ReactNode } from 'react'
+import { useEffect, useId, useState, type ReactNode } from 'react'
 
 import OnsenSpecSummary from '@/components/OnsenSpecSummary'
 import FavoriteButton from '@/features/favorites/FavoriteButton'
@@ -53,13 +53,19 @@ function ActionIcon({
 type OnsenDetailPanelProps = {
   onsen: OnsenListItem | OnsenMapPoint
   onDirections: () => void
+  /** 주변 탭이 열렸는지 — 지도에 주변 마커를 띄울지 판단한다. */
+  onNearbyOpenChange?: (open: boolean) => void
 }
 
 /**
  * MAP-02 상세패널. 한눈에·정보 탭은 명세에 있는 온천 스펙(수온·수질·효능·시설·요금·뚜벅이)으로
  * 채운다. 리뷰(REV-*)는 목 모드에서 화면 검토용 목록을 보여준다.
  */
-export default function OnsenDetailPanel({ onsen, onDirections }: OnsenDetailPanelProps) {
+export default function OnsenDetailPanel({
+  onsen,
+  onDirections,
+  onNearbyOpenChange,
+}: OnsenDetailPanelProps) {
   const { detail, loading, error, retry } = useOnsenDetail(onsen.id)
   const summary = 'tags' in onsen ? onsen : detail ? onsenFromDetail(detail) : undefined
 
@@ -101,6 +107,7 @@ export default function OnsenDetailPanel({ onsen, onDirections }: OnsenDetailPan
       onsen={summary}
       detail={detail}
       onDirections={onDirections}
+      onNearbyOpenChange={onNearbyOpenChange}
     />
   )
 }
@@ -109,13 +116,23 @@ function OnsenDetailContent({
   onsen,
   detail,
   onDirections,
+  onNearbyOpenChange,
 }: {
   onsen: OnsenListItem
   detail?: OnsenDetail
   onDirections: () => void
+  onNearbyOpenChange?: (open: boolean) => void
 }) {
   const [tab, setTab] = useState<DetailTab>('한눈에')
   const tabsId = useId()
+
+  // 주변 탭이 열린 동안만 지도에 주변 마커를 띄운다. 패널이 닫히거나 다른 온천으로
+  // 바뀌면(key로 새로 마운트된다) 해제된다.
+  const nearbyOpen = tab === '주변'
+  useEffect(() => {
+    onNearbyOpenChange?.(nearbyOpen)
+    return () => onNearbyOpenChange?.(false)
+  }, [nearbyOpen, onNearbyOpenChange])
 
   // 목록 데이터로 먼저 그리고 상세가 도착하면 덮는다 — 로딩 중에도 화면이 비지 않는다.
   const name = detail?.name ?? onsen.name
@@ -130,7 +147,7 @@ function OnsenDetailContent({
         <span className="text-text-secondary text-[11px]">장소 상세</span>
       </div>
 
-      <div className="flex items-start justify-between gap-3 pt-1">
+      <div className="flex items-start gap-3 pt-1">
         <div className="min-w-0 flex-1">
           <h2 className="text-text-primary text-[20px] leading-[1.4] font-semibold tracking-tight break-keep [overflow-wrap:anywhere]">
             {name}
@@ -139,7 +156,6 @@ function OnsenDetailContent({
             {address}
           </p>
         </div>
-        <FavoriteButton target={{ placeId: onsen.id }} name={name} className="-mt-0.5" />
       </div>
 
       {imageUrl ? (

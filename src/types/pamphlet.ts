@@ -40,3 +40,10 @@ export type PamphletPlace = {
   lng?: number | null
   kakaoPlaceUrl?: string | null
 }
+
+/** 팜플렛 상세 (GET /pamphlets/{id}). 지도에는 places의 좌표만 쓴다. */
+export type PamphletDetail = Omit<Pamphlet, 'placeCount' | 'regionName'> & {
+  isMine: boolean
+  places: PamphletPlace[]
+  summary?: { onsenCount: number; placeCount: number; regionName?: string | null } | null
+}

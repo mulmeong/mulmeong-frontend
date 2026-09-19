@@ -17,6 +17,8 @@ import OnsenDetailPanel from '@/features/map/components/OnsenDetailPanel'
 import PoiFilter from '@/features/map/components/PoiFilter'
 import { usePoiLoadingIndicator } from '@/features/map/hooks/usePoiLoadingIndicator'
 import { POI_HIDE_LEVEL, POI_VISIBLE_LEVEL, REGION_PREVIEW_COUNT } from '@/features/map/constants'
+import { fetchPamphletDetail } from '@/features/map/api/pamphlets'
+import { useNearby } from '@/features/map/hooks/useNearby'
 import { useOnsenMapPoints } from '@/features/map/hooks/useOnsenMapPoints'
 import { useOnsens } from '@/features/map/hooks/useOnsens'
 import { useDirections } from '@/features/map/hooks/useDirections'
@@ -27,8 +29,8 @@ import { REGION_VIEWS } from '@/types/onsen'
 
 import type { OnsenMapPoint } from '@/features/map/types/mapPoint'
 import type { MapBounds, MapView, Region } from '@/types/onsen'
-import type { Pamphlet } from '@/types/pamphlet'
-import type { PoiCategory } from '@/types/poi'
+import type { Pamphlet, PamphletPlace } from '@/types/pamphlet'
+import type { MapPoi, PoiCategory } from '@/types/poi'
 import { poiKey } from '@/types/poi'
 
 /** 검색 결과가 하나뿐일 때 지도를 얼마나 당길지. */
@@ -51,6 +53,11 @@ export default function MapPage() {
    * (features/map/api/pamphlets.ts 주석 참고). BE가 열어주면 여기서 이어받는다.
    */
   const [activePamphlet, setActivePamphlet] = useState<Pamphlet>()
+  /**
+   * 주변 탭이 열려 있으면 그 장소들을 지도에 띄운다. POI 토글과 둘 다 '주변에 뭐가
+   * 있나'를 보는 기능이라 동시에 켜면 마커가 섞여 읽기 어렵다 — 탭이 열리면 POI를 끈다.
+   */
+  const [nearbyOpen, setNearbyOpen] = useState(false)
   const handleSelectPamphlet = useCallback((pamphlet: Pamphlet) => {
     setActivePamphlet((current) =>
       current?.pamphletId === pamphlet.pamphletId ? undefined : pamphlet,
@@ -66,6 +73,33 @@ export default function MapPage() {
   const { onsens, loading, error, load } = useOnsens(REGION_PREVIEW_COUNT)
   const nationalMap = useOnsenMapPoints()
   const [selectedId, setSelectedId] = useState<number>()
+  const nearby = useNearby(selectedId, nearbyOpen)
+  /**
+   * 주변 장소를 POI 마커로 그린다 — 지도 위 표현을 하나로 맞추고 아이콘도 재사용한다.
+   * 관광지는 PoiCategory에 없어 공원 아이콘을 빌려 쓴다.
+   */
+  const nearbyPois = useMemo<MapPoi[]>(
+    () =>
+      nearbyOpen
+        ? (nearby.result?.items ?? [])
+            .filter((place) => place.lat != null && place.lng != null)
+            .map((place) => ({
+              externalId: place.externalId,
+              name: place.name,
+              categoryName: place.categoryLabel,
+              roadAddress: place.address ?? undefined,
+              lat: place.lat,
+              lng: place.lng,
+              distanceM: place.distanceM ?? 0,
+              kakaoPlaceUrl: place.kakaoPlaceUrl ?? undefined,
+              category:
+                place.category === 'RESTAURANT' || place.category === 'CAFE'
+                  ? place.category
+                  : 'PARK',
+            }))
+        : [],
+    [nearbyOpen, nearby.result],
+  )
   const [selectedPoint, setSelectedPoint] = useState<OnsenMapPoint>()
   const [externalPlace, setExternalPlace] = useState<Favorite>()
   const [detailClosing, setDetailClosing] = useState(false)
@@ -147,6 +181,44 @@ export default function MapPage() {
   const filtersRef = useRef<SearchFilters>({})
   const [hasFilter, setHasFilter] = useState(false)
   const [focus, setFocus] = useState<MapView>()
+  /**
+   * 고른 팜플렛의 장소. 목록 응답에는 좌표가 없어 상세를 따로 받는다.
+   * 실패해도 지도 탐색은 계속돼야 해서 조용히 비운다.
+   */
+  const [pamphletPlaces, setPamphletPlaces] = useState<PamphletPlace[]>([])
+  useEffect(() => {
+    const id = activePamphlet?.pamphletId
+    if (id === undefined) {
+      setPamphletPlaces([])
+      return
+    }
+    let cancelled = false
+    fetchPamphletDetail(id)
+      .then((detail) => {
+        if (cancelled) return
+        const placed = detail.places.filter((place) => place.lat != null && place.lng != null)
+        setPamphletPlaces(placed)
+        // 저장한 곳이 한눈에 들어오게 범위를 맞춘다. 한 곳뿐이면 과하게 당기지 않는다.
+        if (placed.length > 1) {
+          setFocus({
+            bounds: {
+              swLat: Math.min(...placed.map((place) => place.lat!)),
+              swLng: Math.min(...placed.map((place) => place.lng!)),
+              neLat: Math.max(...placed.map((place) => place.lat!)),
+              neLng: Math.max(...placed.map((place) => place.lng!)),
+            },
+          })
+        } else if (placed[0]) {
+          setFocus({ lat: placed[0].lat!, lng: placed[0].lng!, level: SINGLE_RESULT_LEVEL })
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setPamphletPlaces([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [activePamphlet])
 
   useEffect(() => {
     const key = searchParams.toString()
@@ -240,7 +312,26 @@ export default function MapPage() {
       })),
     [favorites.items],
   )
-  const basePoints = showingSaved ? savedPoints : hasFilter ? onsens : nationalMap.points
+  // 팜플렛을 띄운 동안에는 그 장소만 보여준다 — 전국 마커와 섞이면 뭘 저장했는지 묻힌다.
+  const pamphletPoints = useMemo<OnsenMapPoint[]>(
+    () =>
+      pamphletPlaces.map((place) => ({
+        id: place.placeId,
+        name: place.name,
+        lat: place.lat!,
+        lng: place.lng!,
+        address: place.address ?? undefined,
+        imageUrl: place.imageUrl ?? undefined,
+      })),
+    [pamphletPlaces],
+  )
+  const basePoints = pamphletPoints.length
+    ? pamphletPoints
+    : showingSaved
+      ? savedPoints
+      : hasFilter
+        ? onsens
+        : nationalMap.points
   const mapOnsens = useMemo(() => {
     const points =
       !showingSaved && linkedOnsen && !basePoints.some((place) => place.id === linkedOnsen.id)
@@ -325,7 +416,8 @@ export default function MapPage() {
     [],
   )
   const poiOnsen = !externalSelected ? selected : undefined
-  const poiEnabled = mode === 'search' && poiZoomVisible
+  // 주변 탭이 열린 동안에는 POI를 내린다 — 둘 다 주변 장소라 마커가 섞이면 읽기 어렵다.
+  const poiEnabled = mode === 'search' && poiZoomVisible && !nearbyOpen
   const poiCenter = poiOnsen ? { lat: poiOnsen.lat, lng: poiOnsen.lng } : viewportCenter
   const poiScope =
     poiEnabled && poiCenter
@@ -487,6 +579,7 @@ export default function MapPage() {
                     <OnsenDetailPanel
                       onsen={selected}
                       onDirections={() => openDirections(selected)}
+                      onNearbyOpenChange={setNearbyOpen}
                     />
                   )}
                 </div>
@@ -522,7 +615,7 @@ export default function MapPage() {
             onSelect={handleSelect}
             onBoundsChange={handleBoundsChange}
             onCenterChange={handleCenterChange}
-            pois={pois}
+            pois={nearbyOpen ? nearbyPois : pois}
             selectedPoiKey={selectedPoiKey}
             onSelectPoi={handleSelectPoi}
             focus={focus}

@@ -90,7 +90,7 @@ export function mockNearby(onsenId: number): Promise<NearbyResult> {
   // 서버가 distanceM 순으로 준다는 보장은 없지만, 화면은 가까운 곳부터 읽는 게 자연스럽다.
   const items = MOCK_ITEMS.map((place, index) => {
     const angle = index * 1.3
-    const offset = place.distanceM / 111000
+    const offset = (place.distanceM ?? 0) / 111000
     return {
       ...place,
       externalId: `MOCK_${onsenId}_${index}`,
@@ -98,6 +98,6 @@ export function mockNearby(onsenId: number): Promise<NearbyResult> {
       lat: onsen.lat + Math.cos(angle) * offset,
       lng: onsen.lng + (Math.sin(angle) * offset) / Math.cos((onsen.lat * Math.PI) / 180),
     }
-  }).sort((a, b) => a.distanceM - b.distanceM)
+  }).sort((a, b) => (a.distanceM ?? 0) - (b.distanceM ?? 0))
   return Promise.resolve({ onsenId, items, hasMore: false })
 }

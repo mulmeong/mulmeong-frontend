@@ -431,7 +431,6 @@ export default function SignupPage() {
             invalid={Boolean(agreementError) && !agreements.terms}
             checked={agreements.terms}
             onChange={(checked) => updateAgreement('terms', checked)}
-            to="/terms"
           />
           <AgreementRow
             label="개인정보 처리방침 동의"
