@@ -1,6 +1,7 @@
 import { useEffect, useId, useState, type ReactNode } from 'react'
 
 import OnsenSpecSummary from '@/components/OnsenSpecSummary'
+import { DEFAULT_ONSEN_IMAGE } from '@/constants/images'
 import FavoriteButton from '@/features/favorites/FavoriteButton'
 import NearbyList from '@/features/map/components/NearbyList'
 import ReviewSection from '@/features/map/components/ReviewSection'
@@ -55,6 +56,8 @@ type OnsenDetailPanelProps = {
   onDirections: () => void
   /** 주변 탭이 열렸는지 — 지도에 주변 마커를 띄울지 판단한다. */
   onNearbyOpenChange?: (open: boolean) => void
+  selectedNearbyKey?: string
+  onSelectNearby?: (key: string) => void
 }
 
 /**
@@ -65,6 +68,8 @@ export default function OnsenDetailPanel({
   onsen,
   onDirections,
   onNearbyOpenChange,
+  selectedNearbyKey,
+  onSelectNearby,
 }: OnsenDetailPanelProps) {
   const { detail, loading, error, retry } = useOnsenDetail(onsen.id)
   const summary = 'tags' in onsen ? onsen : detail ? onsenFromDetail(detail) : undefined
@@ -108,6 +113,8 @@ export default function OnsenDetailPanel({
       detail={detail}
       onDirections={onDirections}
       onNearbyOpenChange={onNearbyOpenChange}
+      selectedNearbyKey={selectedNearbyKey}
+      onSelectNearby={onSelectNearby}
     />
   )
 }
@@ -117,11 +124,15 @@ function OnsenDetailContent({
   detail,
   onDirections,
   onNearbyOpenChange,
+  selectedNearbyKey,
+  onSelectNearby,
 }: {
   onsen: OnsenListItem
   detail?: OnsenDetail
   onDirections: () => void
   onNearbyOpenChange?: (open: boolean) => void
+  selectedNearbyKey?: string
+  onSelectNearby?: (key: string) => void
 }) {
   const [tab, setTab] = useState<DetailTab>('한눈에')
   const tabsId = useId()
@@ -152,17 +163,26 @@ function OnsenDetailContent({
           <h2 className="text-text-primary text-[20px] leading-[1.4] font-semibold tracking-tight break-keep [overflow-wrap:anywhere]">
             {name}
           </h2>
+          {detail?.isRegistered && (
+            <span className="border-border-default/70 text-text-secondary mt-2 inline-flex h-5 max-w-full items-center rounded-full border px-2 text-[11px] leading-none font-normal">
+              행안부 등록 온천
+            </span>
+          )}
           <p className="text-text-secondary mt-1.5 text-[12px] leading-[1.7] [overflow-wrap:anywhere]">
             {address}
           </p>
         </div>
       </div>
 
-      {imageUrl ? (
-        <img src={imageUrl} alt="" className="mt-6 h-[180px] w-full rounded-[2px] object-cover" />
-      ) : (
-        <div aria-hidden="true" className="bg-surface-dim mt-6 h-[180px] w-full rounded-sm" />
-      )}
+      <img
+        src={imageUrl || DEFAULT_ONSEN_IMAGE}
+        alt=""
+        onError={(event) => {
+          event.currentTarget.onerror = null
+          event.currentTarget.src = DEFAULT_ONSEN_IMAGE
+        }}
+        className="mt-6 h-[180px] w-full rounded-[2px] object-cover"
+      />
 
       {/* 길찾기는 이 온천을 도착지로 채운다. */}
       <div role="group" aria-label="장소 액션" className="mt-2 grid grid-cols-3 gap-1 pb-1">
@@ -264,7 +284,14 @@ function OnsenDetailContent({
       >
         {tab === '한눈에' && <OnsenSpecSummary onsen={onsen} detail={detail} />}
         {tab === '정보' && <Details onsen={onsen} detail={detail} />}
-        {tab === '주변' && <NearbyList onsenId={onsen.id} active />}
+        {tab === '주변' && (
+          <NearbyList
+            onsenId={onsen.id}
+            active
+            selectedKey={selectedNearbyKey}
+            onSelectPlace={onSelectNearby}
+          />
+        )}
         {tab === '리뷰' && <ReviewSection onsen={onsen} />}
       </div>
     </div>
@@ -300,6 +327,37 @@ function Section({ title, rows }: { title: string; rows: [string, ReactNode][] }
   )
 }
 
+function AccessValue({
+  label,
+  stationName,
+}: {
+  label: string
+  stationName?: string | null
+}) {
+  return (
+    <span className="inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 align-top">
+      <span>{label}</span>
+      {stationName && (
+        <span className="border-border-default/70 text-text-secondary inline-flex h-5 max-w-full items-center rounded-full border px-2 text-[11px] leading-none font-normal">
+          {stationName} 기준
+        </span>
+      )}
+    </span>
+  )
+}
+
+function joinUnique(values: (string | undefined | null | false)[]) {
+  const seen = new Set<string>()
+  return values
+    .filter((value): value is string => Boolean(value))
+    .filter((value) => {
+      if (seen.has(value)) return false
+      seen.add(value)
+      return true
+    })
+    .join(' · ')
+}
+
 /** 상세 응답은 값이 없을 때 null로 오므로 undefined와 함께 걸러낸다. */
 function rowsOf(entries: [string, string | undefined | null][]) {
   return entries.filter((entry): entry is [string, string] => Boolean(entry[1]))
@@ -331,10 +389,34 @@ function Details({ onsen, detail }: { onsen: OnsenListItem; detail?: OnsenDetail
   const parking = detail?.parkingInfo ?? onsen.parking
   const priceMin = detail?.priceMin ?? onsen.admissionFee
   const notice = detail?.notes ?? onsen.notice
+  const access = detail?.access
+  const station = access?.nearestStation
+  const detailFacilities = detail?.facilities
+  const facilitySummary = detailFacilities
+    ? joinUnique([
+        detailFacilities.facilityType,
+        detailFacilities.hasOutdoor && '노천탕',
+        detailFacilities.hasLodging && '숙박 가능',
+      ])
+    : facilities?.length
+      ? facilities.join(' · ')
+      : undefined
+  const annualVisitors =
+    detail?.annualVisitors !== undefined && detail.annualVisitors !== null
+      ? `연 ${detail.annualVisitors.toLocaleString('ko-KR')}명`
+      : undefined
+  const registeredLabel =
+    detail?.isRegistered === true
+      ? '행안부 등록 온천'
+      : detail?.isRegistered === false
+        ? '행안부 미등록'
+        : undefined
 
   const website = homepageHref(homepage)
   const basic: [string, ReactNode][] = rowsOf([
     ['주소', address],
+    ['등록', registeredLabel],
+    ['방문객', annualVisitors],
     ['운영시간', openingHours],
     ['전화번호', phone],
     ['홈페이지', homepage],
@@ -367,14 +449,22 @@ function Details({ onsen, detail }: { onsen: OnsenListItem; detail?: OnsenDetail
     ['주차', parking],
   ])
 
-  const facilityRows = rowsOf([
-    ['편의시설', facilities?.length ? facilities.join(' · ') : undefined],
-    ['접근성', detail?.access?.accessLevelLabel],
+  const facilityRows: [string, ReactNode][] = rowsOf([
+    ['편의시설', facilitySummary],
   ])
+  if (access?.accessLevelLabel) {
+    facilityRows.push([
+      '접근성',
+      <AccessValue
+        key="access"
+        label={access.accessLevelLabel}
+        stationName={station?.name}
+      />,
+    ])
+  }
 
   // 거점역 유무와 접근성 등급은 별개다 — 거점역이 없어도 '자차 필수'는 알려줄 값이다.
-  const station = detail?.access?.nearestStation
-  const access = rowsOf([
+  const accessRows = rowsOf([
     ['거점역', station?.name],
     ['가는 법', station?.stationToPlaceDesc],
   ])
@@ -383,7 +473,7 @@ function Details({ onsen, detail }: { onsen: OnsenListItem; detail?: OnsenDetail
     basic.length === 0 &&
     usage.length === 0 &&
     facilityRows.length === 0 &&
-    access.length === 0 &&
+    accessRows.length === 0 &&
     !notice
   ) {
     return <p className="text-text-secondary text-[13px] leading-[1.6]">등록된 정보가 없습니다.</p>
@@ -395,7 +485,7 @@ function Details({ onsen, detail }: { onsen: OnsenListItem; detail?: OnsenDetail
       <Section title="이용 안내" rows={usage} />
       <Section title="시설" rows={facilityRows} />
       {/* 접근성은 시설 그룹에, 거점역→온천 경로는 교통 그룹에 표시한다. */}
-      <Section title="교통" rows={access} />
+      <Section title="교통" rows={accessRows} />
       {notice && (
         <section>
           <h3 className="text-text-primary text-[15px] leading-6 font-semibold">참고사항</h3>

@@ -1,4 +1,5 @@
 import Chip from '@/components/ui/Chip'
+import { DEFAULT_ONSEN_IMAGE } from '@/constants/images'
 import FavoriteButton from '@/features/favorites/FavoriteButton'
 import { cn } from '@/lib/cn'
 
@@ -60,7 +61,15 @@ export default function OnsenCard({
 
   return (
     <div className={cn('bg-surface w-[260px] overflow-hidden rounded-md shadow-lg', className)}>
-      {imageUrl && <img src={imageUrl} alt="" className="h-[120px] w-full object-cover" />}
+      <img
+        src={imageUrl || DEFAULT_ONSEN_IMAGE}
+        alt=""
+        onError={(event) => {
+          event.currentTarget.onerror = null
+          event.currentTarget.src = DEFAULT_ONSEN_IMAGE
+        }}
+        className="h-[120px] w-full object-cover"
+      />
       <div className="p-4">
         <div className="flex items-center justify-between gap-2">
           <p className="text-text-primary text-[15px] font-bold">{name}</p>

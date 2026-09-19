@@ -1,5 +1,6 @@
 import Badge from '@/components/ui/Badge'
 import Checkbox from '@/components/ui/Checkbox'
+import { DEFAULT_ONSEN_IMAGE } from '@/constants/images'
 
 import { categoryLabel, type SavedPlace } from '@/types/saved'
 
@@ -19,6 +20,7 @@ export default function SavedPlaceItem({
   onDelete,
 }: SavedPlaceItemProps) {
   const { name, address, category, rating, reviewCount, imageUrl } = place
+  const fallbackImage = category === 'onsen' ? DEFAULT_ONSEN_IMAGE : undefined
 
   return (
     <article className="flex items-center gap-4 py-4">
@@ -30,8 +32,17 @@ export default function SavedPlaceItem({
         className="cursor-pointer"
       />
 
-      {imageUrl ? (
-        <img src={imageUrl} alt="" className="size-12 shrink-0 rounded-sm object-cover" />
+      {imageUrl || fallbackImage ? (
+        <img
+          src={imageUrl || fallbackImage}
+          alt=""
+          onError={(event) => {
+            if (!fallbackImage) return
+            event.currentTarget.onerror = null
+            event.currentTarget.src = fallbackImage
+          }}
+          className="size-12 shrink-0 rounded-sm object-cover"
+        />
       ) : (
         <div aria-hidden="true" className="bg-surface-dim size-12 shrink-0 rounded-sm" />
       )}
