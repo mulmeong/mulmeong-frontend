@@ -1,4 +1,5 @@
-import type { MyReview, MyReviewsPage } from '@/types/myReview'
+import type { MyReview, MyReviewDetail, MyReviewsPage } from '@/types/myReview'
+import type { ReviewSpec } from '@/types/review'
 
 /**
  * GET /users/me/reviews (MY-04) 응답. 명세 그대로 옮겼다.
@@ -58,6 +59,49 @@ function toMyReview(dto: MyReviewDto): MyReview {
     content: dto.bodyPreview,
     createdAt: dto.createdAt,
     imageUrl: dto.firstImage,
+  }
+}
+
+/**
+ * GET /users/me/reviews/{reviewId} (MY-05) 응답.
+ *
+ * 목록과 달리 온천 정보가 통째로 들어 있고, 사진이 문자열이 아니라 객체 배열이다.
+ */
+export type MyReviewDetailDto = {
+  reviewId: number
+  onsen: {
+    onsenId: number
+    name: string
+    address: string
+    lat: number
+    lng: number
+    thumbnail?: string | null
+  }
+  rating: number
+  visitedAt: string
+  spec: ReviewSpec
+  body: string
+  /** 썸네일 생성 기능이 없어 thumbnailUrl은 url과 같은 값이다. */
+  images: { url: string; thumbnailUrl: string }[]
+  createdAt: string
+  /** 고친 적이 없으면 null. createdAt과 다르면 목록에 '수정됨'을 붙인다. */
+  updatedAt: string | null
+  isRevisit: boolean
+}
+
+export function toMyReviewDetail(dto: MyReviewDetailDto): MyReviewDetail {
+  return {
+    id: dto.reviewId,
+    onsenId: dto.onsen.onsenId,
+    onsenName: dto.onsen.name,
+    onsenAddress: dto.onsen.address,
+    rating: dto.rating,
+    visitedAt: dto.visitedAt,
+    spec: dto.spec,
+    body: dto.body,
+    // 수정(605)의 imageUrls에 그대로 되돌려 보낼 수 있는 값이다 (명세 비고).
+    imageUrls: dto.images.map((image) => image.url),
+    updatedAt: dto.updatedAt,
   }
 }
 

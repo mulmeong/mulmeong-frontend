@@ -1,13 +1,14 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useOutletContext, useSearchParams } from 'react-router-dom'
 
 import { ApiError } from '@/api'
 import Button from '@/components/ui/Button'
 import Chip from '@/components/ui/Chip'
 import Modal from '@/components/ui/Modal'
-import { deleteReview } from '@/features/mypage/api/reviews'
+import { deleteReview, findReviewPage } from '@/features/mypage/api/reviews'
 import Pagination from '@/features/mypage/components/Pagination'
 import ReviewFormPanel from '@/features/mypage/components/ReviewFormPanel'
+import ReviewWritePanel from '@/features/mypage/components/ReviewWritePanel'
 import ReviewItem from '@/features/mypage/components/ReviewItem'
 import { useMyReviews } from '@/features/mypage/hooks/useMyReviews'
 
@@ -39,6 +40,15 @@ export default function MyReviewsPage() {
   const [searchParams] = useSearchParams()
   const [initialRegion] = useState(() => searchParams.get('regionCode') ?? undefined)
 
+  /**
+   * 내 지도에서 리뷰 한 건을 눌러 넘어오면 ?reviewId=501이 함께 붙는다.
+   * 그 리뷰를 펼친 채로 연다. 몇 페이지에 있는지는 아래 effect가 찾는다.
+   */
+  const [initialReviewId] = useState(() => {
+    const value = Number(searchParams.get('reviewId'))
+    return Number.isInteger(value) && value > 0 ? value : null
+  })
+
   const [sort, setSort] = useState<ReviewSort>('RECENT')
   /** 고른 지역 코드. undefined면 전국이다. */
   const [regionCode, setRegionCode] = useState<string | undefined>(initialRegion)
@@ -54,19 +64,47 @@ export default function MyReviewsPage() {
 
   /** 수정 패널이 열려 있는 리뷰. null이면 닫힌 상태. */
   const [editingId, setEditingId] = useState<number | null>(null)
+  const [writing, setWriting] = useState(false)
   const [editDone, setEditDone] = useState(false)
 
   /**
    * 아래로 펼친 리뷰. 하나만 연다 — 숫자 하나로 두면 다른 걸 여는 순간
    * 이전 것이 저절로 닫힌다.
    */
-  const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [expandedId, setExpandedId] = useState<number | null>(initialReviewId)
 
   /**
    * 수정 후 펼쳐둔 상세를 다시 받아오게 하는 값.
    * 상세는 펼칠 때 한 번만 받아오므로, 항목을 새로 그려야 바뀐 내용이 보인다.
    */
   const [detailVersion, setDetailVersion] = useState(0)
+
+  /**
+   * 내 지도에서 지목해 온 리뷰가 몇 페이지에 있는지 찾아 그 페이지를 연다.
+   *
+   * 첫 페이지에 있으면 이미 보이는 채로 시작하므로 페이지를 건드리지 않는다.
+   * 지운 리뷰라 못 찾으면(null) 그냥 목록을 보여준다 — 따로 알리지 않는다.
+   * 주소로 들어온 한 번만 하면 되므로 마운트 때만 돈다.
+   */
+  useEffect(() => {
+    if (initialReviewId === null) return
+
+    let cancelled = false
+
+    const locate = async () => {
+      const found = await findReviewPage(initialReviewId, { regionCode: initialRegion })
+      if (!cancelled && found !== null && found > 1) setPage(found)
+    }
+
+    // state 변경은 await 뒤에서 일어난다 — effect 본문에서 동기로 부르지 않는다.
+    void locate().catch(() => {
+      // 못 찾아도 목록 자체는 멀쩡하다. 펼침만 안 될 뿐이다.
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [initialReviewId, initialRegion])
 
   const toggleExpanded = (review: MyReview) => {
     setExpandedId((current) => (current === review.id ? null : review.id))
@@ -121,6 +159,16 @@ export default function MyReviewsPage() {
   }
 
   /**
+   * 리뷰를 새로 남겼다.
+   * 수정과 달리 포도알·레벨·리뷰 수가 바뀌므로(REV-06) 헤더도 다시 받아온다.
+   */
+  const handleCreated = () => {
+    setWriting(false)
+    reload()
+    reloadProfile()
+  }
+
+  /**
    * 지역 칩 목록. 불러오는 동안에는 직전 것을 그대로 쓴다 —
    * 칩을 누를 때마다 응답이 올 때까지 칩 줄이 통째로 사라졌다 나타난다.
    * 값이 같으면 덮어써도 결과가 같아 렌더 중에 담아둬도 안전하다.
@@ -139,6 +187,7 @@ export default function MyReviewsPage() {
           {REVIEW_SORTS.map((option) => (
             <Chip
               key={option.id}
+              variant="plain"
               selected={option.id === sort}
               onClick={() => handleSort(option.id)}
             >
@@ -150,9 +199,10 @@ export default function MyReviewsPage() {
         {/*
           같은 줄의 정렬 칩(py-2 / 13px)과 높이를 맞춘다 — Button 기본값은
           한 단계 커서 이 줄에서는 혼자 튄다.
-          TODO: 리뷰 작성 화면(REV-*)이 아직 없다. 어느 온천에 쓸지 고르는 단계도 미정.
         */}
-        <Button className="ml-auto px-4 py-2 text-[13px]">리뷰 작성하기</Button>
+        <Button onClick={() => setWriting(true)} className="ml-auto px-4 py-2 text-[13px]">
+          리뷰 작성하기
+        </Button>
       </div>
 
       {/*
@@ -165,12 +215,17 @@ export default function MyReviewsPage() {
       */}
       {(regions.length > 0 || regionCode !== undefined) && (
         <div className="border-border-default mt-3 flex flex-wrap items-center gap-2 border-t pt-3">
-          <Chip selected={regionCode === undefined} onClick={() => handleRegion(undefined)}>
+          <Chip
+            variant="plain"
+            selected={regionCode === undefined}
+            onClick={() => handleRegion(undefined)}
+          >
             전국
           </Chip>
           {regions.map((option) => (
             <Chip
               key={option.regionCode}
+              variant="plain"
               selected={option.regionCode === regionCode}
               onClick={() => handleRegion(option.regionCode)}
             >
@@ -217,6 +272,12 @@ export default function MyReviewsPage() {
           </p>
         </div>
       )}
+
+      <ReviewWritePanel
+        open={writing}
+        onClose={() => setWriting(false)}
+        onCreated={handleCreated}
+      />
 
       <ReviewFormPanel
         reviewId={editingId}

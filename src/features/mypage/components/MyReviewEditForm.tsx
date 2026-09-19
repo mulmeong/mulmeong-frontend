@@ -99,7 +99,6 @@ function ScoreRow({
 /** 이미 쓴 리뷰 고치기. 값이 채워진 채로 열린다는 점만 작성과 다르다. */
 export default function MyReviewEditForm({ detail, onCancel, onUpdated }: MyReviewEditFormProps) {
   const [rating, setRating] = useState(detail.rating)
-  const [visitedAt, setVisitedAt] = useState(detail.visitedAt)
   const [visitTime, setVisitTime] = useState<VisitTime>(detail.spec.visitTime)
   const [clean, setClean] = useState(detail.spec.clean)
   const [crowd, setCrowd] = useState(detail.spec.crowd)
@@ -123,9 +122,9 @@ export default function MyReviewEditForm({ detail, onCancel, onUpdated }: MyRevi
     try {
       await updateReview(detail.id, {
         rating,
-        visitedAt,
         spec: { visitTime, clean, crowd, facility },
         body: body.trim(),
+        // 전체 교체라 남길 사진을 그대로 다시 보낸다. 빼면 전부 지워진다.
         imageUrls: detail.imageUrls,
       })
       onUpdated()
@@ -146,19 +145,19 @@ export default function MyReviewEditForm({ detail, onCancel, onUpdated }: MyRevi
         <StarRating value={rating} onChange={setRating} />
       </div>
 
+      {/*
+        방문일은 고칠 수 없다 (REV-05 비고) — 방문 인증 날짜이자 하루 한 번
+        제한의 기준이라 서버가 막는다. 입력칸 대신 값만 보여주고 왜 못 고치는지
+        적어둔다. 칸을 지워버리면 "왜 없지" 하고 찾게 된다.
+      */}
       <div>
-        <label htmlFor="editVisitedAt" className="text-text-primary text-[13px]">
-          방문일
-        </label>
-        <input
-          id="editVisitedAt"
-          type="date"
-          value={visitedAt}
-          // 미래 방문일은 서버가 400으로 막는다 — 입력에서 먼저 잘라낸다.
-          max={detail.visitedAt > todayIso() ? detail.visitedAt : todayIso()}
-          onChange={(e) => setVisitedAt(e.target.value)}
-          className="border-border-default text-text-primary mt-1.5 h-9 w-full rounded-sm border px-2.5 text-[13px] outline-none"
-        />
+        <span className="text-text-primary text-[13px]">방문일</span>
+        <p className="text-text-primary mt-1.5 text-[13px]">
+          {detail.visitedAt.replaceAll('-', '.')}
+        </p>
+        <p className="text-text-secondary mt-1 text-[12px]">
+          방문일은 고칠 수 없어요. 바꾸려면 지우고 다시 써주세요.
+        </p>
       </div>
 
       <div>
@@ -248,14 +247,4 @@ export default function MyReviewEditForm({ detail, onCancel, onUpdated }: MyRevi
       </div>
     </form>
   )
-}
-
-/**
- * 오늘(KST). 작성 쪽 todayInKst()와 같은 계산이다.
- * 그 함수는 features/map/api/reviewMock.ts에 있어서, 목 파일을 화면에서 가져다
- * 쓰는 모양이 되지 않게 여기서 따로 둔다.
- */
-function todayIso(): string {
-  const kst = new Date(Date.now() + 9 * 60 * 60 * 1000)
-  return kst.toISOString().slice(0, 10)
 }

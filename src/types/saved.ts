@@ -68,12 +68,16 @@ export function categoryLabel(category: SavedCategory): string {
  */
 export type SavedCounts = Record<SavedCategory | 'all', number>
 
+/** 한 번에 더 보여줄 개수. 스크롤이 끝에 닿을 때마다 이만큼씩 늘어난다. */
+export const SAVED_PAGE_SIZE = 20
+
 export type SavedPlacesPage = {
+  /** 지금까지 펼쳐 보여줄 만큼 잘라낸 목록. */
   items: SavedPlace[]
   /** 조건에 걸린 개수. 목록 위 '전체 N'에 쓴다. */
   totalCount: number
-  page: number
-  totalPages: number
+  /** 아직 안 보여준 게 남았다. */
+  hasMore: boolean
   counts: SavedCounts
 }
 
