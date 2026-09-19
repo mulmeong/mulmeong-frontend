@@ -88,7 +88,7 @@ export default function SidebarPicks() {
           ? // 자리를 먼저 잡아 목록이 밀려 올라가지 않게 한다.
             Array.from({ length: VISIBLE_COUNT }, (_, index) => (
               <li key={index} className="w-[168px] shrink-0">
-                <div className="bg-surface-dim aspect-[168/104] w-full rounded-sm" />
+                <div className="bg-surface-dim aspect-[168/104] w-full rounded-[2px]" />
                 <div className="bg-surface-dim mt-2 h-3.5 w-3/4 rounded-sm" />
               </li>
             ))
@@ -100,7 +100,7 @@ export default function SidebarPicks() {
                 >
                   <MagazineImage
                     src={magazine.thumbnailUrl}
-                    className="aspect-[168/104] w-full rounded-sm"
+                    className="aspect-[168/104] w-full rounded-[2px]"
                   />
                   <p className="text-text-primary mt-2 truncate text-[13px] group-hover:underline">
                     {magazine.title}
