@@ -101,8 +101,13 @@ export default function RegionPlaceCard({
           {description}
         </span>
       </button>
+      {/* 사진 위 오버레이라 기본 크기(32px)는 카드에 비해 커 보인다. */}
       <div className="absolute top-2 right-2 rounded-sm bg-white/85">
-        <FavoriteButton target={{ placeId: onsen.id }} name={name} />
+        <FavoriteButton
+          target={{ placeId: onsen.id }}
+          name={name}
+          className="size-7 [&>svg]:size-4"
+        />
       </div>
     </div>
   )
