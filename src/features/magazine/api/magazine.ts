@@ -67,3 +67,31 @@ export async function setMagazineLike(id: number, liked: boolean): Promise<void>
     invalidateMagazines()
   }
 }
+
+/**
+ * 지도 8권역 → 행안부 sidoCode. 매거진은 코드로만 거를 수 있고 한 권역이 여러 코드를
+ * 쓰므로 나눠 부른 뒤 합친다. 목록 size 상한이 30이라 전부 받아 프론트에서 거를 수 없다.
+ */
+const REGION_SIDO_CODES: Record<string, string[]> = {
+  서울: ['11'],
+  부산: ['26'],
+  경기: ['41'],
+  인천: ['28'],
+  강원: ['51', '42'],
+  충청: ['30', '36', '43', '44'],
+  경상: ['26', '27', '31', '47', '48'],
+  전라: ['29', '45', '46', '52'],
+  제주: ['50'],
+}
+
+/** 권역에 속한 매거진을 코드별로 받아 최신순으로 합친다. */
+export async function fetchMagazinesByRegion(region: string, size = 5) {
+  const codes = REGION_SIDO_CODES[region]
+  if (!codes) return []
+  const pages = await Promise.all(
+    codes.map((sidoCode) => fetchMagazines({ sidoCode, size }).catch(() => null)),
+  )
+  return pages
+    .flatMap((page) => page?.content ?? [])
+    .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
+}
