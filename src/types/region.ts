@@ -34,4 +34,3 @@ export function matchesRegionGroup(address: string, region: RegionGroupId): bool
   if (!group || group.prefixes.length === 0) return true
   return group.prefixes.some((prefix) => address.startsWith(prefix))
 }
-

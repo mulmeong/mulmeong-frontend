@@ -6,11 +6,7 @@ import SidoMap from '@/features/mypage/components/SidoMap'
 import SigunguMap from '@/features/mypage/components/SigunguMap'
 import { useGrapeMap } from '@/features/mypage/hooks/useGrapeMap'
 import { useRegionReviews } from '@/features/mypage/hooks/useRegionReviews'
-import {
-  regionGrowStyle,
-  SIDO_REGIONS,
-  type SidoRegion,
-} from '@/features/mypage/myMap/sidoRegions'
+import { regionGrowStyle, SIDO_REGIONS, type SidoRegion } from '@/features/mypage/myMap/sidoRegions'
 import { cn } from '@/lib/cn'
 
 import type { MyReview } from '@/types/myReview'
@@ -120,11 +116,7 @@ export default function MyMapPage() {
               style={regionGrowStyle(selected) as CSSProperties}
               className="animate-region-grow absolute inset-0 motion-reduce:animate-none"
             >
-              <SigunguMap
-                sido={selected}
-                regions={sigungu.data?.regions ?? []}
-                onHover={setTip}
-              />
+              <SigunguMap sido={selected} regions={sigungu.data?.regions ?? []} onHover={setTip} />
             </div>
           )}
 

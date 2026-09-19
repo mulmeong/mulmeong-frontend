@@ -22,12 +22,7 @@ type SidoMapProps = {
   onHover?: (tip: MapTip | null) => void
 }
 
-export default function SidoMap({
-  regions,
-  selectedCode = null,
-  onSelect,
-  onHover,
-}: SidoMapProps) {
+export default function SidoMap({ regions, selectedCode = null, onSelect, onHover }: SidoMapProps) {
   // 시·도 코드는 응답의 regionCode 2자리와 그대로 맞는다.
   const visitOf = (code: string) => regions.find((region) => region.regionCode === code)
 

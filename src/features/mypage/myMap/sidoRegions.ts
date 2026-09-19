@@ -144,11 +144,7 @@ export function regionGrowStyle(region: SidoRegion): Record<string, string> {
   const offsetX = (bounds.x + bounds.width / 2 - viewX) / viewWidth - 0.5
   const offsetY = (bounds.y + bounds.height / 2 - viewY) / viewHeight - 0.5
 
-  const scale = Math.max(
-    MIN_GROW_SCALE,
-    bounds.width / viewWidth,
-    bounds.height / viewHeight,
-  )
+  const scale = Math.max(MIN_GROW_SCALE, bounds.width / viewWidth, bounds.height / viewHeight)
 
   return {
     '--grow-x': `${(offsetX * 100).toFixed(2)}%`,
