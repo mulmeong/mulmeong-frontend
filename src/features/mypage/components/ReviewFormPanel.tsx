@@ -26,10 +26,24 @@ type ReviewFormPanelProps = {
 export default function ReviewFormPanel({ reviewId, onClose, onSaved }: ReviewFormPanelProps) {
   const ref = useRef<HTMLDialogElement>(null)
 
-  const [detail, setDetail] = useState<MyReviewDetail>()
-  const [error, setError] = useState<string>()
+  /**
+   * 받아온 결과. 어느 리뷰 것인지 함께 들고 있는다.
+   *
+   * 패널이 닫힐 때 따로 비우지 않아도 되게 하려는 것이다. 비우는 코드를 effect에
+   * 두면 렌더 도중 state를 건드리는 셈이라 불필요한 렌더가 한 번 더 돈다.
+   */
+  const [loaded, setLoaded] = useState<{
+    reviewId: number
+    detail?: MyReviewDetail
+    error?: string
+  }>()
 
   const open = reviewId !== null
+
+  // 지금 열린 리뷰의 것일 때만 쓴다. 닫히거나 다른 리뷰로 바뀌면 저절로 버려진다.
+  const current = loaded?.reviewId === reviewId ? loaded : undefined
+  const detail = current?.detail
+  const error = current?.error
 
   useEffect(() => {
     const dialog = ref.current
@@ -40,26 +54,23 @@ export default function ReviewFormPanel({ reviewId, onClose, onSaved }: ReviewFo
   }, [open])
 
   useEffect(() => {
-    if (reviewId === null) {
-      setDetail(undefined)
-      setError(undefined)
-      return
-    }
+    if (reviewId === null) return
 
     let cancelled = false
     const fetchDetail = async () => {
       try {
-        const result = await getReviewDetail(reviewId)
-        if (!cancelled) setDetail(result)
+        const detail = await getReviewDetail(reviewId)
+        if (!cancelled) setLoaded({ reviewId, detail })
       } catch (cause) {
-        if (!cancelled) {
-          setError(cause instanceof ApiError ? cause.message : '리뷰를 불러오지 못했습니다.')
-        }
+        if (cancelled) return
+        setLoaded({
+          reviewId,
+          error: cause instanceof ApiError ? cause.message : '리뷰를 불러오지 못했습니다.',
+        })
       }
     }
 
-    // 서버에서 값을 받아오는 일은 effect가 맞는 자리다. useMyReviews도 같은 구조다.
-    // oxlint-disable-next-line react/set-state-in-effect
+    // state 변경은 전부 await 뒤에서 일어난다 — effect 본문에서 동기로 부르지 않는다.
     void fetchDetail()
 
     return () => {

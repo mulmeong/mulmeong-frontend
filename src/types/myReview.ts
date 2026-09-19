@@ -1,4 +1,4 @@
-import type { RegionGroupId } from '@/types/region'
+import type { ReviewRegionFilter } from '@/features/mypage/api/reviewsDto'
 import type { CreateReviewBody, ReviewSpec } from '@/types/review'
 
 /**
@@ -30,17 +30,29 @@ export type MyReview = {
   imageUrl?: string
 }
 
-/** 시안의 정렬 칩 세 가지. */
-export type ReviewSort = 'recent' | 'region' | 'rating'
+/**
+ * 정렬 기준. 명세(MY-04)의 enum을 그대로 쓴다.
+ *
+ * 시안에서는 '지역별'이 정렬 칩 자리에 있었지만, 지역은 정렬이 아니라 거르는
+ * 조건이다. 정렬 줄과 지역 줄을 따로 뒀다.
+ */
+export type ReviewSort = 'RECENT' | 'OLDEST' | 'RATING_DESC'
 
 export const REVIEW_SORTS: { id: ReviewSort; label: string }[] = [
-  { id: 'recent', label: '최신순' },
-  { id: 'region', label: '지역별' },
-  { id: 'rating', label: '별점순' },
+  { id: 'RECENT', label: '최신순' },
+  { id: 'OLDEST', label: '오래된순' },
+  { id: 'RATING_DESC', label: '별점순' },
 ]
 
-/** 지역 칩은 찜한 장소와 같은 묶음을 쓴다. */
-export type ReviewRegion = RegionGroupId
+/** 목록을 받아올 조건. 전부 없어도 되며, 그러면 전국 최신순 1페이지다. */
+export type MyReviewQuery = {
+  /** 시도 2자리 또는 시군구 5자리. 없으면 전국. */
+  regionCode?: string
+  sort?: ReviewSort
+  /** 화면 기준 1부터. 서버로 나갈 때 0부터로 바꾼다. */
+  page?: number
+  size?: number
+}
 
 export type MyReviewsPage = {
   items: MyReview[]
@@ -48,6 +60,8 @@ export type MyReviewsPage = {
   totalCount: number
   page: number
   totalPages: number
+  /** 서버가 주는 지역 칩 — 내가 리뷰를 쓴 지역만 담긴다. */
+  regions?: ReviewRegionFilter[]
 }
 
 /** ReviewSpec에서 점수인 항목만. visitTime은 같은 객체에 있지만 숫자가 아니다. */
