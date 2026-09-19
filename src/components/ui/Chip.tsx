@@ -18,6 +18,7 @@ export default function Chip({
       aria-pressed={selected}
       className={cn(
         'inline-flex items-center justify-center rounded-full px-[14px] py-2 text-[13px] font-medium',
+        'transition-colors duration-150 ease-out',
         selected
           ? 'bg-inverse text-text-inverse'
           : 'bg-surface text-text-primary border border-border-strong',
