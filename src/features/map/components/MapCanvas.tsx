@@ -44,17 +44,9 @@ function svgMarker(svg: string) {
 }
 
 /** 온천 기호는 SVG 선으로 그려 기기별 글꼴·이모지 차이 없이 알아볼 수 있게 한다. */
-const onsenMarker = (selected = false) =>
+const onsenMarker = () =>
   `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
-    <defs>
-      <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-        <feDropShadow dx="0" dy="1" stdDeviation="1.25" flood-color="#1C1B18" flood-opacity=".16"/>
-      </filter>
-    </defs>
-    ${selected ? '<circle cx="18" cy="18" r="16.5" fill="none" stroke="#1C1B18" stroke-opacity=".7"/>' : ''}
-    <circle cx="18" cy="18" r="${selected ? 14 : 12}" fill="${selected ? '#F7F7F5' : '#1C1B18'}" fill-opacity="${selected ? 1 : 0.92}"
-      stroke="${selected ? '#1C1B18' : '#FFFFFF'}" stroke-opacity=".85" stroke-width="${selected ? 1.5 : 1}" filter="url(#shadow)"/>
-    <g transform="translate(4.5 4) scale(.75)" fill="none" stroke="${selected ? '#1C1B18' : '#FFFFFF'}" stroke-width="1.6"
+    <g transform="translate(-3.6 -3.6) scale(1.2)" fill="none" stroke="#1C1B18" stroke-width="1.6"
       stroke-linecap="round" stroke-linejoin="round">
       <path d="M13 18c-2-2 2-3.5 0-5.5M18 18c-2-2 2-3.5 0-5.5M23 18c-2-2 2-3.5 0-5.5"/>
       <path d="M12 20.5c-1.3.4-2 1-2 1.7 0 1.4 3.6 2.5 8 2.5s8-1.1 8-2.5c0-.7-.7-1.3-2-1.7"/>
@@ -62,9 +54,8 @@ const onsenMarker = (selected = false) =>
   </svg>`
 
 const ONSEN_MARKER = svgMarker(onsenMarker())
-const ONSEN_MARKER_SELECTED = svgMarker(onsenMarker(true))
 const FAVORITE_MARKER = svgMarker(
-  '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="14" fill="#1C1B18" stroke="white" stroke-width="1.5"/><path d="M18 25 10.8 18a4.5 4.5 0 0 1 7.2-5.3 4.5 4.5 0 0 1 7.2 5.3Z" fill="white"/></svg>',
+  '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36"><path d="M18 25 10.8 18a4.5 4.5 0 0 1 7.2-5.3 4.5 4.5 0 0 1 7.2 5.3Z" fill="#1C1B18"/></svg>',
 )
 
 /** 개수 구간은 시각 크기만 결정한다. 지도 격자와 클러스터 묶음 기준은 그대로 둔다. */
@@ -91,7 +82,6 @@ const CLUSTER_STYLES = [34, 38, 42].map((size) => ({
 }))
 
 const EMPTY_POIS: MapPoi[] = []
-
 
 /** idle이 연달아 오는 걸 묶는다 — 쿼터 방어 (CLAUDE.md 비기능 요구사항). */
 const BOUNDS_DEBOUNCE_MS = 600
@@ -238,52 +228,80 @@ export default function MapCanvas({
     clusterer.clear()
     const markers = onsens.map((onsen) => {
       const chosen = onsen.id === selectedId
-      const size = chosen ? 54 : 44
+      const pinSize = chosen ? 58 : 48
+      const photoSize = chosen ? 40 : 32
+      const hostHeight = pinSize + 12
       const host = document.createElement('div')
-      host.style.cssText = `position:relative;width:${size}px;height:${size}px;`
+      host.style.cssText = `position:relative;width:${pinSize}px;height:${hostHeight}px;`
       const button = document.createElement('button')
       button.type = 'button'
       button.setAttribute('aria-label', onsen.name)
       button.setAttribute('aria-pressed', String(chosen))
-      button.style.cssText = `display:block;padding:0;box-sizing:border-box;width:100%;height:100%;border-radius:50%;border:${chosen ? '3px solid #292823' : '2px solid white'};background:white;box-shadow:0 2px 5px #0002;cursor:pointer;overflow:hidden;`
-      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) button.style.transition = 'transform 160ms ease-out'
+      button.style.cssText = `position:absolute;left:50%;top:0;display:flex;align-items:center;justify-content:center;padding:0;box-sizing:border-box;width:${pinSize}px;height:${pinSize}px;border-radius:50% 50% 50% 10px;border:${chosen ? '2px solid #292823' : '1px solid rgba(28,27,24,.86)'};background:#1C1B18;box-shadow:0 3px 8px #00000026;cursor:pointer;overflow:hidden;transform:translateX(-50%) rotate(-45deg);transform-origin:50% 50%;`
+      const restingShadow = chosen ? '0 4px 12px #0000002e' : '0 3px 8px #00000026'
+      button.style.boxShadow = restingShadow
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+        button.style.transition = 'transform 180ms ease-out, box-shadow 180ms ease-out'
+      const photoWrap = document.createElement('span')
+      photoWrap.style.cssText = `display:block;box-sizing:border-box;width:${photoSize}px;height:${photoSize}px;border-radius:50%;border:2px solid rgba(255,255,255,.92);background:#F7F7F5;overflow:hidden;transform:rotate(45deg);`
       const image = document.createElement('img')
       image.alt = ''
       image.style.cssText = 'display:block;width:100%;height:100%;object-fit:cover;'
-      const fallback = favoriteMarkers ? FAVORITE_MARKER : chosen ? ONSEN_MARKER_SELECTED : ONSEN_MARKER
-      image.onerror = () => { image.onerror = null; image.src = fallback }
-      image.src = onsen.imageUrl && (!onsen.markerType || onsen.markerType === 'REGISTERED') ? onsen.imageUrl : fallback
-      button.append(image)
+      const showFallback = () => {
+        image.onerror = null
+        photoWrap.style.border = '0'
+        image.src = favoriteMarkers ? FAVORITE_MARKER : ONSEN_MARKER
+      }
+      image.onerror = showFallback
+      if (onsen.imageUrl && (!onsen.markerType || onsen.markerType === 'REGISTERED'))
+        image.src = onsen.imageUrl
+      else showFallback()
+      photoWrap.append(image)
+      button.append(photoWrap)
       const label = document.createElement('span')
       label.textContent = onsen.name
-      label.style.cssText = 'display:none;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:8px;max-width:220px;width:max-content;padding:4px 8px;border:1px solid #ddd;border-radius:4px;background:white;color:#1c1b18;font:500 12px/1.5 system-ui;pointer-events:none;white-space:normal;'
+      label.style.cssText =
+        'display:none;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:8px;max-width:220px;width:max-content;padding:4px 8px;border:1px solid #ddd;border-radius:4px;background:white;color:#1c1b18;font:500 12px/1.5 system-ui;pointer-events:none;white-space:normal;box-shadow:0 2px 6px #00000010;'
       host.append(button, label)
       const overlay = new maps.CustomOverlay({
         position: new maps.LatLng(onsen.lat, onsen.lng),
-        content: host, xAnchor: 0.5, yAnchor: 0.5, zIndex: chosen ? 50 : 25, clickable: true,
+        content: host,
+        xAnchor: 0.5,
+        yAnchor: 1,
+        zIndex: chosen ? 50 : 25,
+        clickable: true,
       })
       const show = () => {
         label.style.display = 'block'
-        button.style.transform = chosen ? 'none' : 'scale(1.06)'
+        button.style.transform = chosen
+          ? 'translateX(-50%) rotate(-45deg)'
+          : 'translateX(-50%) rotate(-45deg) scale(1.08)'
+        button.style.boxShadow = '0 4px 12px #0000002e'
         overlay.setZIndex(chosen ? 50 : 40)
       }
       const hide = () => {
         label.style.display = 'none'
-        button.style.transform = 'none'
+        button.style.transform = 'translateX(-50%) rotate(-45deg)'
+        button.style.boxShadow = restingShadow
         overlay.setZIndex(chosen ? 50 : 25)
       }
       button.onmouseenter = show
       button.onmouseleave = hide
       button.onfocus = show
       button.onblur = hide
-      button.onclick = (event) => { event.stopPropagation(); onSelect?.(onsen) }
+      button.onclick = (event) => {
+        event.stopPropagation()
+        onSelect?.(onsen)
+      }
       return overlay
     })
-    clusterer.addMarkers(markers.filter((marker, index) => {
-      if (onsens[index].id !== selectedId) return true
-      marker.setMap(map)
-      return false
-    }))
+    clusterer.addMarkers(
+      markers.filter((marker, index) => {
+        if (onsens[index].id !== selectedId) return true
+        marker.setMap(map)
+        return false
+      }),
+    )
     return () => {
       clusterer.clear()
       markers.forEach((marker) => marker.setMap(null))
@@ -496,7 +514,14 @@ export default function MapCanvas({
   return (
     <div className="relative size-full" aria-busy={busy}>
       <div ref={containerRef} className="size-full" inert={busy} />
-      {ready && onSelectPoi && <PoiMarkers map={mapRef.current} pois={pois ?? EMPTY_POIS} selectedKey={selectedPoiKey} onSelect={onSelectPoi} />}
+      {ready && onSelectPoi && (
+        <PoiMarkers
+          map={mapRef.current}
+          pois={pois ?? EMPTY_POIS}
+          selectedKey={selectedPoiKey}
+          onSelect={onSelectPoi}
+        />
+      )}
       {busy && (
         <div
           role="status"

@@ -222,24 +222,27 @@ export default function MapPage() {
         lat: place.lat,
         lng: place.lng,
         address: place.address ?? undefined,
-        imageUrl: place.placeType === 'ONSEN' ? place.thumbnail ?? undefined : undefined,
+        imageUrl: place.placeType === 'ONSEN' ? (place.thumbnail ?? undefined) : undefined,
       })),
     [favorites.items],
   )
   const basePoints = showingSaved ? savedPoints : hasFilter ? onsens : nationalMap.points
-  const mapOnsens = useMemo(
-    () => {
-      const points = !showingSaved && linkedOnsen && !basePoints.some((place) => place.id === linkedOnsen.id)
-        ? [...basePoints, linkedOnsen] : basePoints
-      // 검색 미리보기에서 선택한 온천도 전국 마커 응답 유무와 무관하게 계속 보여준다.
-      if (selectedPoint?.id === selectedId && externalPlace?.placeId !== selectedId &&
-          selectedPoint && !points.some((place) => place.id === selectedPoint.id)) {
-        return [...points, selectedPoint]
-      }
-      return points
-    },
-    [showingSaved, linkedOnsen, basePoints, selectedPoint, selectedId, externalPlace],
-  )
+  const mapOnsens = useMemo(() => {
+    const points =
+      !showingSaved && linkedOnsen && !basePoints.some((place) => place.id === linkedOnsen.id)
+        ? [...basePoints, linkedOnsen]
+        : basePoints
+    // 검색 미리보기에서 선택한 온천도 전국 마커 응답 유무와 무관하게 계속 보여준다.
+    if (
+      selectedPoint?.id === selectedId &&
+      externalPlace?.placeId !== selectedId &&
+      selectedPoint &&
+      !points.some((place) => place.id === selectedPoint.id)
+    ) {
+      return [...points, selectedPoint]
+    }
+    return points
+  }, [showingSaved, linkedOnsen, basePoints, selectedPoint, selectedId, externalPlace])
   // 첫 화면의 미리보기에 없는 마커도 선택할 수 있다. 상세는 선택한 id로 조회한다.
   const selected =
     onsens.find((onsen) => onsen.id === selectedId) ??
@@ -285,47 +288,72 @@ export default function MapPage() {
 
   function handleNationalView() {
     setCollapsed(false)
-    setCategories([])
+    setCategory(undefined)
     setSidebarVersion((version) => version + 1)
     void handleSearch({})
   }
 
-  const [categories, setCategories] = useState<PoiCategory[]>([])
+  const [category, setCategory] = useState<PoiCategory>()
   const [viewportCenter, setViewportCenter] = useState<{ lat: number; lng: number }>()
   const [poiZoomVisible, setPoiZoomVisible] = useState(false)
-  const handleCenterChange = useCallback((viewport: { lat: number; lng: number; level: number }) => {
-    setPoiZoomVisible((visible) => visible ? viewport.level < POI_HIDE_LEVEL : viewport.level <= POI_VISIBLE_LEVEL)
-    // Ignore sub-block drift caused by relayout and floating-point projection.
-    const lat = Number(viewport.lat.toFixed(3))
-    const lng = Number(viewport.lng.toFixed(3))
-    setViewportCenter((current) => current?.lat === lat && current.lng === lng ? current : { lat, lng })
-  }, [])
+  const handleCenterChange = useCallback(
+    (viewport: { lat: number; lng: number; level: number }) => {
+      setPoiZoomVisible((visible) =>
+        visible ? viewport.level < POI_HIDE_LEVEL : viewport.level <= POI_VISIBLE_LEVEL,
+      )
+      // Ignore sub-block drift caused by relayout and floating-point projection.
+      const lat = Number(viewport.lat.toFixed(3))
+      const lng = Number(viewport.lng.toFixed(3))
+      setViewportCenter((current) =>
+        current?.lat === lat && current.lng === lng ? current : { lat, lng },
+      )
+    },
+    [],
+  )
   const poiOnsen = !externalSelected ? selected : undefined
   const poiEnabled = mode === 'search' && poiZoomVisible
   const poiCenter = poiOnsen ? { lat: poiOnsen.lat, lng: poiOnsen.lng } : viewportCenter
-  const poiScope = poiEnabled && poiCenter
-    ? `${poiOnsen?.id ?? 'viewport'}:${poiCenter.lat}:${poiCenter.lng}` : undefined
-  const { pois, loading: poiLoading, error: poiError, retry: retryPois, requestKey: poiRequestKey } = usePois(poiEnabled ? categories : [], poiCenter)
-  const poiLoadingVisible = usePoiLoadingIndicator(poiLoading, poiRequestKey, poiEnabled && categories.length > 0)
+  const poiScope =
+    poiEnabled && poiCenter
+      ? `${poiOnsen?.id ?? 'viewport'}:${poiCenter.lat}:${poiCenter.lng}`
+      : undefined
+  const {
+    pois,
+    loading: poiLoading,
+    error: poiError,
+    retry: retryPois,
+    requestKey: poiRequestKey,
+  } = usePois(poiEnabled && category ? [category] : [], poiCenter)
+  const poiLoadingVisible = usePoiLoadingIndicator(
+    poiLoading,
+    poiRequestKey,
+    poiEnabled && category !== undefined,
+  )
   const [selectedPoi, setSelectedPoi] = useState<{ scope: string; key: string }>()
-  const selectedPoiKey = selectedPoi?.scope === poiScope && pois.some((poi) => poiKey(poi) === selectedPoi?.key)
-    ? selectedPoi?.key : undefined
+  const selectedPoiKey =
+    selectedPoi?.scope === poiScope && pois.some((poi) => poiKey(poi) === selectedPoi?.key)
+      ? selectedPoi?.key
+      : undefined
 
   useEffect(() => {
     setSelectedPoi(undefined)
   }, [poiScope])
 
-  const handleSelectPoi = useCallback((key?: string) => {
-    setSelectedPoi(key && poiScope ? { scope: poiScope, key } : undefined)
-  }, [poiScope])
+  const handleSelectPoi = useCallback(
+    (key?: string) => {
+      setSelectedPoi(key && poiScope ? { scope: poiScope, key } : undefined)
+    },
+    [poiScope],
+  )
 
-  const handleToggleCategory = useCallback((category: PoiCategory) => {
-    if (!poiScope) return
-    setSelectedPoi((current) => current?.key.startsWith(`${category}:`) ? undefined : current)
-    setCategories((prev) =>
-      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category],
-    )
-  }, [poiScope])
+  const handleToggleCategory = useCallback(
+    (category: PoiCategory) => {
+      if (!poiScope) return
+      setSelectedPoi(undefined)
+      setCategory((current) => (current === category ? undefined : category))
+    },
+    [poiScope],
+  )
 
   return (
     // 지도는 화면을 꽉 채워야 해서 RootLayout(max-w-5xl 본문) 밖에 두고 헤더만 직접 쓴다.
@@ -536,16 +564,23 @@ export default function MapPage() {
                 <div
                   inert={!poiEnabled}
                   aria-hidden={!poiEnabled}
-                  className={cn('min-w-0 flex-1 transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none', poiEnabled ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-0')}
+                  className={cn(
+                    'min-w-0 flex-1 transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none',
+                    poiEnabled ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-0',
+                  )}
                 >
                   <div className="pointer-events-auto w-fit max-w-full rounded-xl bg-white/95 p-3 shadow-[0_2px_8px_#0000000d]">
-                  <p role="status" className="text-text-primary mb-2 h-5 truncate text-[13px] leading-5 font-semibold">
-                    {poiLoadingVisible ? '주변을 찾고 있어요…' : poiOnsen ? '온천 주변도 둘러보세요' : '주변도 함께 둘러보세요'}
-                  </p>
-                  <PoiFilter
-                    selected={categories}
-                    onToggle={handleToggleCategory}
-                  />
+                    <p
+                      role="status"
+                      className="text-text-primary mb-2 h-5 truncate text-[13px] leading-5 font-semibold"
+                    >
+                      {poiLoadingVisible
+                        ? '주변을 찾고 있어요…'
+                        : poiOnsen
+                          ? '온천 주변도 둘러보세요'
+                          : '주변도 함께 둘러보세요'}
+                    </p>
+                    <PoiFilter selected={category} onToggle={handleToggleCategory} />
                   </div>
                 </div>
                 {(!nationalView || selectedId !== undefined || hasFilter) && (
@@ -559,12 +594,27 @@ export default function MapPage() {
                 )}
                 <MapSavedControls showingSaved={showingSaved} onToggleSaved={toggleSavedMap} />
               </div>
-              {poiEnabled && categories.length > 0 && !poiLoading && !poiLoadingVisible && (poiError || pois.length === 0) && (
-                <div role="status" className="bg-white/95 text-text-secondary absolute top-28 left-3 z-[100] max-w-[calc(100%-1.5rem)] rounded-sm px-3 py-2 text-[12px] leading-5">
-                  {poiError ?? '선택한 카테고리의 주변 장소가 없어요.'}
-                  {!poiLoading && poiError && <button type="button" onClick={retryPois} className="text-text-primary ml-2 underline underline-offset-2">다시 시도</button>}
-                </div>
-              )}
+              {poiEnabled &&
+                category !== undefined &&
+                !poiLoading &&
+                !poiLoadingVisible &&
+                (poiError || pois.length === 0) && (
+                  <div
+                    role="status"
+                    className="bg-white/95 text-text-secondary absolute top-28 left-3 z-[100] max-w-[calc(100%-1.5rem)] rounded-sm px-3 py-2 text-[12px] leading-5"
+                  >
+                    {poiError ?? '선택한 카테고리의 주변 장소가 없어요.'}
+                    {!poiLoading && poiError && (
+                      <button
+                        type="button"
+                        onClick={retryPois}
+                        className="text-text-primary ml-2 underline underline-offset-2"
+                      >
+                        다시 시도
+                      </button>
+                    )}
+                  </div>
+                )}
             </>
           )}
         </main>

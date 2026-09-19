@@ -4,7 +4,7 @@ import { POI_CATEGORIES, POI_CATEGORY_LABELS } from '@/types/poi'
 import type { PoiCategory } from '@/types/poi'
 
 type PoiFilterProps = {
-  selected: PoiCategory[]
+  selected?: PoiCategory
   onToggle: (category: PoiCategory) => void
   /** 전국 뷰처럼 검색 기준점이 바다 한가운데일 때 — 눌러도 결과가 거의 없다. */
   disabled?: boolean
@@ -15,7 +15,7 @@ export default function PoiFilter({ selected, onToggle, disabled = false }: PoiF
   return (
     <div className="scrollbar-thin pointer-events-auto flex items-center gap-1 overflow-x-auto">
       {POI_CATEGORIES.map((category) => {
-        const on = selected.includes(category)
+        const on = selected === category
         return (
           <button
             key={category}
