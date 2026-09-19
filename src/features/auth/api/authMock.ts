@@ -9,12 +9,17 @@ import type { Availability, LoginResponse, SignupResponse } from './auth'
 const MOCK_DELAY_MS = 400
 
 /** 이 계정으로만 로그인이 성공한다. */
-const MOCK_ACCOUNT = { email: 'test@mulmeong.kr', password: 'mulmeong1234' }
+export const MOCK_ACCOUNT = { email: 'test@mulmeong.kr', password: 'mulmeong1234' }
 
 /** 로그인·재발급이 내려주는 최소 프로필. 이메일은 없다 (명세). */
-const MOCK_USER: AuthUser = { userId: 1, nickname: '물멍러1234', level: 2, title: '물 좀 아는' }
+export const MOCK_USER: AuthUser = {
+  userId: 1,
+  nickname: '물멍러1234',
+  level: 2,
+  title: '물 좀 아는',
+}
 
-const MOCK_PROFILE: MyProfile = {
+export const MOCK_PROFILE: MyProfile = {
   ...MOCK_USER,
   email: MOCK_ACCOUNT.email,
   visitedOnsenCount: 12,
@@ -76,7 +81,7 @@ export async function mockGetMe(): Promise<MyProfile> {
   if (tokenStorage.get() !== MOCK_TOKEN) {
     throw new ApiError(401, '로그인이 필요합니다.', { code: 'UNAUTHORIZED' })
   }
-  return MOCK_PROFILE
+  return { ...MOCK_PROFILE }
 }
 
 /** 서버가 Refresh 쿠키를 지우는 것에 대응한다. */

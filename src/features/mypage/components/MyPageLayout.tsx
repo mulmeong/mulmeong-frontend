@@ -1,6 +1,8 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useMatch } from 'react-router-dom'
 
 import Badge from '@/components/ui/Badge'
+import type { MyProfile } from '@/types/user'
+
 import { useAuth } from '@/features/auth/hooks/authContext'
 import { useMyProfile } from '@/features/mypage/hooks/useMyProfile'
 import { cn } from '@/lib/cn'
@@ -20,12 +22,16 @@ const TABS = [
  */
 export type MyPageOutletContext = {
   reloadProfile: () => void
+  /** 내정보 탭이 이메일·닉네임 변경 가능 여부까지 쓴다 — 헤더가 이미 받아둔 걸 넘긴다. */
+  profile?: MyProfile
+  profileError?: string
 }
 
 export default function MyPageLayout() {
+  const isAccountPage = useMatch('/my/account') !== null
   // RequireAuth를 통과했으므로 user는 반드시 있다. 통계는 프로필 API가 채운다.
   const { user } = useAuth()
-  const { profile, reload: reloadProfile } = useMyProfile()
+  const { profile, error: profileError, reload: reloadProfile } = useMyProfile()
 
   // 프로필이 도착하기 전에도 헤더가 비지 않게 로그인 응답의 값을 먼저 쓴다.
   const nickname = profile?.nickname ?? user?.nickname ?? ''
@@ -44,14 +50,54 @@ export default function MyPageLayout() {
     <div className="flex flex-col">
       <div className="flex flex-wrap items-center justify-between gap-y-4 py-6">
         <div className="flex min-w-0 items-center gap-4">
-          <div className="bg-inverse text-text-inverse flex size-14 shrink-0 items-center justify-center rounded-full text-[22px] font-bold">
-            {nickname.slice(0, 1)}
+          <div
+            aria-hidden="true"
+            className="bg-inverse text-text-inverse flex size-14 shrink-0 items-center justify-center rounded-full text-[22px] font-bold"
+          >
+            {isAccountPage ? (
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                className="size-7"
+              >
+                <circle cx="12" cy="8" r="3.5" />
+                <path d="M5 20v-2a7 7 0 0 1 14 0v2" />
+              </svg>
+            ) : (
+              nickname.slice(0, 1)
+            )}
           </div>
           <div className="flex min-w-0 flex-col gap-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="truncate text-[20px] font-bold">{nickname}</span>
-              {level !== undefined && <Badge type="level">{`LV.${level}`}</Badge>}
-              {title && <span className="text-text-secondary text-[14px]">{title}</span>}
+            <div
+              className={cn(
+                'flex',
+                isAccountPage ? 'flex-col items-start gap-1.5' : 'flex-wrap items-center gap-2',
+              )}
+            >
+              <span
+                className={cn(
+                  'max-w-full truncate font-semibold',
+                  isAccountPage ? 'text-[24px] leading-8' : 'text-[20px] font-bold',
+                )}
+              >
+                {nickname}
+              </span>
+              <div className={isAccountPage ? 'flex flex-wrap items-center gap-2' : 'contents'}>
+                {level !== undefined && <Badge type="level">{`LV.${level}`}</Badge>}
+                {title && (
+                  <span
+                    className={cn(
+                      'text-[14px]',
+                      isAccountPage ? 'text-text-primary/65' : 'text-text-secondary',
+                    )}
+                  >
+                    {title}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -67,7 +113,7 @@ export default function MyPageLayout() {
         </div>
       </div>
 
-      <nav role="tablist" className="border-border-default flex border-y">
+      <nav role="tablist" className="border-border-default flex overflow-x-auto border-y">
         {TABS.map((tab) => (
           <NavLink
             key={tab.to}
@@ -76,7 +122,7 @@ export default function MyPageLayout() {
             role="tab"
             className={({ isActive }) =>
               cn(
-                'border-border-default flex items-center justify-center border-r px-5 py-[14px] text-[14px] whitespace-nowrap',
+                'border-border-default flex min-w-0 flex-1 items-center justify-center border-r px-1 py-[14px] text-[12px] whitespace-nowrap sm:flex-none sm:px-5 sm:text-[14px]',
                 isActive
                   ? 'bg-inverse text-text-inverse font-semibold'
                   : 'bg-surface text-text-primary font-normal',
@@ -89,7 +135,7 @@ export default function MyPageLayout() {
       </nav>
 
       <div className="py-6">
-        <Outlet context={{ reloadProfile } satisfies MyPageOutletContext} />
+        <Outlet context={{ reloadProfile, profile, profileError } satisfies MyPageOutletContext} />
       </div>
     </div>
   )

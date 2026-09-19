@@ -52,11 +52,11 @@ export type Availability = { available: boolean }
  * ⚠️ 서버 permitAll에 이 경로가 빠져 있어 지금은 비로그인이 401이다(email/check만 열림).
  * BE 수정 대기 중 — 고쳐지면 그대로 통한다.
  */
-export function checkNickname(nickname: string): Promise<Availability> {
+export function checkNickname(nickname: string, authenticated = false): Promise<Availability> {
   if (env.useMockAuth) return mockCheckNickname(nickname)
   return api.get<Availability>('/auth/nickname/check', {
     params: { nickname },
-    skipAuth: true,
+    skipAuth: !authenticated,
   })
 }
 
