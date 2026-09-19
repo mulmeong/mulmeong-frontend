@@ -1,25 +1,72 @@
-import { api } from '@/api'
-import { env } from '@/lib/env'
+import { getAllFavorites, type Favorite } from '@/features/favorites/api'
+import type { SavedCounts, SavedPlace, SavedPlacesPage, SavedQuery } from '@/types/saved'
 
-import { mockDeleteSavedPlace, mockGetSavedPlaces } from './savedMock'
+const CATEGORY = {
+  ONSEN: 'onsen',
+  SPA: 'onsen',
+  RESTAURANT: 'restaurant',
+  CAFE: 'cafe',
+  ATTRACTION: 'attraction',
+  ETC: 'etc',
+} as const
 
-import type { SavedPlacesPage, SavedQuery } from '@/types/saved'
+/**
+ * 카테고리별 개수(MY-06 counts).
+ *
+ * 서버도 같은 값을 응답에 담아 주지만, FavoritesProvider가 찜 버튼 상태 때문에
+ * 어차피 전체 목록을 들고 있어서 여기서 센다. 조건을 걸기 전 목록으로 세야
+ * 칩을 눌러도 숫자가 흔들리지 않는다.
+ */
+function countByCategory(items: SavedPlace[]): SavedCounts {
+  const counts: SavedCounts = {
+    all: items.length,
+    onsen: 0,
+    restaurant: 0,
+    cafe: 0,
+    attraction: 0,
+    etc: 0,
+  }
 
-/** TODO: 엔드포인트·응답 형태는 백엔드와 맞춘 뒤 수정할 것. */
-export function getSavedPlaces(query: SavedQuery, page: number): Promise<SavedPlacesPage> {
-  if (env.useMock) return mockGetSavedPlaces(query, page)
-  return api.get<SavedPlacesPage>('/users/me/saved', {
-    // 고르지 않은 조건은 보내지 않는다 — 조건이 없는 것과 같다.
-    params: {
-      page,
-      region: query.filter === 'region' && query.region !== 'all' ? query.region : undefined,
-      category:
-        query.filter === 'category' && query.category !== 'all' ? query.category : undefined,
-    },
-  })
+  for (const item of items) counts[item.category] += 1
+  return counts
 }
 
-export function deleteSavedPlace(savedId: number): Promise<void> {
-  if (env.useMock) return mockDeleteSavedPlace()
-  return api.delete<void>(`/users/me/saved/${savedId}`)
+export function selectSavedPlaces(
+  favorites: Favorite[],
+  query: SavedQuery,
+  page: number,
+): SavedPlacesPage {
+  const all: SavedPlace[] = favorites.map((item) => ({
+    // 목록 선택과 삭제 모두 favoriteId가 아닌 placeId를 사용한다.
+    id: item.placeId,
+    onsenId: item.placeId,
+    placeType: item.placeType,
+    name: item.name,
+    address: item.address ?? [item.sido, item.sigungu].filter(Boolean).join(' '),
+    category: CATEGORY[item.placeType],
+    imageUrl: item.thumbnail ?? undefined,
+    subText: item.subText ?? undefined,
+    kakaoPlaceUrl: item.kakaoPlaceUrl ?? undefined,
+    lat: item.lat,
+    lng: item.lng,
+  }))
+
+  const items = all.filter((item) => query.category === 'all' || item.category === query.category)
+
+  // RECENT는 서버가 준 순서 그대로다(찜한 순). 이름순만 여기서 다시 세운다.
+  if (query.sort === 'NAME') items.sort((a, b) => a.name.localeCompare(b.name, 'ko'))
+
+  const totalPages = Math.max(1, Math.ceil(items.length / 20))
+  const safePage = Math.max(1, Math.min(page, totalPages))
+  return {
+    items: items.slice((safePage - 1) * 20, safePage * 20),
+    totalCount: items.length,
+    page: safePage,
+    totalPages,
+    counts: countByCategory(all),
+  }
+}
+
+export async function getSavedPlaces(query: SavedQuery, page: number) {
+  return selectSavedPlaces(await getAllFavorites(), query, page)
 }

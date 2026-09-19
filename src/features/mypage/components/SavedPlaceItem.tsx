@@ -66,6 +66,7 @@ export default function SavedPlaceItem({
             </>
           )}
         </p>
+        {place.subText && <p className="text-text-secondary text-[12px]">{place.subText}</p>}
       </div>
 
       <div className="text-text-secondary flex shrink-0 items-center gap-2 text-[12px]">

@@ -1,69 +1,82 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { fetchPoi } from '@/features/map/api/poi'
+import { POI_CATEGORY_LABELS, type MapPoi, type PoiCategory } from '@/types/poi'
 
-import type { Poi, PoiCategory } from '@/types/poi'
+type Entry = { places?: MapPoi[]; error?: boolean }
+const CACHE_TTL = 30 * 60 * 1000
 
-/** 서버가 좌표를 소수점 3자리로 반올림해 캐싱한다 — 클라이언트도 같은 키를 써야 캐시가 맞는다. */
-function cacheKey(category: PoiCategory, lat: number, lng: number) {
-  return `${category}|${lat.toFixed(3)}|${lng.toFixed(3)}`
-}
-
-/**
- * MAP-04. 켜진 카테고리마다 따로 불러 합친다.
- * 지도를 조금만 움직여도 재호출되므로 캐시와 staleness 가드가 둘 다 필요하다.
- */
 export function usePois(
   categories: PoiCategory[],
   center: { lat: number; lng: number } | undefined,
 ) {
-  const [fetched, setFetched] = useState<{ key: string; places: Poi[] }>()
-  // 실패한 조건을 같이 들고 있어야 조건이 바뀔 때 옛 에러가 남지 않는다.
-  const [failed, setFailed] = useState<string>()
-
-  const cache = useRef(new Map<string, Poi[]>())
-  const requestId = useRef(0)
-
-  // 배열은 매 렌더 새 참조라 의존성에 직접 못 쓴다 — 정렬해 문자열로 굳힌다.
+  const [entries, setEntries] = useState<Record<string, Entry>>({})
+  const [attempt, setAttempt] = useState(0)
+  const cache = useRef(new Map<string, { places: MapPoi[]; expires: number }>())
   const categoryKey = [...categories].sort().join(',')
   const lat = center?.lat
   const lng = center?.lng
-  const queryKey =
-    categoryKey && lat !== undefined && lng !== undefined
-      ? `${categoryKey}|${lat.toFixed(3)}|${lng.toFixed(3)}`
-      : ''
+  const locationKey = lat !== undefined && lng !== undefined ? `${lat},${lng}` : ''
+  const active = useMemo(
+    () => (locationKey && categoryKey ? (categoryKey.split(',') as PoiCategory[]) : []),
+    [locationKey, categoryKey],
+  )
 
   useEffect(() => {
-    if (!queryKey || lat === undefined || lng === undefined) return
+    if (!active.length || lat === undefined || lng === undefined) return
+    let cancelled = false
+    const controller = new AbortController()
+    for (const category of active) {
+      const key = `${locationKey}|${category}`
+      const cached = cache.current.get(key)
+      if (cached && cached.expires > Date.now()) {
+        setEntries((current) => ({ ...current, [key]: { places: cached.places } }))
+        continue
+      }
+      cache.current.delete(key)
+      setEntries((current) => ({ ...current, [key]: {} }))
+      void fetchPoi({ category, lat, lng }, controller.signal)
+        .then((result) => {
+          if (cancelled) return
+          const places = result.places
+            .filter((place) => Number.isFinite(place.lat) && Number.isFinite(place.lng))
+            .map((place) => ({ ...place, category }))
+          cache.current.set(key, { places, expires: Date.now() + CACHE_TTL })
+          setEntries((current) => ({ ...current, [key]: { places } }))
+        })
+        .catch(() => {
+          if (!cancelled) setEntries((current) => ({ ...current, [key]: { error: true } }))
+        })
+    }
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
+  }, [active, locationKey, lat, lng, attempt])
 
-    const active = categoryKey.split(',') as PoiCategory[]
-    const id = ++requestId.current
-
-    Promise.all(
-      active.map(async (category) => {
-        const key = cacheKey(category, lat, lng)
-        const cached = cache.current.get(key)
-        if (cached) return cached
-
-        const result = await fetchPoi({ category, lat, lng })
-        cache.current.set(key, result.places)
-        return result.places
-      }),
-    )
-      .then((groups) => {
-        if (id !== requestId.current) return
-        setFetched({ key: queryKey, places: groups.flat() })
+  const pois = useMemo(() => {
+    const seen = new Set<string>()
+    return active
+      .flatMap((category) => entries[`${locationKey}|${category}`]?.places ?? [])
+      .filter((place) => {
+        if (seen.has(place.externalId)) return false
+        seen.add(place.externalId)
+        return true
       })
-      .catch(() => {
-        if (id !== requestId.current) return
-        // POI는 보조 정보다 — 실패해도 지도 탐색은 계속돼야 한다.
-        setFailed(queryKey)
-      })
-  }, [queryKey, categoryKey, lat, lng])
-
-  // 조건이 바뀌면 이전 결과·에러를 렌더 시점에 버린다 (effect에서 지우면 한 프레임 깜빡인다).
-  const pois = fetched && fetched.key === queryKey ? fetched.places : []
-  const error = failed === queryKey && queryKey ? '주변 장소를 불러오지 못했습니다.' : undefined
-
-  return { pois, error }
+  }, [active, locationKey, entries])
+  const failed = active.filter((category) => entries[`${locationKey}|${category}`]?.error)
+  const loading = active.some((category) => {
+    const entry = entries[`${locationKey}|${category}`]
+    return !entry?.places && !entry?.error
+  })
+  const error = failed.length
+    ? `${failed.map((category) => POI_CATEGORY_LABELS[category]).join(' · ')} 장소를 불러오지 못했어요.`
+    : undefined
+  return {
+    pois,
+    loading,
+    error,
+    requestKey: `${locationKey}|${categoryKey}|${attempt}`,
+    retry: () => setAttempt((value) => value + 1),
+  }
 }

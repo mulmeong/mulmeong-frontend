@@ -2,8 +2,9 @@ import { z } from 'zod'
 
 import { api, ApiError } from '@/api'
 import { mockDirections, mockRoutePlaces } from '@/features/map/api/directionsMock'
-import { searchOnsens } from '@/features/map/api/map'
+import { searchOnsensByKeyword } from '@/features/map/api/map'
 import { env } from '@/lib/env'
+import { TRAVEL_MODES } from '@/features/map/types/directions'
 
 import type {
   DirectionsQuery,
@@ -12,23 +13,25 @@ import type {
   TravelMode,
 } from '@/features/map/types/directions'
 
-const API_MODES = { car: 'CAR', transit: 'TRANSIT', walk: 'WALK', bike: 'BIKE' } as const
+const API_MODES = { car: 'CAR', transit: 'TRANSIT', walk: 'WALK', bike: 'BICYCLE' } as const
 const minutes = z.number().finite().nonnegative()
 const responseSchema = z.object({
-  mode: z.enum(['CAR', 'TRANSIT', 'WALK', 'BIKE']),
+  mode: z
+    .enum(['CAR', 'TRANSIT', 'WALK', 'BIKE', 'BICYCLE'])
+    .transform((mode) => (mode === 'BIKE' ? 'BICYCLE' : mode)),
   distanceM: z.number().finite().nonnegative(),
   durationMin: minutes,
   walkDurationMin: minutes.nullable(),
   totalDurationMin: minutes,
   fare: z.number().finite().nonnegative().nullish(),
-  summary: z.string(),
+  summary: z.string().nullish(),
   steps: z.array(
     z.object({
       seq: z.number(),
       type: z.string(),
       durationMin: minutes,
-      distanceM: z.number().nonnegative().optional(),
-      description: z.string(),
+      distanceM: z.number().nonnegative().nullish(),
+      description: z.string().nullish(),
     }),
   ),
   // 서버 좌표 순서는 [위도, 경도]. 구간별 좌표는 제공되지 않으므로 임의로 나누지 않는다.
@@ -48,12 +51,12 @@ function cacheKey(query: DirectionsQuery) {
 export async function searchRoutePlaces(keyword: string): Promise<RoutePlace[]> {
   const trimmed = keyword.trim()
   if (!trimmed) return []
-  if (env.useMock) return mockRoutePlaces(trimmed)
-  const places = await searchOnsens({ keyword: trimmed })
-  return places.map(({ id, name, address, lat, lng }) => ({
-    id: `onsen-${id}`,
+  if (env.useMockRoutePlaces) return mockRoutePlaces(trimmed)
+  const places = await searchOnsensByKeyword(trimmed)
+  return places.map(({ onsenId, name, address, lat, lng }) => ({
+    id: `onsen-${onsenId}`,
     name,
-    address,
+    address: address ?? '',
     lat,
     lng,
   }))
@@ -82,13 +85,16 @@ async function requestDirections(query: DirectionsQuery): Promise<DirectionsResu
     if (!parsed.success || parsed.data.mode !== API_MODES[query.mode])
       throw new Error('경로 정보를 확인하지 못했어요. 다시 시도해 주세요.')
     const data = parsed.data
+    const modeLabel = TRAVEL_MODES.find((mode) => mode.value === query.mode)!.label
+    // 현재 백엔드의 straightPath는 출발·도착 두 점뿐이므로 실제 경로선으로 그리지 않는다.
+    const path = data.path && data.path.length > 2 ? data.path : []
     return {
       ...query,
       preview: false,
       routes: [
         {
           id: `${query.mode}-route`,
-          label: data.summary || '추천 경로',
+          label: data.summary?.trim() || `${modeLabel} 경로`,
           distanceMeters: data.distanceM,
           durationSeconds: data.totalDurationMin * 60,
           fare: data.fare ?? undefined,
@@ -98,17 +104,24 @@ async function requestDirections(query: DirectionsQuery): Promise<DirectionsResu
             query.mode === 'transit' && data.walkDurationMin !== null
               ? data.walkDurationMin * 60
               : undefined,
-          path: (data.path ?? []).map(([lat, lng]) => ({ lat, lng })),
+          path: path.map(([lat, lng]) => ({ lat, lng })),
           legs: [...data.steps]
             .sort((a, b) => a.seq - b.seq)
-            .map((step) => ({
-              mode:
-                ({ WALK: 'walk', CAR: 'car', BIKE: 'bike' } as Record<string, TravelMode>)[
-                  step.type
-                ] ?? 'transit',
-              label: step.description,
-              durationSeconds: step.durationMin * 60,
-            })),
+            .map((step) => {
+              const mode =
+                (
+                  { WALK: 'walk', CAR: 'car', BIKE: 'bike', BICYCLE: 'bike' } as Record<
+                    string,
+                    TravelMode
+                  >
+                )[step.type] ?? 'transit'
+              const label = TRAVEL_MODES.find((item) => item.value === mode)!.label
+              return {
+                mode,
+                label: step.description?.trim() || `${label} 이동`,
+                durationSeconds: step.durationMin * 60,
+              }
+            }),
         },
       ],
     }

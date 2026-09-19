@@ -19,8 +19,15 @@ declare namespace kakao.maps {
   class Map {
     constructor(container: HTMLElement, options: { center: LatLng; level?: number })
     getCenter(): LatLng
+    setDraggable(draggable: boolean): void
+    setZoomable(zoomable: boolean): void
     setCenter(latlng: LatLng): void
     panTo(latlng: LatLng): void
+    jump(
+      center: LatLng,
+      level: number,
+      options?: { animate?: boolean | { duration: number } },
+    ): void
     getLevel(): number
     setLevel(level: number): void
     setMaxLevel(level: number): void
@@ -70,6 +77,7 @@ declare namespace kakao.maps {
 
   /** 마커 위에 이름표를 얹는다 — Marker로는 텍스트를 못 그린다. */
   class CustomOverlay {
+    setZIndex(zIndex: number): void
     constructor(options: {
       position: LatLng
       content: string | HTMLElement
@@ -94,7 +102,7 @@ declare namespace kakao.maps {
       calculator?: number[]
       styles?: Record<string, string>[]
     })
-    addMarkers(markers: Marker[]): void
+    addMarkers(markers: (Marker | CustomOverlay)[]): void
     clear(): void
   }
 

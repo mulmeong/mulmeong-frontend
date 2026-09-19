@@ -1,8 +1,10 @@
 import { useEffect, useId, useRef, useState } from 'react'
 
-import RegionPlaceCard from '@/features/map/components/RegionPlaceCard'
+import PlaceListSkeleton from '@/features/map/components/PlaceListSkeleton'
+import RegionPlaceCard, { RegionPlaceCardSkeleton } from '@/features/map/components/RegionPlaceCard'
 import SearchResultItem from '@/features/map/components/SearchResultItem'
 import { REGION_PREVIEW_COUNT } from '@/features/map/constants'
+import { SIDEBAR_CARD_TRACK } from './sidebarCardStyles'
 
 import type { OnsenListItem } from '@/features/map/api/map'
 import type { Onsen } from '@/types/onsen'
@@ -45,7 +47,8 @@ function PlaceCarousel({
   region,
   selectedId,
   onSelect,
-}: Pick<RegionPlacesProps, 'onsens' | 'region' | 'selectedId' | 'onSelect'>) {
+  loading,
+}: Pick<RegionPlacesProps, 'onsens' | 'region' | 'selectedId' | 'onSelect' | 'loading'>) {
   const trackRef = useRef<HTMLUListElement>(null)
   const trackId = useId()
   const [scroll, setScroll] = useState({ previous: false, next: false })
@@ -70,7 +73,7 @@ function PlaceCarousel({
       observer.disconnect()
       track.removeEventListener('scroll', update)
     }
-  }, [onsens.length])
+  }, [onsens.length, loading])
 
   function move(direction: number) {
     const track = trackRef.current
@@ -87,53 +90,67 @@ function PlaceCarousel({
 
   return (
     <>
+      {loading && (
+        <span role="status" className="sr-only">
+          장소를 불러오는 중…
+        </span>
+      )}
       <ul
         id={trackId}
         ref={trackRef}
         aria-label="장소 미리보기"
-        tabIndex={hasOverflow ? 0 : undefined}
+        aria-hidden={loading || undefined}
+        tabIndex={!loading && hasOverflow ? 0 : undefined}
         onKeyDown={(event) => {
-          if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+          if (loading || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) return
           event.preventDefault()
           move(event.key === 'ArrowLeft' ? -1 : 1)
         }}
-        className="-mx-5 mt-2 flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto overscroll-x-contain px-5 py-1 outline-none [scrollbar-width:none] focus-visible:ring-2 focus-visible:ring-border-strong focus-visible:ring-inset [&::-webkit-scrollbar]:hidden"
+        className={SIDEBAR_CARD_TRACK}
       >
-        {onsens.map((onsen) => (
-          <li key={onsen.id} className="w-[min(72%,220px)] shrink-0 snap-start">
-            <RegionPlaceCard
-              onsen={onsen}
-              region={region}
-              selected={onsen.id === selectedId}
-              onClick={() => onSelect(onsen)}
-            />
-          </li>
-        ))}
+        {loading
+          ? Array.from({ length: REGION_PREVIEW_COUNT }, (_, index) => (
+              <li key={index} className="min-w-0 snap-start">
+                <RegionPlaceCardSkeleton />
+              </li>
+            ))
+          : onsens.map((onsen) => (
+              <li key={onsen.id} className="min-w-0 snap-start">
+                <RegionPlaceCard
+                  onsen={onsen}
+                  region={region}
+                  selected={onsen.id === selectedId}
+                  onClick={() => onSelect(onsen)}
+                />
+              </li>
+            ))}
       </ul>
-      {hasOverflow && (
-        <div role="group" aria-label="장소 카드 이동" className="mt-2 flex justify-end gap-1">
-          <button
-            type="button"
-            aria-label="이전 장소"
-            aria-controls={trackId}
-            disabled={!scroll.previous}
-            onClick={() => move(-1)}
-            className={ARROW_ACTION}
-          >
-            <Chevron backwards />
-          </button>
-          <button
-            type="button"
-            aria-label="다음 장소"
-            aria-controls={trackId}
-            disabled={!scroll.next}
-            onClick={() => move(1)}
-            className={ARROW_ACTION}
-          >
-            <Chevron />
-          </button>
-        </div>
-      )}
+      <div className="mt-2 flex h-9 w-full items-center justify-end">
+        {!loading && hasOverflow && (
+          <div role="group" aria-label="장소 카드 이동" className="flex gap-1">
+            <button
+              type="button"
+              aria-label="이전 장소"
+              aria-controls={trackId}
+              disabled={!scroll.previous}
+              onClick={() => move(-1)}
+              className={ARROW_ACTION}
+            >
+              <Chevron backwards />
+            </button>
+            <button
+              type="button"
+              aria-label="다음 장소"
+              aria-controls={trackId}
+              disabled={!scroll.next}
+              onClick={() => move(1)}
+              className={ARROW_ACTION}
+            >
+              <Chevron />
+            </button>
+          </div>
+        )}
+      </div>
     </>
   )
 }
@@ -180,7 +197,7 @@ export default function RegionPlaces({
   }
 
   return (
-    <section aria-labelledby={headingId} aria-busy={loading} className="mt-5">
+    <section aria-labelledby={headingId} aria-busy={loading} className="w-full min-w-0">
       <div className="flex min-h-9 items-center justify-between gap-3">
         <h3
           id={headingId}
@@ -190,13 +207,14 @@ export default function RegionPlaces({
         >
           {region ? `${region}에서 둘러보기` : '먼저 둘러보기'}
         </h3>
-        {region && (showingAll || (ready && onsens.length > 0)) && (
+        {region && (loading || showingAll || (ready && onsens.length > 0)) && (
           <button
             type="button"
             onClick={toggleExpanded}
+            disabled={loading}
             aria-expanded={showingAll}
             aria-controls={listId}
-            className={TEXT_ACTION}
+            className={`${TEXT_ACTION} disabled:pointer-events-none disabled:opacity-40`}
           >
             {showingAll && <Chevron backwards />}
             {showingAll ? '미리보기' : '전체보기'}
@@ -212,10 +230,14 @@ export default function RegionPlaces({
       )}
 
       <div id={listId}>
-        {loading && (
-          <div role="status" className="py-5">
-            <p className="text-text-secondary text-[12px]">장소를 불러오는 중…</p>
-          </div>
+        {loading && showingAll && (
+          <>
+            <div aria-hidden="true" className="mt-1 flex h-[16.5px] items-center">
+              <div className="bg-border-default/35 h-2 w-28 rounded-full motion-safe:animate-pulse" />
+            </div>
+            <PlaceListSkeleton count={onsens.slice(start, start + PAGE_SIZE).length || PAGE_SIZE} />
+            {pageCount > 1 && <div aria-hidden="true" className="mt-4 h-9" />}
+          </>
         )}
         {!loading && error && (
           <div className="py-3">
@@ -241,61 +263,57 @@ export default function RegionPlaces({
             )}
           </div>
         )}
-        {ready &&
-          onsens.length > 0 &&
-          (showingAll ? (
-            <>
-              <p role="status" className="text-text-secondary mt-1 text-[11px]">
-                온천·사우나 {onsens.length}곳
-                {pageCount > 1 &&
-                  ` · ${start + 1}–${Math.min(start + PAGE_SIZE, onsens.length)}번째`}
-              </p>
-              <ul aria-label="전체 장소" className="mt-2 flex flex-col">
-                {onsens.slice(start, start + PAGE_SIZE).map((onsen) => (
-                  <li key={onsen.id}>
-                    <SearchResultItem
-                      onsen={onsen}
-                      selected={onsen.id === selectedId}
-                      onClick={() => onSelect(onsen)}
-                    />
-                  </li>
-                ))}
-              </ul>
-              {pageCount > 1 && (
-                <nav
-                  aria-label="장소 목록 페이지"
-                  className="mt-4 flex items-center justify-between"
+        {ready && onsens.length > 0 && showingAll && (
+          <>
+            <p role="status" className="text-text-secondary mt-1 text-[11px]">
+              온천·사우나 {onsens.length}곳
+              {pageCount > 1 && ` · ${start + 1}–${Math.min(start + PAGE_SIZE, onsens.length)}번째`}
+            </p>
+            <ul aria-label="전체 장소" className="mt-2 flex flex-col">
+              {onsens.slice(start, start + PAGE_SIZE).map((onsen) => (
+                <li key={onsen.id}>
+                  <SearchResultItem
+                    onsen={onsen}
+                    selected={onsen.id === selectedId}
+                    onClick={() => onSelect(onsen)}
+                  />
+                </li>
+              ))}
+            </ul>
+            {pageCount > 1 && (
+              <nav aria-label="장소 목록 페이지" className="mt-4 flex items-center justify-between">
+                <button
+                  type="button"
+                  disabled={currentPage === 0}
+                  onClick={() => changePage(currentPage - 1)}
+                  className={`${TEXT_ACTION} disabled:pointer-events-none disabled:opacity-30`}
                 >
-                  <button
-                    type="button"
-                    disabled={currentPage === 0}
-                    onClick={() => changePage(currentPage - 1)}
-                    className={`${TEXT_ACTION} disabled:pointer-events-none disabled:opacity-30`}
-                  >
-                    <Chevron backwards /> 이전
-                  </button>
-                  <span className="text-text-secondary text-[11px] tabular-nums">
-                    <span className="text-text-primary">{currentPage + 1}</span> / {pageCount}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={currentPage === pageCount - 1}
-                    onClick={() => changePage(currentPage + 1)}
-                    className={`${TEXT_ACTION} disabled:pointer-events-none disabled:opacity-30`}
-                  >
-                    다음 <Chevron />
-                  </button>
-                </nav>
-              )}
-            </>
-          ) : (
-            <PlaceCarousel
-              onsens={onsens.slice(0, REGION_PREVIEW_COUNT)}
-              region={region}
-              selectedId={selectedId}
-              onSelect={onSelect}
-            />
-          ))}
+                  <Chevron backwards /> 이전
+                </button>
+                <span className="text-text-secondary text-[11px] tabular-nums">
+                  <span className="text-text-primary">{currentPage + 1}</span> / {pageCount}
+                </span>
+                <button
+                  type="button"
+                  disabled={currentPage === pageCount - 1}
+                  onClick={() => changePage(currentPage + 1)}
+                  className={`${TEXT_ACTION} disabled:pointer-events-none disabled:opacity-30`}
+                >
+                  다음 <Chevron />
+                </button>
+              </nav>
+            )}
+          </>
+        )}
+        {!showingAll && (loading || (ready && onsens.length > 0)) && (
+          <PlaceCarousel
+            onsens={onsens.slice(0, REGION_PREVIEW_COUNT)}
+            region={region}
+            selectedId={selectedId}
+            onSelect={onSelect}
+            loading={loading}
+          />
+        )}
       </div>
     </section>
   )

@@ -6,7 +6,8 @@ import { useReadingProgress } from '@/features/magazine/hooks/useReadingProgress
 import { cn } from '@/lib/cn'
 
 function formatDate(iso: string) {
-  return iso.replaceAll('-', '.')
+  // 서버는 ISO 전체(2025-09-19T15:00:00Z)를 주므로 날짜 부분만 쓴다.
+  return iso.slice(0, 10).replaceAll('-', '.')
 }
 
 /**
@@ -39,7 +40,8 @@ export default function MagazineDetailPage() {
     )
   }
 
-  const { title, subtitle, category, readMinutes, publishedAt, author, photographer } = magazine
+  const { title, subtitle, categoryLabel, readMinutes, publishedAt, author, photographer } =
+    magazine
   const { body, likeCount, heroImageUrl } = magazine
   // body는 MULMUNG_TEXT 문자열 한 덩어리로 온다 — 빈 줄 기준으로 문단을 나눈다.
   const paragraphs = body
@@ -64,7 +66,7 @@ export default function MagazineDetailPage() {
             className="text-text-secondary text-[12px] font-semibold tracking-[0.5em]"
             style={{ writingMode: 'vertical-rl' }}
           >
-            {category.replaceAll(' ', '')}
+            {categoryLabel.replaceAll(' ', '')}
           </span>
 
           <div className="bg-surface-dim relative h-40 w-[2px] rounded-full">
@@ -94,7 +96,7 @@ export default function MagazineDetailPage() {
 
       <article className="min-w-0 flex-1 pt-14 pb-28">
         <p className="text-text-secondary text-[12px] font-semibold tracking-[0.4em]">
-          {category.split('').join(' ')}
+          {categoryLabel.split('').join(' ')}
         </p>
 
         <h1 className="text-text-primary mt-[18px] text-[44px] leading-[1.2] font-bold">{title}</h1>

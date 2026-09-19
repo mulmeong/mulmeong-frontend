@@ -14,11 +14,13 @@ export type NearbyPlace = {
   category: string
   categoryLabel: string
   name: string
+  address?: string | null
+  phone?: string | null
   description?: string
   imageUrl?: string | null
   lat: number
   lng: number
-  distanceM: number
+  distanceM?: number | null
   /** 카카오 장소만 가진다 — 상세는 카카오맵으로 넘긴다. */
   kakaoPlaceUrl?: string
   /** 이미 places에 저장된 장소면 그 id, 아니면 null. 찜(501) 연동 때 쓴다. */

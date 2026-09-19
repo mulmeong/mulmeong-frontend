@@ -12,7 +12,7 @@ type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> & {
   /** line=라벨+값+하단선, search=박스형 */
   variant?: 'line' | 'search'
   /** line 전용. */
-  label?: string
+  label?: ReactNode
   /** 문자열이면 텍스트로, 객체면 클릭 가능한 버튼으로 렌더링된다. */
   trailing?: ReactNode | TrailingAction
   /** 에러 메시지. 있으면 밑줄과 메시지가 에러색으로 바뀐다. */

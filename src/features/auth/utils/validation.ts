@@ -2,7 +2,13 @@ import type { ZodType } from 'zod'
 
 import * as schema from '@/features/auth/schemas'
 
-export { NAME_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from '@/features/auth/schemas'
+export {
+  NAME_MAX_LENGTH,
+  NICKNAME_MAX_LENGTH,
+  NICKNAME_MIN_LENGTH,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+} from '@/features/auth/schemas'
 
 function firstError(field: ZodType, value: unknown): string | undefined {
   const result = field.safeParse(value)
@@ -27,6 +33,10 @@ export function validateBirthDate(value: string) {
 
 export function validatePhone(value: string) {
   return firstError(schema.phone, value)
+}
+
+export function validateNickname(value: string) {
+  return firstError(schema.nickname, value)
 }
 
 export function validatePasswordConfirm(value: string, password: string): string | undefined {
