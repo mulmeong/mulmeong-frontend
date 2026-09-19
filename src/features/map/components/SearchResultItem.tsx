@@ -28,46 +28,46 @@ export default function SearchResultItem({ onsen, selected, onClick }: SearchRes
 
   return (
     <div className="flex items-center gap-2">
-    <button
-      type="button"
-      onClick={onClick}
-      aria-current={selected || undefined}
-      className={cn(
-        '-ml-2 flex min-w-0 flex-1 items-center gap-3 rounded-sm px-2 py-2.5 text-left',
-        'transition-colors outline-none focus-visible:underline focus-visible:underline-offset-2',
-        selected ? 'bg-surface-dim' : 'hover:bg-surface-dim',
-      )}
-    >
-      {imageUrl ? (
-        <img src={imageUrl} alt="" className="size-11 shrink-0 rounded-[2px] object-cover" />
-      ) : (
-        <div className="bg-surface-dim size-11 shrink-0 rounded-[2px]" />
-      )}
+      <button
+        type="button"
+        onClick={onClick}
+        aria-current={selected || undefined}
+        className={cn(
+          '-ml-2 flex min-w-0 flex-1 items-center gap-3 rounded-sm px-2 py-2.5 text-left',
+          'transition-colors outline-none focus-visible:underline focus-visible:underline-offset-2',
+          selected ? 'bg-surface-dim' : 'hover:bg-surface-dim',
+        )}
+      >
+        {imageUrl ? (
+          <img src={imageUrl} alt="" className="size-11 shrink-0 rounded-[2px] object-cover" />
+        ) : (
+          <div className="bg-surface-dim size-11 shrink-0 rounded-[2px]" />
+        )}
 
-      <span className="min-w-0 flex-1">
-        <span
-          className={cn(
-            'text-text-primary block truncate text-[14px]',
-            selected ? 'font-semibold' : 'font-medium',
+        <span className="min-w-0 flex-1">
+          <span
+            className={cn(
+              'text-text-primary block truncate text-[14px]',
+              selected ? 'font-semibold' : 'font-medium',
+            )}
+          >
+            {name}
+          </span>
+          {specLine && (
+            <span className="text-text-secondary mt-[3px] block truncate text-[12px]">
+              {specLine}
+            </span>
           )}
-        >
-          {name}
+          <span className="text-text-secondary mt-[2px] block truncate text-[11px]">{address}</span>
         </span>
-        {specLine && (
-          <span className="text-text-secondary mt-[3px] block truncate text-[12px]">
-            {specLine}
+
+        {distanceKm !== undefined && (
+          <span className="text-text-secondary shrink-0 text-[12px]">
+            {formatDistance(distanceKm)}
           </span>
         )}
-        <span className="text-text-secondary mt-[2px] block truncate text-[11px]">{address}</span>
-      </span>
-
-      {distanceKm !== undefined && (
-        <span className="text-text-secondary shrink-0 text-[12px]">
-          {formatDistance(distanceKm)}
-        </span>
-      )}
-    </button>
-    <FavoriteButton target={{ placeId: onsen.id }} name={name} />
+      </button>
+      <FavoriteButton target={{ placeId: onsen.id }} name={name} />
     </div>
   )
 }

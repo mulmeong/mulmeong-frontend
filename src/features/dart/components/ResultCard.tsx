@@ -107,8 +107,13 @@ export default function ResultCard({
       </div>
 
       <div className="flex flex-none gap-2 border-t border-[#E2E5E4] px-[30px] pt-4 pb-[22px]">
-        <FavoriteButton target={{ placeId: onsen.id }} name={name} label="찜하기" onSaved={onSave}
-          className="h-auto w-auto flex-1 bg-[#0E1513] px-4 py-3.5 text-[13.5px] font-bold text-white hover:bg-[#2C3331]" />
+        <FavoriteButton
+          target={{ placeId: onsen.id }}
+          name={name}
+          label="찜하기"
+          onSaved={onSave}
+          className="h-auto w-auto flex-1 bg-[#0E1513] px-4 py-3.5 text-[13.5px] font-bold text-white hover:bg-[#2C3331]"
+        />
         <button
           type="button"
           onClick={onRethrow}

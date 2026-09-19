@@ -1,17 +1,19 @@
 import { api } from '@/api'
 
 export type FavoriteCategory = 'ONSEN' | 'SPA' | 'RESTAURANT' | 'CAFE' | 'ATTRACTION' | 'ETC'
-export type FavoriteRequest = { placeId: number } | {
-  source: 'KAKAO' | 'TOUR_API'
-  externalId: string
-  name: string
-  lat: number
-  lng: number
-  category: Exclude<FavoriteCategory, 'ONSEN'>
-  address?: string | null
-  phone?: string | null
-  imageUrl?: string | null
-}
+export type FavoriteRequest =
+  | { placeId: number }
+  | {
+      source: 'KAKAO' | 'TOUR_API'
+      externalId: string
+      name: string
+      lat: number
+      lng: number
+      category: Exclude<FavoriteCategory, 'ONSEN'>
+      address?: string | null
+      phone?: string | null
+      imageUrl?: string | null
+    }
 
 export type Favorite = {
   favoriteId: number
@@ -50,14 +52,17 @@ export function getFavorites(page = 0, category = 'ALL', sort: 'RECENT' | 'NAME'
 export async function getAllFavorites() {
   const first = await getFavorites()
   const rest = await Promise.all(
-    Array.from({ length: Math.max(0, first.totalPages - 1) }, (_, index) => getFavorites(index + 1)),
+    Array.from({ length: Math.max(0, first.totalPages - 1) }, (_, index) =>
+      getFavorites(index + 1),
+    ),
   )
   return [first, ...rest].flatMap((page) => page.content)
 }
 
 export function addFavorite(body: FavoriteRequest) {
   return api.post<{ favoriteId: number; placeId: number; isFavorite: boolean; createdAt: string }>(
-    '/favorites', body,
+    '/favorites',
+    body,
   )
 }
 

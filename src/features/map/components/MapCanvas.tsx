@@ -530,7 +530,8 @@ export default function MapCanvas({
       const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
       const destination = limitMapViewport(map, container, limits, target)
       const point = map.getProjection().containerPointFromCoords(destination)
-      const needsPan = Math.abs(point.x - container.clientWidth / 2) > 1 ||
+      const needsPan =
+        Math.abs(point.x - container.clientWidth / 2) > 1 ||
         Math.abs(point.y - container.clientHeight / 2) > 1
       setMoving(currentLevel !== targetLevel || needsPan)
 
@@ -568,7 +569,10 @@ export default function MapCanvas({
           className="absolute inset-0 z-[120] flex touch-none flex-col items-center justify-center gap-3 bg-white/35"
           onWheel={(event) => event.stopPropagation()}
         >
-          <span aria-hidden="true" className="border-text-primary/20 border-t-text-primary size-5 rounded-full border-2 motion-safe:animate-spin" />
+          <span
+            aria-hidden="true"
+            className="border-text-primary/20 border-t-text-primary size-5 rounded-full border-2 motion-safe:animate-spin"
+          />
           <p className="text-text-primary bg-white/85 rounded-sm px-2 py-1 text-[14px] leading-5 font-medium">
             장소를 찾고 있어요
           </p>

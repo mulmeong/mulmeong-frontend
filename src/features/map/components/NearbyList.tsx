@@ -16,13 +16,27 @@ function formatDistance(m: number) {
 
 function PlaceRow({ place }: { place: NearbyPlace }) {
   const meta = `${place.categoryLabel} · ${formatDistance(place.distanceM)}`
-  const category = place.category === 'RESTAURANT' || place.category === 'CAFE' ||
-    place.category === 'ATTRACTION' || place.category === 'SPA' ? place.category : 'ETC'
-  const target: FavoriteRequest = place.placeId != null ? { placeId: place.placeId } : {
-    source: place.source, externalId: place.externalId, name: place.name,
-    lat: place.lat, lng: place.lng, category, imageUrl: place.imageUrl,
-    address: place.address, phone: place.phone,
-  }
+  const category =
+    place.category === 'RESTAURANT' ||
+    place.category === 'CAFE' ||
+    place.category === 'ATTRACTION' ||
+    place.category === 'SPA'
+      ? place.category
+      : 'ETC'
+  const target: FavoriteRequest =
+    place.placeId != null
+      ? { placeId: place.placeId }
+      : {
+          source: place.source,
+          externalId: place.externalId,
+          name: place.name,
+          lat: place.lat,
+          lng: place.lng,
+          category,
+          imageUrl: place.imageUrl,
+          address: place.address,
+          phone: place.phone,
+        }
 
   const body = (
     <>
@@ -57,15 +71,17 @@ function PlaceRow({ place }: { place: NearbyPlace }) {
   return (
     <div className="flex items-center gap-2">
       {place.kakaoPlaceUrl ? (
-      <a
-        href={place.kakaoPlaceUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="hover:bg-surface-dim -mx-2 flex min-w-0 flex-1 items-start gap-3 px-2 py-4 transition-colors outline-none focus-visible:ring-1 focus-visible:ring-inverse focus-visible:ring-inset"
-      >
-        {body}
-      </a>
-      ) : <div className="flex min-w-0 flex-1 items-start gap-3 py-4">{body}</div>}
+        <a
+          href={place.kakaoPlaceUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="hover:bg-surface-dim -mx-2 flex min-w-0 flex-1 items-start gap-3 px-2 py-4 transition-colors outline-none focus-visible:ring-1 focus-visible:ring-inverse focus-visible:ring-inset"
+        >
+          {body}
+        </a>
+      ) : (
+        <div className="flex min-w-0 flex-1 items-start gap-3 py-4">{body}</div>
+      )}
       <FavoriteButton target={target} name={place.name} />
     </div>
   )

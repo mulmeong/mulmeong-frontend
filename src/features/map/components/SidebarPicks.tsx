@@ -47,7 +47,9 @@ export default function SidebarPicks() {
     const gap = Number.parseFloat(getComputedStyle(track).columnGap) || 0
     track.scrollBy({
       left: direction * (card.getBoundingClientRect().width + gap),
-      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ? 'instant'
+        : 'smooth',
     })
   }
 
@@ -55,7 +57,11 @@ export default function SidebarPicks() {
   if (error || (!loading && magazines.length === 0)) return null
 
   return (
-    <section aria-label="추천 매거진" aria-busy={loading} className="mt-auto w-full min-w-0 shrink-0">
+    <section
+      aria-label="추천 매거진"
+      aria-busy={loading}
+      className="mt-auto w-full min-w-0 shrink-0"
+    >
       <div className="flex items-baseline justify-between gap-3">
         {/* 카드가 큰 만큼 제목도 키워 위계를 맞춘다 (다른 섹션 라벨은 11px 유지). */}
         <h2 className="text-text-primary text-[13px] font-medium">지금 이런 곳은 어때요</h2>

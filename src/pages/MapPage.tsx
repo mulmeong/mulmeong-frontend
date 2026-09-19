@@ -41,7 +41,10 @@ export default function MapPage() {
   const showingSaved = savedMode && !!user
   const linkedId = Number(searchParams.get('onsen')) || undefined
   const linkedDetail = useOnsenDetail(linkedId)
-  const linkedOnsen = useMemo(() => linkedDetail.detail ? onsenFromDetail(linkedDetail.detail) : undefined, [linkedDetail.detail])
+  const linkedOnsen = useMemo(
+    () => (linkedDetail.detail ? onsenFromDetail(linkedDetail.detail) : undefined),
+    [linkedDetail.detail],
+  )
   const handledLink = useRef('')
   const { onsens, loading, error, load } = useOnsens(REGION_PREVIEW_COUNT)
   const nationalMap = useOnsenMapPoints()
@@ -137,7 +140,12 @@ export default function MapPage() {
     } else if (searchParams.has('lat') && searchParams.has('lng')) {
       const lat = Number(searchParams.get('lat'))
       const lng = Number(searchParams.get('lng'))
-      if (Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+      if (
+        Number.isFinite(lat) &&
+        Number.isFinite(lng) &&
+        Math.abs(lat) <= 90 &&
+        Math.abs(lng) <= 180
+      ) {
         handledLink.current = key
         setFocus({ lat, lng, level: SINGLE_RESULT_LEVEL })
       }
@@ -203,12 +211,25 @@ export default function MapPage() {
     [load, hasFilter, showingSaved],
   )
 
-  const savedPoints = useMemo(() => favorites.items.map((place) => ({
-    id: place.placeId, name: place.name, lat: place.lat, lng: place.lng, address: place.address ?? undefined,
-  })), [favorites.items])
+  const savedPoints = useMemo(
+    () =>
+      favorites.items.map((place) => ({
+        id: place.placeId,
+        name: place.name,
+        lat: place.lat,
+        lng: place.lng,
+        address: place.address ?? undefined,
+      })),
+    [favorites.items],
+  )
   const basePoints = showingSaved ? savedPoints : hasFilter ? onsens : nationalMap.points
-  const mapOnsens = useMemo(() => !showingSaved && linkedOnsen && !basePoints.some((place) => place.id === linkedOnsen.id)
-    ? [...basePoints, linkedOnsen] : basePoints, [showingSaved, linkedOnsen, basePoints])
+  const mapOnsens = useMemo(
+    () =>
+      !showingSaved && linkedOnsen && !basePoints.some((place) => place.id === linkedOnsen.id)
+        ? [...basePoints, linkedOnsen]
+        : basePoints,
+    [showingSaved, linkedOnsen, basePoints],
+  )
   // 첫 화면의 미리보기에 없는 마커도 선택할 수 있다. 상세는 선택한 id로 조회한다.
   const selected =
     onsens.find((onsen) => onsen.id === selectedId) ??
@@ -234,12 +255,14 @@ export default function MapPage() {
     if (points.length === 1) {
       setFocus({ lat: points[0].lat, lng: points[0].lng, level: SINGLE_RESULT_LEVEL })
     } else if (points.length > 1) {
-      setFocus({ bounds: {
-        swLat: Math.min(...points.map((point) => point.lat)),
-        swLng: Math.min(...points.map((point) => point.lng)),
-        neLat: Math.max(...points.map((point) => point.lat)),
-        neLng: Math.max(...points.map((point) => point.lng)),
-      } })
+      setFocus({
+        bounds: {
+          swLat: Math.min(...points.map((point) => point.lat)),
+          swLng: Math.min(...points.map((point) => point.lng)),
+          neLat: Math.max(...points.map((point) => point.lat)),
+          neLng: Math.max(...points.map((point) => point.lng)),
+        },
+      })
     }
   }, [showingSaved, favorites.loading, favorites.error, savedPoints])
 
@@ -353,22 +376,47 @@ export default function MapPage() {
                 <div className="h-full min-h-0 w-full">
                   {externalSelected ? (
                     <div className="bg-surface h-full overflow-y-auto px-4 py-6">
-                      <p className="text-text-secondary text-[12px]">{externalSelected.placeTypeLabel}</p>
+                      <p className="text-text-secondary text-[12px]">
+                        {externalSelected.placeTypeLabel}
+                      </p>
                       <div className="mt-3 flex items-center justify-between gap-2">
                         <h2 className="text-[20px] font-semibold">{externalSelected.name}</h2>
-                        <FavoriteButton target={{ placeId: externalSelected.placeId }} name={externalSelected.name} />
+                        <FavoriteButton
+                          target={{ placeId: externalSelected.placeId }}
+                          name={externalSelected.name}
+                        />
                       </div>
-                      <p className="text-text-secondary mt-2 text-[13px] leading-6">{externalSelected.address}</p>
-                      {externalSelected.thumbnail && <img src={externalSelected.thumbnail} alt="" className="mt-5 aspect-video w-full rounded-sm object-cover" />}
-                      {externalSelected.subText && <p className="mt-4 text-[13px]">{externalSelected.subText}</p>}
-                      {externalSelected.kakaoPlaceUrl && /^https?:\/\//i.test(externalSelected.kakaoPlaceUrl) && (
-                        <a href={externalSelected.kakaoPlaceUrl} target="_blank" rel="noopener noreferrer" className="mt-5 inline-block text-[13px] underline underline-offset-4">카카오맵에서 보기</a>
+                      <p className="text-text-secondary mt-2 text-[13px] leading-6">
+                        {externalSelected.address}
+                      </p>
+                      {externalSelected.thumbnail && (
+                        <img
+                          src={externalSelected.thumbnail}
+                          alt=""
+                          className="mt-5 aspect-video w-full rounded-sm object-cover"
+                        />
                       )}
+                      {externalSelected.subText && (
+                        <p className="mt-4 text-[13px]">{externalSelected.subText}</p>
+                      )}
+                      {externalSelected.kakaoPlaceUrl &&
+                        /^https?:\/\//i.test(externalSelected.kakaoPlaceUrl) && (
+                          <a
+                            href={externalSelected.kakaoPlaceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-5 inline-block text-[13px] underline underline-offset-4"
+                          >
+                            카카오맵에서 보기
+                          </a>
+                        )}
                     </div>
-                  ) : <OnsenDetailPanel
-                    onsen={selected}
-                    onDirections={() => openDirections(selected)}
-                  />}
+                  ) : (
+                    <OnsenDetailPanel
+                      onsen={selected}
+                      onDirections={() => openDirections(selected)}
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -393,7 +441,10 @@ export default function MapPage() {
           <MapCanvas
             onsens={mapOnsens}
             selectedId={selectedId}
-            loading={mode === 'search' && (showingSaved ? favorites.loading : loading || (!hasFilter && nationalMap.loading))}
+            loading={
+              mode === 'search' &&
+              (showingSaved ? favorites.loading : loading || (!hasFilter && nationalMap.loading))
+            }
             favoriteMarkers={showingSaved}
             onNationalViewChange={setNationalView}
             onSelect={handleSelect}
@@ -405,26 +456,43 @@ export default function MapPage() {
             route={mode === 'directions' ? directions.selectedRoute : undefined}
           />
 
-          {showingSaved && !favorites.loading && (favorites.error || favorites.items.length === 0) && (
-            <div role="status" className="bg-surface/95 absolute bottom-5 left-1/2 z-[100] -translate-x-1/2 rounded-sm px-4 py-3 text-center text-[13px]">
-              {favorites.error ?? '아직 찜한 장소가 없어요.'}
-              {favorites.error && <button type="button" onClick={() => void favorites.reload()} className="ml-2 underline">다시 시도</button>}
-            </div>
-          )}
-          {!showingSaved && !hasFilter && mode === 'search' && !nationalMap.loading && nationalMap.error && (
-            <div className="bg-surface/95 absolute bottom-5 left-1/2 z-[100] max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-sm px-4 py-3 text-center text-[12px]">
-              <p role="alert" className="text-text-secondary">
-                지도에 장소를 표시하지 못했어요.
-              </p>
-              <button
-                type="button"
-                onClick={nationalMap.retry}
-                className="text-text-primary mt-2 min-h-9 underline underline-offset-4"
+          {showingSaved &&
+            !favorites.loading &&
+            (favorites.error || favorites.items.length === 0) && (
+              <div
+                role="status"
+                className="bg-surface/95 absolute bottom-5 left-1/2 z-[100] -translate-x-1/2 rounded-sm px-4 py-3 text-center text-[13px]"
               >
-                다시 시도
-              </button>
-            </div>
-          )}
+                {favorites.error ?? '아직 찜한 장소가 없어요.'}
+                {favorites.error && (
+                  <button
+                    type="button"
+                    onClick={() => void favorites.reload()}
+                    className="ml-2 underline"
+                  >
+                    다시 시도
+                  </button>
+                )}
+              </div>
+            )}
+          {!showingSaved &&
+            !hasFilter &&
+            mode === 'search' &&
+            !nationalMap.loading &&
+            nationalMap.error && (
+              <div className="bg-surface/95 absolute bottom-5 left-1/2 z-[100] max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-sm px-4 py-3 text-center text-[12px]">
+                <p role="alert" className="text-text-secondary">
+                  지도에 장소를 표시하지 못했어요.
+                </p>
+                <button
+                  type="button"
+                  onClick={nationalMap.retry}
+                  className="text-text-primary mt-2 min-h-9 underline underline-offset-4"
+                >
+                  다시 시도
+                </button>
+              </div>
+            )}
 
           {/*
             지도 위에 띄운다 — 컨테이너는 클릭을 통과시켜 팬·줌을 막지 않는다.

@@ -181,7 +181,11 @@ export default function MySavedPage() {
         {message ? (
           <p role="alert" className="text-danger py-10 text-center text-[13px]">
             {message}
-            {error && <button type="button" onClick={() => void reload()} className="ml-2 underline">다시 시도</button>}
+            {error && (
+              <button type="button" onClick={() => void reload()} className="ml-2 underline">
+                다시 시도
+              </button>
+            )}
           </p>
         ) : loading ? (
           <p className="text-text-secondary py-10 text-center text-[13px]">불러오는 중…</p>

@@ -18,5 +18,10 @@ export function useSavedPlaces(
   page: number,
 ) {
   const { items, loading, error, reload } = useFavorites()
-  return { data: selectSavedPlaces(items, { filter, region, category }, page), loading, error, reload }
+  return {
+    data: selectSavedPlaces(items, { filter, region, category }, page),
+    loading,
+    error,
+    reload,
+  }
 }

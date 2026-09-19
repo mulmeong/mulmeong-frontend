@@ -4,11 +4,24 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/authContext'
 
 const ACTIONS = [
-  { id: 'pamphlets', label: '팜플렛', to: '/my/pamphlets', description: '로그인하면 찜한 장소를 팜플렛으로 엮어둘 수 있어요.' },
-  { id: 'saved', label: '찜', to: '/my/saved', description: '로그인하면 마음에 드는 장소를 찜할 수 있어요.' },
+  {
+    id: 'pamphlets',
+    label: '팜플렛',
+    to: '/my/pamphlets',
+    description: '로그인하면 찜한 장소를 팜플렛으로 엮어둘 수 있어요.',
+  },
+  {
+    id: 'saved',
+    label: '찜',
+    to: '/my/saved',
+    description: '로그인하면 마음에 드는 장소를 찜할 수 있어요.',
+  },
 ] as const
 
-export default function MapSavedControls({ showingSaved = false, onToggleSaved }: {
+export default function MapSavedControls({
+  showingSaved = false,
+  onToggleSaved,
+}: {
   showingSaved?: boolean
   onToggleSaved: () => void
 }) {
@@ -30,7 +43,8 @@ export default function MapSavedControls({ showingSaved = false, onToggleSaved }
       return
     }
     const outside = (event: PointerEvent) => {
-      if (event.target instanceof Node && !rootRef.current?.contains(event.target)) setOpen(undefined)
+      if (event.target instanceof Node && !rootRef.current?.contains(event.target))
+        setOpen(undefined)
     }
     const escape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
@@ -55,7 +69,9 @@ export default function MapSavedControls({ showingSaved = false, onToggleSaved }
         const visible = open === action.id && !loading && !user
         return (
           <div key={action.id} className="relative flex h-full items-center">
-            {index > 0 && <span aria-hidden="true" className="bg-border-default/70 h-3 w-px shrink-0" />}
+            {index > 0 && (
+              <span aria-hidden="true" className="bg-border-default/70 h-3 w-px shrink-0" />
+            )}
             <button
               type="button"
               aria-expanded={visible}
@@ -68,7 +84,7 @@ export default function MapSavedControls({ showingSaved = false, onToggleSaved }
                   return
                 }
                 triggerRef.current = event.currentTarget
-                setOpen((current) => current === action.id ? undefined : action.id)
+                setOpen((current) => (current === action.id ? undefined : action.id))
               }}
               className={`text-text-primary inline-flex h-full items-center justify-center gap-1 px-2.5 text-[12px] leading-4 whitespace-nowrap hover:bg-surface-dim focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${index === 0 ? 'rounded-l-md' : 'rounded-r-md'} ${action.id === 'saved' && showingSaved ? 'bg-surface-dim font-semibold' : ''}`}
             >
@@ -81,7 +97,10 @@ export default function MapSavedControls({ showingSaved = false, onToggleSaved }
                 aria-labelledby={`${id}-${action.id}-title`}
                 className="border-border-default bg-surface absolute top-full right-0 z-10 mt-2 w-[240px] max-w-[calc(100vw-96px)] rounded-md border p-4"
               >
-                <h2 id={`${id}-${action.id}-title`} className="text-text-primary text-[14px] leading-5 font-medium">
+                <h2
+                  id={`${id}-${action.id}-title`}
+                  className="text-text-primary text-[14px] leading-5 font-medium"
+                >
                   로그인이 필요한 기능이에요
                 </h2>
                 <p className="text-text-secondary mt-2 text-[12px] leading-5 break-keep">

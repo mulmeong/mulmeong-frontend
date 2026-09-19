@@ -149,27 +149,30 @@ function OnsenDetailContent({
       )}
 
       {/* 길찾기는 이 온천을 도착지로 채운다. */}
-      <div
-        role="group"
-        aria-label="장소 액션"
-        className="mt-2 grid grid-cols-3 gap-1 pb-1"
-      >
-        {ACTIONS.map((action) => action.icon === 'save' ? (
-          <FavoriteButton key={action.icon} target={{ placeId: onsen.id }} name={name} label="저장"
-            className="h-9 w-full text-[12px] font-medium" />
-        ) : (
-          <button
-            key={action.icon}
-            type="button"
-            disabled={action.disabled}
-            onClick={action.icon === 'directions' ? onDirections : undefined}
-            title={action.disabled ? `${action.label} 기능은 준비 중입니다.` : undefined}
-            className="text-text-primary hover:not-disabled:bg-surface-dim flex min-h-9 items-center justify-center gap-2 text-[12px] font-medium outline-none focus-visible:ring-1 focus-visible:ring-inverse disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <ActionIcon kind={action.icon} />
-            {action.label}
-          </button>
-        ))}
+      <div role="group" aria-label="장소 액션" className="mt-2 grid grid-cols-3 gap-1 pb-1">
+        {ACTIONS.map((action) =>
+          action.icon === 'save' ? (
+            <FavoriteButton
+              key={action.icon}
+              target={{ placeId: onsen.id }}
+              name={name}
+              label="저장"
+              className="h-9 w-full text-[12px] font-medium"
+            />
+          ) : (
+            <button
+              key={action.icon}
+              type="button"
+              disabled={action.disabled}
+              onClick={action.icon === 'directions' ? onDirections : undefined}
+              title={action.disabled ? `${action.label} 기능은 준비 중입니다.` : undefined}
+              className="text-text-primary hover:not-disabled:bg-surface-dim flex min-h-9 items-center justify-center gap-2 text-[12px] font-medium outline-none focus-visible:ring-1 focus-visible:ring-inverse disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ActionIcon kind={action.icon} />
+              {action.label}
+            </button>
+          ),
+        )}
       </div>
 
       {rating !== undefined && (
@@ -255,7 +258,9 @@ function OnsenDetailContent({
 function Row({ label, value }: { label: string; value: ReactNode }) {
   const stacked = ['주소', '편의시설', '가는 법', '주차'].includes(label)
   return (
-    <div className={stacked ? 'space-y-1.5' : 'grid grid-cols-[64px_minmax(0,1fr)] items-start gap-3'}>
+    <div
+      className={stacked ? 'space-y-1.5' : 'grid grid-cols-[64px_minmax(0,1fr)] items-start gap-3'}
+    >
       <dt className="text-text-secondary text-[11px] leading-6">{label}</dt>
       <dd className="text-text-primary text-[13px] leading-6 font-medium break-keep whitespace-pre-line [overflow-wrap:anywhere]">
         {value}

@@ -60,7 +60,9 @@ export default function AuthProvider() {
 
   return (
     <AuthContext value={value}>
-      <FavoritesProvider><Outlet /></FavoritesProvider>
+      <FavoritesProvider>
+        <Outlet />
+      </FavoritesProvider>
     </AuthContext>
   )
 }

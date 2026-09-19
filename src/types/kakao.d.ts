@@ -23,7 +23,11 @@ declare namespace kakao.maps {
     setZoomable(zoomable: boolean): void
     setCenter(latlng: LatLng): void
     panTo(latlng: LatLng): void
-    jump(center: LatLng, level: number, options?: { animate?: boolean | { duration: number } }): void
+    jump(
+      center: LatLng,
+      level: number,
+      options?: { animate?: boolean | { duration: number } },
+    ): void
     getLevel(): number
     setLevel(level: number): void
     setMaxLevel(level: number): void
