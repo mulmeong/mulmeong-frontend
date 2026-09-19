@@ -5,7 +5,7 @@ import { ApiError } from '@/api'
 import Button from '@/components/ui/Button'
 import Chip from '@/components/ui/Chip'
 import Modal from '@/components/ui/Modal'
-import { deleteSavedPlace } from '@/features/mypage/api/saved'
+import { useFavorites } from '@/features/favorites/FavoritesProvider'
 import Pagination from '@/features/mypage/components/Pagination'
 import SavedPlaceItem from '@/features/mypage/components/SavedPlaceItem'
 import { useSavedPlaces } from '@/features/mypage/hooks/useSavedPlaces'
@@ -22,6 +22,7 @@ import {
 /** 찜한 장소 · 담당: 예린 */
 export default function MySavedPage() {
   const navigate = useNavigate()
+  const favorites = useFavorites()
 
   const [filter, setFilter] = useState<SavedFilter>('all')
   const [region, setRegion] = useState<RegionGroupId>('all')
@@ -76,7 +77,7 @@ export default function MySavedPage() {
     setDeleting(true)
     setActionError(undefined)
     try {
-      await deleteSavedPlace(pendingDelete.id)
+      await favorites.remove(pendingDelete.id)
       // 사라진 항목이 선택에 남아 있으면 팜플렛 개수가 실제와 어긋난다.
       setSelected((current) => {
         const next = new Set(current)
@@ -85,7 +86,6 @@ export default function MySavedPage() {
       })
       setPendingDelete(null)
       setDeleteDone(true)
-      reload()
     } catch (cause) {
       // 실패하면 확인 모달을 닫고 목록 위에 사유를 보여준다.
       setPendingDelete(null)
@@ -96,48 +96,51 @@ export default function MySavedPage() {
   }
 
   const handleShowOnMap = (place: SavedPlace) => {
-    // TODO: 지도 화면이 아직 이 파라미터를 읽지 않는다 (MapPage는 다른 팀원 담당).
-    // 해당 온천을 열어주도록 할지 협의 후 맞출 것.
-    void navigate(`/map?onsen=${place.onsenId}`)
+    if (place.placeType === 'ONSEN' || !place.placeType) {
+      void navigate(`/map?onsen=${place.onsenId}`)
+    } else if (place.kakaoPlaceUrl && /^https?:\/\//i.test(place.kakaoPlaceUrl)) {
+      window.open(place.kakaoPlaceUrl, '_blank', 'noopener,noreferrer')
+    } else if (place.lat !== undefined && place.lng !== undefined) {
+      void navigate(`/map?lat=${place.lat}&lng=${place.lng}`)
+    }
   }
 
   const message = error ?? actionError
 
   return (
     <div className="flex flex-col">
+      {/* 내 리뷰 탭과 같은 줄 구성 — 개수 · 1단계 칩 · 오른쪽 끝 동작 버튼. */}
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-[14px] font-semibold">전체 {data?.totalCount ?? 0}</span>
 
-        <div className="ml-auto flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setSelected(new Set())}
-            disabled={selected.size === 0}
-            className="text-text-secondary hover:text-text-primary text-[13px] disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            선택 해제
-          </button>
-
-          {/*
-            같은 줄의 칩(py-2 / 13px)과 높이를 맞춘다 — Button 기본값은 한 단계 커서 혼자 튄다.
-            TODO: 팜플렛 만들기 화면(PAM-01)이 아직 없다.
-          */}
-          <Button disabled={selected.size === 0} className="px-4 py-2 text-[13px]">
-            선택 {selected.size}곳으로 팜플렛 만들기
-          </Button>
+        <div className="flex gap-2">
+          {SAVED_FILTERS.map((option) => (
+            <Chip
+              key={option.id}
+              selected={option.id === filter}
+              onClick={() => handleFilter(option.id)}
+            >
+              {option.label}
+            </Chip>
+          ))}
         </div>
-      </div>
 
-      <div className="mt-3 flex gap-2">
-        {SAVED_FILTERS.map((option) => (
-          <Chip
-            key={option.id}
-            selected={option.id === filter}
-            onClick={() => handleFilter(option.id)}
-          >
-            {option.label}
-          </Chip>
-        ))}
+        <button
+          type="button"
+          onClick={() => setSelected(new Set())}
+          disabled={selected.size === 0}
+          className="text-text-secondary hover:text-text-primary ml-auto text-[13px] disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          선택 해제
+        </button>
+
+        {/*
+          같은 줄의 칩(py-2 / 13px)과 높이를 맞춘다 — Button 기본값은 한 단계 커서 혼자 튄다.
+          TODO: 팜플렛 만들기 화면(PAM-01)이 아직 없다.
+        */}
+        <Button disabled={selected.size === 0} className="px-4 py-2 text-[13px]">
+          선택 {selected.size}곳으로 팜플렛 만들기
+        </Button>
       </div>
 
       {/* 2단계 칩. 1단계에서 고른 쪽만 나온다. */}
@@ -177,6 +180,11 @@ export default function MySavedPage() {
         {message ? (
           <p role="alert" className="text-danger py-10 text-center text-[13px]">
             {message}
+            {error && (
+              <button type="button" onClick={() => void reload()} className="ml-2 underline">
+                다시 시도
+              </button>
+            )}
           </p>
         ) : loading ? (
           <p className="text-text-secondary py-10 text-center text-[13px]">불러오는 중…</p>

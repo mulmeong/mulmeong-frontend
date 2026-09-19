@@ -1,3 +1,4 @@
+import type { ReviewRegionFilter } from '@/features/mypage/api/reviewsDto'
 import type { RegionGroupId } from '@/types/region'
 import type { CreateReviewBody, ReviewSpec } from '@/types/review'
 
@@ -48,6 +49,12 @@ export type MyReviewsPage = {
   totalCount: number
   page: number
   totalPages: number
+  /**
+   * 서버가 주는 지역 칩 — 내가 리뷰를 쓴 지역만 담긴다.
+   * TODO: 지금 화면은 아직 REGION_GROUPS 권역 칩을 쓴다. 목록 탭을 명세(MY-04)로
+   * 옮길 때 이 값으로 칩을 그린다. 그때 ReviewRegion·REGION_GROUPS 의존이 없어진다.
+   */
+  regions?: ReviewRegionFilter[]
 }
 
 /** ReviewSpec에서 점수인 항목만. visitTime은 같은 객체에 있지만 숫자가 아니다. */

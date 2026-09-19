@@ -1,6 +1,8 @@
 import { api } from '@/api'
 import { env } from '@/lib/env'
 
+import { regionOf } from '@/types/onsen'
+
 import type { MapBounds, Onsen } from '@/types/onsen'
 
 import { mockSearchOnsens, mockSuggest } from './mapMock'
@@ -31,31 +33,95 @@ export type OnsenListItem = Onsen & { distanceKm?: number }
 export type Suggestion =
   { type: 'region'; value: string } | { type: 'onsen'; id: number; name: string; address: string }
 
+/** 서버 검색 응답(GET /map/onsens/search). 명세의 /onsens/suggest는 아직 없다. */
+type SearchResponse = {
+  results: {
+    type: string
+    onsenId: number
+    name: string
+    address: string | null
+    lat: number
+    lng: number
+  }[]
+}
+
+/** 좌표까지 필요한 호출부(길찾기 출발·도착 선택)가 있어 원본 그대로 돌려준다. */
+export function searchOnsensByKeyword(keyword: string, limit = 10) {
+  return api
+    .get<SearchResponse>('/map/onsens/search', {
+      params: { keyword, limit },
+      skipAuth: true,
+    })
+    .then(({ results }) => results)
+}
+
 export function suggestPlaces(keyword: string): Promise<Suggestion[]> {
   const trimmed = keyword.trim()
   if (!trimmed) return Promise.resolve([])
 
-  if (env.useMock) return mockSuggest(trimmed)
-  return api.get<Suggestion[]>('/onsens/suggest', {
-    params: { keyword: trimmed },
-    skipAuth: true,
-  })
+  if (env.useMockSuggest) return mockSuggest(trimmed)
+  return searchOnsensByKeyword(trimmed).then((results) =>
+    results.map((item): Suggestion => ({
+      type: 'onsen',
+      id: item.onsenId,
+      name: item.name,
+      address: item.address ?? '',
+    })),
+  )
+}
+
+/** 서버 목록 응답(GET /onsens). 프론트 Onsen과 이름이 달라 매핑한다. */
+type OnsenListResponse = {
+  content: {
+    onsenId: number
+    name: string
+    sido: string | null
+    sigungu: string | null
+    address: string | null
+    lat: number | null
+    lng: number | null
+    waterTemp: number | null
+    waterType: string | null
+    accessLevel: string | null
+    accessLevelLabel: string | null
+    thumbnail: string | null
+  }[]
+  totalElements: number
 }
 
 export function searchOnsens(params: SearchOnsensParams = {}): Promise<OnsenListItem[]> {
-  const { keyword, region, bounds, limit } = params
-  if (env.useMock) return mockSearchOnsens(params)
+  const { keyword, region, limit } = params
+  if (env.useMockOnsenList) return mockSearchOnsens(params)
   // 비로그인도 지도를 볼 수 있다 (AUTH-02).
-  return api.get<OnsenListItem[]>('/onsens', {
-    params: {
-      keyword,
-      region,
-      limit,
-      swLat: bounds?.swLat,
-      swLng: bounds?.swLng,
-      neLat: bounds?.neLat,
-      neLng: bounds?.neLng,
-    },
-    skipAuth: true,
-  })
+  //
+  // ⚠️ 서버는 region·keyword를 받으면 500을 낸다(page·size만 정상). bounds는 아예 없다.
+  // 그래서 지금은 한 페이지를 받아 프론트에서 거른다 — BE가 고치면 파라미터로 넘긴다.
+  return api
+    .get<OnsenListResponse>('/onsens', {
+      params: { size: Math.min(100, Math.max(limit ?? 20, 20)) },
+      skipAuth: true,
+    })
+    .then(({ content }) => {
+      const items = content.map((item): OnsenListItem => ({
+        id: item.onsenId,
+        name: item.name,
+        address: item.address ?? '',
+        sido: item.sido ?? undefined,
+        sigungu: item.sigungu ?? undefined,
+        lat: item.lat ?? 0,
+        lng: item.lng ?? 0,
+        imageUrl: item.thumbnail ?? undefined,
+        // 목록 응답에 리뷰 집계가 없다. 카드가 '리뷰 0개'로 읽히지 않게 0을 넣는다.
+        reviewCount: 0,
+        tags: [],
+        waterTempC: item.waterTemp ?? undefined,
+        waterQuality: item.waterType ?? undefined,
+        transitAccessible: item.accessLevel === 'WALKABLE' || undefined,
+      }))
+      const needle = keyword?.trim()
+      const filtered = needle
+        ? items.filter((item) => item.name.includes(needle) || item.address.includes(needle))
+        : items
+      return region ? filtered.filter((item) => regionOf(item) === region) : filtered
+    })
 }

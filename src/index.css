@@ -47,10 +47,83 @@
       transform: translateY(0);
     }
   }
+
+  /*
+    내 지도에서 시군구 지도가 나타날 때.
+    누른 시·도가 지도 안에서 차지하던 자리·크기에서 출발해 화면 전체로 자란다.
+    출발 지점은 지역마다 달라 --grow-* 변수로 쓰는 쪽에서 넣어 준다.
+
+    전국 지도가 왼쪽 아래로 줄어드는 동작과 길이를 맞춰야 한 덩어리로 보인다
+    (MyMapPage의 duration-500).
+  */
+  --animate-region-grow: region-grow 500ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  @keyframes region-grow {
+    from {
+      opacity: 0;
+      transform: translate(var(--grow-x, 0), var(--grow-y, 0)) scale(var(--grow-scale, 0.3));
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
 }
 
 :root {
   color-scheme: light;
+}
+
+.map-detail-panel {
+  --map-detail-width: 100%;
+  box-sizing: border-box;
+  width: var(--map-detail-width);
+  height: 45dvh;
+}
+
+@media (width >= 64rem) {
+  .map-detail-panel {
+    --map-detail-width: 347px;
+    height: auto;
+  }
+}
+
+.map-detail-surface {
+  transform: translateX(-100%);
+  will-change: transform;
+}
+
+@keyframes map-detail-surface-enter {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes map-detail-surface-exit {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+.map-detail-surface-enter {
+  animation: map-detail-surface-enter 340ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.map-detail-surface-exit {
+  animation: map-detail-surface-exit 260ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-detail-surface-enter,
+  .map-detail-surface-exit {
+    animation-duration: 1ms;
+  }
 }
 
 /**

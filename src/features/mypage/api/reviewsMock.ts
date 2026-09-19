@@ -1,4 +1,5 @@
 import { ApiError } from '@/api/ApiError'
+import { SIDO_REGIONS } from '@/features/mypage/myMap/sidoRegions'
 import { matchesRegionGroup } from '@/types/region'
 import { RATING_MAX, RATING_MIN, VISIT_TIMES } from '@/types/review'
 
@@ -158,6 +159,32 @@ export function mockGetMyReviews(
     totalCount: filtered.length,
     page: safePage,
     totalPages,
+  })
+}
+
+/**
+ * 한 지역의 최신 리뷰 몇 건.
+ *
+ * 실제 서버는 regionCode로 거르지만 표본 주소는 '경북 울진'처럼 짧은 이름이라,
+ * 코드를 시·도 이름으로 바꿔 앞부분을 대조한다.
+ */
+export function mockGetRegionReviews(
+  regionCode: string | undefined,
+  size: number,
+): Promise<MyReviewsPage> {
+  const name = SIDO_REGIONS.find((region) => region.code === regionCode)?.name
+  const filtered = regionCode
+    ? MOCK_REVIEWS.filter((review) => review.onsenAddress.startsWith(name ?? regionCode))
+    : MOCK_REVIEWS
+
+  const sorted = sortReviews(filtered, 'recent')
+
+  return delay({
+    items: sorted.slice(0, size),
+    // 잘라내기 전 개수다 — 화면의 '이 지역 리뷰 N'이 실제 수를 보여야 한다.
+    totalCount: sorted.length,
+    page: 1,
+    totalPages: Math.max(1, Math.ceil(sorted.length / size)),
   })
 }
 

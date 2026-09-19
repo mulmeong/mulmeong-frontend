@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 import { ApiError } from '@/api'
 import Button from '@/components/ui/Button'
@@ -10,13 +11,22 @@ import ReviewFormPanel from '@/features/mypage/components/ReviewFormPanel'
 import ReviewItem from '@/features/mypage/components/ReviewItem'
 import { useMyReviews } from '@/features/mypage/hooks/useMyReviews'
 
-import { REGION_GROUPS } from '@/types/region'
+import { REGION_GROUPS, toRegionGroupId } from '@/types/region'
 import { REVIEW_SORTS, type MyReview, type ReviewRegion, type ReviewSort } from '@/types/myReview'
 
 /** 내 리뷰 · 담당: 예린 */
 export default function MyReviewsPage() {
-  const [sort, setSort] = useState<ReviewSort>('recent')
-  const [region, setRegion] = useState<ReviewRegion>('all')
+  /**
+   * 내 지도에서 '이 지역 리뷰 전체 보기'로 넘어오면 ?region=gangwon이 붙는다.
+   * 처음 값만 주소에서 읽고, 그 뒤 칩 조작은 state로만 다룬다 — 주소를 계속
+   * 맞춰 쓰면 뒤로 가기가 칩 한 번 누른 만큼씩 되감겨 되레 불편해진다.
+   */
+  const [searchParams] = useSearchParams()
+  const [initialRegion] = useState(() => toRegionGroupId(searchParams.get('region')))
+
+  // 지역을 지정해 들어왔으면 지역 칩이 보여야 하므로 '지역별'로 연다.
+  const [sort, setSort] = useState<ReviewSort>(initialRegion ? 'region' : 'recent')
+  const [region, setRegion] = useState<ReviewRegion>(initialRegion ?? 'all')
   const [page, setPage] = useState(1)
   const { data, loading, error, reload } = useMyReviews(sort, page, region)
 

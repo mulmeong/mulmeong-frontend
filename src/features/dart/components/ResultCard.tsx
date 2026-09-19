@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import FavoriteButton from '@/features/favorites/FavoriteButton'
 
 import SpecRow from '@/features/dart/components/SpecRow'
 import TagChip from '@/features/dart/components/TagChip'
@@ -106,14 +107,13 @@ export default function ResultCard({
       </div>
 
       <div className="flex flex-none gap-2 border-t border-[#E2E5E4] px-[30px] pt-4 pb-[22px]">
-        {/* TODO: 찜 API(PAM-07)는 아직 없다. 지금은 완료 모달만 띄운다. */}
-        <button
-          type="button"
-          onClick={onSave}
-          className="flex-1 bg-[#0E1513] px-4 py-3.5 text-[13.5px] font-bold text-white"
-        >
-          찜하기
-        </button>
+        <FavoriteButton
+          target={{ placeId: onsen.id }}
+          name={name}
+          label="찜하기"
+          onSaved={onSave}
+          className="h-auto w-auto flex-1 bg-[#0E1513] px-4 py-3.5 text-[13.5px] font-bold text-white hover:bg-[#2C3331]"
+        />
         <button
           type="button"
           onClick={onRethrow}
