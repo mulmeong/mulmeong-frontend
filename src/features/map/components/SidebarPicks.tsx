@@ -1,12 +1,22 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import MagazineImage from '@/features/magazine/components/MagazineImage'
 import { useMagazines } from '@/features/magazine/hooks/useMagazines'
+import MagazineRefreshButton from '@/features/map/components/MagazineRefreshButton'
+import { cn } from '@/lib/cn'
 import { SIDEBAR_CARD_IMAGE, SIDEBAR_CARD_TRACK } from './sidebarCardStyles'
 
 /** 가로 스크롤 한 줄에 들어가는 만큼. 더 받아도 사용자가 끝까지 밀지 않는다. */
 const VISIBLE_COUNT = 4
+const FETCH_COUNT = 12
+const FADE_MS = 120
+const SPIN_MS = 450
+
+function takeCircular<T>(items: T[], start: number, count: number) {
+  if (items.length <= count) return items
+  return Array.from({ length: count }, (_, index) => items[(start + index) % items.length])
+}
 
 /**
  * 첫 화면(지역 미선택) 추천 묶음 — 시안의 '지금 이런 곳은 어때요'.
@@ -16,10 +26,27 @@ const VISIBLE_COUNT = 4
  * 지역을 고르면 이 자리는 `SidebarMagazine`(그 지역 글)이 대신한다.
  */
 export default function SidebarPicks() {
-  const { magazines, loading, error } = useMagazines({ size: VISIBLE_COUNT })
+  const { magazines, loading, error } = useMagazines({ size: FETCH_COUNT })
   const trackRef = useRef<HTMLUListElement>(null)
   const trackId = useId()
   const [scroll, setScroll] = useState({ previous: false, next: false })
+  const [offset, setOffset] = useState(0)
+  const [spinning, setSpinning] = useState(false)
+  const [fading, setFading] = useState(false)
+  const spinTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const fadeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const visibleMagazines = useMemo(
+    () => takeCircular(magazines, offset, VISIBLE_COUNT),
+    [magazines, offset],
+  )
+
+  useEffect(
+    () => () => {
+      if (spinTimer.current) clearTimeout(spinTimer.current)
+      if (fadeTimer.current) clearTimeout(fadeTimer.current)
+    },
+    [],
+  )
 
   useEffect(() => {
     const track = trackRef.current
@@ -39,7 +66,12 @@ export default function SidebarPicks() {
       observer.disconnect()
       track.removeEventListener('scroll', update)
     }
-  }, [magazines.length, loading, error])
+  }, [visibleMagazines.length, loading, error])
+
+  useEffect(() => {
+    if (!trackRef.current) return
+    trackRef.current.scrollTo({ left: 0, behavior: 'instant' })
+  }, [offset])
 
   function move(direction: number) {
     const track = trackRef.current
@@ -54,6 +86,19 @@ export default function SidebarPicks() {
     })
   }
 
+  function refreshMagazines() {
+    if (magazines.length <= VISIBLE_COUNT) return
+    if (spinTimer.current) clearTimeout(spinTimer.current)
+    if (fadeTimer.current) clearTimeout(fadeTimer.current)
+    setSpinning(true)
+    setFading(true)
+    spinTimer.current = setTimeout(() => setSpinning(false), SPIN_MS)
+    fadeTimer.current = setTimeout(() => {
+      setOffset((current) => (current + VISIBLE_COUNT) % magazines.length)
+      setFading(false)
+    }, FADE_MS)
+  }
+
   // 보조 영역이라 실패하면 조용히 감춘다 — 지도 탐색을 막지 않는다.
   if (error || (!loading && magazines.length === 0)) return null
 
@@ -62,15 +107,31 @@ export default function SidebarPicks() {
       <div className="flex items-baseline justify-between gap-3">
         {/* 카드가 큰 만큼 제목도 키워 위계를 맞춘다 (다른 섹션 라벨은 11px 유지). */}
         <h2 className="text-text-primary text-[13px] font-medium">지금 이런 곳은 어때요</h2>
-        <Link
-          to="/magazine"
-          className="text-text-secondary shrink-0 text-[11px] outline-none hover:underline focus-visible:underline"
-        >
-          전체보기
-        </Link>
+        <div className="flex shrink-0 items-center gap-1">
+          <MagazineRefreshButton
+            spinning={spinning}
+            disabled={loading || magazines.length <= VISIBLE_COUNT}
+            onClick={refreshMagazines}
+          />
+          <Link
+            to="/magazine"
+            className="text-text-secondary shrink-0 text-[11px] outline-none hover:underline focus-visible:underline"
+          >
+            전체보기
+          </Link>
+        </div>
       </div>
 
-      <ul id={trackId} ref={trackRef} aria-label="추천 매거진 목록" className={SIDEBAR_CARD_TRACK}>
+      <ul
+        id={trackId}
+        ref={trackRef}
+        aria-label="추천 매거진 목록"
+        className={cn(
+          SIDEBAR_CARD_TRACK,
+          'transition-opacity duration-150 motion-reduce:transition-none',
+          fading && 'opacity-0',
+        )}
+      >
         {loading
           ? // 자리를 먼저 잡아 목록이 밀려 올라가지 않게 한다.
             Array.from({ length: VISIBLE_COUNT }, (_, index) => (
@@ -79,7 +140,7 @@ export default function SidebarPicks() {
                 <div className="bg-surface-dim mt-2 h-3.5 w-3/4 rounded-sm" />
               </li>
             ))
-          : magazines.map((magazine) => (
+          : visibleMagazines.map((magazine) => (
               <li key={magazine.magazineId} className="min-w-0 snap-start">
                 <Link
                   to={`/magazine/${magazine.magazineId}`}
