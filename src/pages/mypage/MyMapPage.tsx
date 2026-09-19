@@ -12,7 +12,7 @@ import { cn } from '@/lib/cn'
 import type { MyReview } from '@/types/myReview'
 
 /** 오른쪽 패널에 띄울 리뷰 수. 지도가 주인공이라 맛보기만 둔다. */
-const ASIDE_REVIEW_MAX = 3
+const ASIDE_REVIEW_MAX = 5
 
 /** 2026-08-28T… -> 2026.08.28 */
 function formatDate(iso: string): string {
