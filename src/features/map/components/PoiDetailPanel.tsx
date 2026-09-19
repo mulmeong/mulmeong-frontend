@@ -1,8 +1,7 @@
+import { placeholderImageOf } from '@/constants/images'
 import FavoriteButton from '@/features/favorites/FavoriteButton'
 import type { FavoriteCategory, FavoriteRequest } from '@/features/favorites/api'
 import { POI_CATEGORY_LABELS, type MapPoi, type PoiCategory } from '@/types/poi'
-
-const DEFAULT_PLACE_IMAGE = '/images/place-placeholder.svg'
 
 function formatDistance(m?: number | null) {
   if (m == null) return undefined
@@ -57,6 +56,7 @@ export default function PoiDetailPanel({
   const category = poi.categoryName || POI_CATEGORY_LABELS[poi.category]
   const distance = formatDistance(poi.distanceM)
   const favoriteTarget = favoriteTargetOf(poi, imageUrl)
+  const fallbackImage = placeholderImageOf(poi.category)
 
   return (
     <div className="bg-surface scrollbar-thin h-full min-w-0 overflow-y-auto px-4 pb-8">
@@ -82,11 +82,11 @@ export default function PoiDetailPanel({
       </div>
 
       <img
-        src={imageUrl || DEFAULT_PLACE_IMAGE}
+        src={imageUrl || fallbackImage}
         alt=""
         onError={(event) => {
           event.currentTarget.onerror = null
-          event.currentTarget.src = DEFAULT_PLACE_IMAGE
+          event.currentTarget.src = fallbackImage
         }}
         className="bg-surface-dim mt-6 h-[180px] w-full rounded-[2px] object-cover"
       />

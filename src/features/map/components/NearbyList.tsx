@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+import { placeholderImageOf } from '@/constants/images'
 import { useNearby } from '@/features/map/hooks/useNearby'
 import FavoriteButton from '@/features/favorites/FavoriteButton'
 import type { FavoriteCategory, FavoriteRequest } from '@/features/favorites/api'
@@ -8,7 +9,6 @@ import { cn } from '@/lib/cn'
 import type { NearbyCategory, NearbyPlace } from '@/types/nearby'
 import { poiKeyOf, toPoiCategory } from '@/types/poi'
 
-const DEFAULT_PLACE_IMAGE = '/images/place-placeholder.svg'
 const ALL_FILTER = 'ALL'
 const EMPTY_NEARBY_ITEMS: NearbyPlace[] = []
 
@@ -58,6 +58,7 @@ function PlaceRow({
   const address = place.address ?? undefined
   const imageUrl =
     place.imageUrl ?? place.image ?? place.firstImage ?? place.firstimage ?? place.thumbnail
+  const fallbackImage = placeholderImageOf(place.category)
   const favoriteTarget: FavoriteRequest | undefined =
     place.placeId != null
       ? { placeId: place.placeId }
@@ -84,12 +85,12 @@ function PlaceRow({
   const body = (
     <>
       <img
-        src={imageUrl || DEFAULT_PLACE_IMAGE}
+        src={imageUrl || fallbackImage}
         alt=""
         loading="lazy"
         onError={(event) => {
           event.currentTarget.onerror = null
-          event.currentTarget.src = DEFAULT_PLACE_IMAGE
+          event.currentTarget.src = fallbackImage
         }}
         className="bg-surface-dim size-16 shrink-0 rounded-[2px] object-cover"
       />
