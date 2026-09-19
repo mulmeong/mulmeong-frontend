@@ -15,6 +15,7 @@ import MapSidebarLayout from '@/features/map/components/MapSidebarLayout'
 import MapSavedControls from '@/features/map/components/MapSavedControls'
 import OnsenDetailPanel from '@/features/map/components/OnsenDetailPanel'
 import PoiFilter from '@/features/map/components/PoiFilter'
+import PoiDetailPanel from '@/features/map/components/PoiDetailPanel'
 import { usePoiLoadingIndicator } from '@/features/map/hooks/usePoiLoadingIndicator'
 import { POI_HIDE_LEVEL, POI_VISIBLE_LEVEL, REGION_PREVIEW_COUNT } from '@/features/map/constants'
 import { fetchPamphletDetail } from '@/features/map/api/pamphlets'
@@ -124,6 +125,21 @@ export default function MapPage() {
     },
     [updateField],
   )
+  const setPoiDestination = useCallback(
+    (poi: MapPoi) => {
+      updateField('destination', {
+        text: poi.name,
+        place: {
+          id: `poi-${poi.category}-${poi.externalId}`,
+          name: poi.name,
+          address: poi.address ?? poi.roadAddress ?? '',
+          lat: poi.lat,
+          lng: poi.lng,
+        },
+      })
+    },
+    [updateField],
+  )
   const handleSelect = useCallback(
     (onsen: OnsenMapPoint) => {
       const savedPlace = favorites.items.find((place) => place.placeId === onsen.id)
@@ -167,6 +183,16 @@ export default function MapPage() {
     setDetailEntered(false)
     setCollapsed(false)
     if (onsen) setDestination(onsen)
+  }
+
+  function openPoiDirections(poi: MapPoi) {
+    modeRef.current = 'directions'
+    setMode('directions')
+    setSelectedPoi(undefined)
+    setDetailClosing(false)
+    setDetailEntered(false)
+    setCollapsed(false)
+    setPoiDestination(poi)
   }
 
   function openSearch() {
@@ -442,6 +468,10 @@ export default function MapPage() {
     visiblePois.some((poi) => poiKey(poi) === selectedPoi?.key)
       ? selectedPoi?.key
       : undefined
+  const selectedPoiDetail = selectedPoiKey
+    ? visiblePois.find((poi) => poiKey(poi) === selectedPoiKey)
+    : undefined
+  const detailOpen = Boolean(selected || selectedPoiDetail)
 
   useEffect(() => {
     setSelectedPoi(undefined)
@@ -449,9 +479,24 @@ export default function MapPage() {
 
   const handleSelectPoi = useCallback(
     (key?: string) => {
+      const opening = !selected && !selectedPoiKey && key !== undefined
       setSelectedPoi(key && activePoiScope ? { scope: activePoiScope, key } : undefined)
+      if (key && opening) {
+        if (detailEnterFrame.current !== undefined) {
+          cancelAnimationFrame(detailEnterFrame.current)
+          detailEnterFrame.current = undefined
+        }
+        setDetailClosing(false)
+        setDetailEntered(false)
+        detailEnterFrame.current = requestAnimationFrame(() => {
+          detailEnterFrame.current = requestAnimationFrame(() => {
+            setDetailEntered(true)
+            detailEnterFrame.current = undefined
+          })
+        })
+      }
     },
-    [activePoiScope],
+    [activePoiScope, selected, selectedPoiKey],
   )
 
   const handleSelectNearbyPoi = useCallback(
@@ -483,7 +528,7 @@ export default function MapPage() {
             'border-border-default h-[45dvh] w-full min-w-0 shrink-0 flex-col border-b',
             'lg:h-auto lg:border-r lg:border-b-0',
             collapsed ? 'lg:w-0 lg:overflow-hidden lg:border-r-0' : 'lg:flex lg:w-[380px]',
-            selected ? 'hidden lg:flex' : 'flex',
+            detailOpen ? 'hidden lg:flex' : 'flex',
           )}
         >
           <MapSidebarLayout mode={mode} onSearch={openSearch} onDirections={() => openDirections()}>
@@ -506,7 +551,7 @@ export default function MapPage() {
         <div
           className={cn(
             'pointer-events-none relative z-10 hidden w-0 shrink-0',
-            selected ? 'lg:hidden' : 'lg:block',
+            detailOpen ? 'lg:hidden' : 'lg:block',
           )}
         >
           <button
@@ -526,14 +571,15 @@ export default function MapPage() {
         </div>
 
         {/* 검색 패널을 교체하지 않고 그 오른쪽에 더한다 — 지도는 남은 폭을 쓴다. */}
-        {selected && (
+        {detailOpen && (
           <aside
             className={cn(
               'map-detail-panel border-border-default relative z-[110] flex min-w-0 shrink-0 flex-col border-b lg:border-r lg:border-b-0',
             )}
             onAnimationEnd={() => {
               if (!detailClosing) return
-              setSelectedId(undefined)
+              setSelectedPoi(undefined)
+              if (selected && !selectedPoiDetail) setSelectedId(undefined)
               setDetailClosing(false)
               setDetailEntered(false)
             }}
@@ -548,7 +594,27 @@ export default function MapPage() {
                 )}
               >
                 <div className="h-full min-h-0 w-full">
-                  {externalSelected ? (
+                  {selectedPoiDetail ? (
+                    <>
+                      {selected && (
+                        <div className="hidden h-full min-h-0 w-full">
+                          <OnsenDetailPanel
+                            onsen={selected}
+                            onDirections={() => openDirections(selected)}
+                            onNearbyOpenChange={setNearbyOpen}
+                            selectedNearbyKey={selectedPoiKey}
+                            onSelectNearby={handleSelectNearbyPoi}
+                          />
+                        </div>
+                      )}
+                      <PoiDetailPanel
+                        poi={selectedPoiDetail}
+                        hasOnsenBack={Boolean(selected)}
+                        onBack={() => setSelectedPoi(undefined)}
+                        onDirections={() => openPoiDirections(selectedPoiDetail)}
+                      />
+                    </>
+                  ) : externalSelected ? (
                     <div className="bg-surface h-full overflow-y-auto px-4 py-6">
                       <p className="text-text-secondary text-[12px]">
                         {externalSelected.placeTypeLabel}
@@ -575,13 +641,15 @@ export default function MapPage() {
                       )}
                     </div>
                   ) : (
-                    <OnsenDetailPanel
-                      onsen={selected}
-                      onDirections={() => openDirections(selected)}
-                      onNearbyOpenChange={setNearbyOpen}
-                      selectedNearbyKey={selectedPoiKey}
-                      onSelectNearby={handleSelectNearbyPoi}
-                    />
+                    selected && (
+                      <OnsenDetailPanel
+                        onsen={selected}
+                        onDirections={() => openDirections(selected)}
+                        onNearbyOpenChange={setNearbyOpen}
+                        selectedNearbyKey={selectedPoiKey}
+                        onSelectNearby={handleSelectNearbyPoi}
+                      />
+                    )
                   )}
                 </div>
               </div>
@@ -589,6 +657,15 @@ export default function MapPage() {
             <button
               type="button"
               onClick={() => {
+                if (selectedPoiDetail) {
+                  if (selected) {
+                    setSelectedPoi(undefined)
+                    return
+                  }
+                  setDetailEntered(false)
+                  setDetailClosing(true)
+                  return
+                }
                 setDetailEntered(false)
                 setDetailClosing(true)
               }}

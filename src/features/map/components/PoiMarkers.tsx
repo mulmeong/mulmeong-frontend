@@ -1,12 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
-import FavoriteButton from '@/features/favorites/FavoriteButton'
-import type { FavoriteCategory, FavoriteRequest } from '@/features/favorites/api'
 import { cn } from '@/lib/cn'
 import { POI_CATEGORY_LABELS, poiKey, type MapPoi, type PoiCategory } from '@/types/poi'
-
-const DEFAULT_PLACE_IMAGE = '/images/place-placeholder.svg'
 
 const ICON_PATHS: Record<PoiCategory, string> = {
   CAFE: 'M18 8h1a3 3 0 0 1 0 6h-1M3 8h15v9a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3ZM6 2v3m4-3v3m4-3v3',
@@ -31,19 +27,6 @@ type Host = {
 }
 
 const POI_OVERLAP_DISTANCE_PX = 1
-
-function favoriteCategoryOf(category: PoiCategory): Exclude<FavoriteCategory, 'ONSEN'> {
-  if (category === 'CAFE' || category === 'RESTAURANT') return category
-  if (
-    category === 'PARK' ||
-    category === 'CULTURE' ||
-    category === 'LEISURE' ||
-    category === 'SHOPPING' ||
-    category === 'FESTIVAL'
-  )
-    return 'ATTRACTION'
-  return 'ETC'
-}
 
 export default function PoiMarkers({
   map,
@@ -166,24 +149,6 @@ export default function PoiMarkers({
     const poi = selectedMember ?? firstPoi
     const key = poiKey(poi)
     const selected = key === selectedKey
-    const address = poi.address ?? poi.roadAddress
-    const imageUrl = poi.imageUrl ?? poi.image ?? poi.firstImage ?? poi.firstimage ?? poi.thumbnail
-    const favoriteTarget: FavoriteRequest | undefined =
-      poi.placeId != null
-        ? { placeId: poi.placeId }
-        : poi.externalId
-          ? {
-              source: 'TOUR_API',
-              externalId: poi.externalId,
-              name: poi.name,
-              lat: poi.lat,
-              lng: poi.lng,
-              category: favoriteCategoryOf(poi.category),
-              address,
-              phone: poi.phone,
-              imageUrl,
-            }
-          : undefined
     if (members.length > 1 && !selectedMember) {
       return createPortal(
         <div className="relative flex size-10 items-center justify-center">
@@ -259,59 +224,13 @@ export default function PoiMarkers({
           <span
             className={cn(
               'pointer-events-none absolute bottom-full left-1/2 z-20 mb-3 w-max max-w-[220px] -translate-x-1/2 rounded-sm border border-border-default bg-white px-2 py-1 text-center text-[12px] leading-5 text-text-primary whitespace-normal break-keep shadow-[0_2px_6px_#00000012] [overflow-wrap:anywhere]',
-              labelKey === key && !expandedKey && (!selected || simpleLabels)
-                ? 'visible'
-                : 'invisible',
+              labelKey === key && !expandedKey ? 'visible' : 'invisible',
               selected && 'border-text-primary bg-inverse text-white',
             )}
           >
             {poi.name}
           </span>
         </button>
-        {selected && labelKey === key && !expandedKey && !simpleLabels && (
-          <div
-            className="absolute bottom-full left-1/2 z-30 mb-3 w-64 -translate-x-1/2 rounded-md border border-border-default bg-white p-3 text-text-primary shadow-[0_4px_12px_#00000014]"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <span
-              aria-hidden="true"
-              className="border-border-default absolute top-full left-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rotate-45 border-t border-r bg-white"
-            />
-            <div className="flex gap-3">
-              <img
-                src={imageUrl || DEFAULT_PLACE_IMAGE}
-                alt=""
-                loading="lazy"
-                onError={(event) => {
-                  event.currentTarget.onerror = null
-                  event.currentTarget.src = DEFAULT_PLACE_IMAGE
-                }}
-                className="bg-surface-dim size-14 shrink-0 rounded-[2px] object-cover"
-              />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-start gap-2">
-                  <p className="min-w-0 flex-1 text-[13px] leading-5 font-semibold break-keep [overflow-wrap:anywhere]">
-                    {poi.name}
-                  </p>
-                  {favoriteTarget && (
-                    <FavoriteButton
-                      target={favoriteTarget}
-                      name={poi.name}
-                      className="-mt-1 -mr-1 size-7 [&>svg]:size-4"
-                    />
-                  )}
-                </div>
-                <p className="mt-1 text-[12px] leading-5 text-text-secondary">
-                  {poi.categoryName || POI_CATEGORY_LABELS[poi.category]}
-                </p>
-                {address && (
-                  <p className="mt-1 text-[12px] leading-5 whitespace-normal">{address}</p>
-                )}
-                {poi.phone && <p className="mt-1 text-[12px] leading-5">{poi.phone}</p>}
-              </div>
-            </div>
-          </div>
-        )}
       </div>,
       node,
       key,

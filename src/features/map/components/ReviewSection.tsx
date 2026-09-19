@@ -28,7 +28,7 @@ function formatDate(value: string) {
 
 function SpecSummary({ review }: { review: PublicReview }) {
   return (
-    <p className="text-text-secondary mt-2 text-[11px] leading-5">
+    <p className="text-text-secondary mt-3 text-[11px] leading-5">
       {VISIT_TIME_LABELS[review.spec.visitTime]} 방문 · 청결 {review.spec.clean} · 혼잡{' '}
       {review.spec.crowd} · 시설 {review.spec.facility}
       {review.isRevisit && ' · 재방문'}
@@ -48,8 +48,8 @@ function ReviewListItem({ review }: { review: PublicReview }) {
         >
           {author.nickname.charAt(0)}
         </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-text-primary flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] leading-5 font-semibold [overflow-wrap:anywhere]">
+        <div className="min-w-0 flex-1 pt-0.5">
+          <p className="text-text-primary flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[13px] leading-4 font-semibold [overflow-wrap:anywhere]">
             <span>{author.nickname}</span>
             {review.isMine && (
               <span className="border-border-default/70 text-text-secondary rounded-full border px-1.5 py-0.5 text-[10px] leading-none font-normal">
@@ -57,17 +57,14 @@ function ReviewListItem({ review }: { review: PublicReview }) {
               </span>
             )}
           </p>
-          {(author.level || author.title) && (
-            <p className="text-text-secondary mt-0.5 text-[11px] leading-5">
-              {author.level ? `Lv.${author.level}` : ''}
-              {author.level && author.title ? ' · ' : ''}
-              {author.title}
-            </p>
-          )}
           <time
             dateTime={review.visitedAt}
-            className="text-text-secondary mt-1 block text-[11px] leading-5"
+            className="text-text-secondary mt-px block text-[10.5px] leading-[15px]"
           >
+            {author.level ? `Lv.${author.level}` : ''}
+            {author.level && author.title ? ' · ' : ''}
+            {author.title}
+            {(author.level || author.title) && ' · '}
             {formatDate(review.visitedAt)} 방문
           </time>
         </div>
@@ -228,7 +225,7 @@ export default function ReviewSection({ onsen }: { onsen: OnsenListItem }) {
         <Button
           hierarchy="secondary"
           onClick={handleWriteClick}
-          className="border-border-default/60 hover:bg-surface-dim h-8 w-fit max-w-full rounded-[4px] border px-2.5 py-0 text-[12px] leading-4 font-medium outline-none focus-visible:ring-1 focus-visible:ring-inverse focus-visible:ring-offset-2"
+          className="border-border-default/60 hover:bg-surface-dim h-8 w-full rounded-[4px] border px-2.5 py-0 text-[12px] leading-4 font-medium outline-none focus-visible:ring-1 focus-visible:ring-inverse focus-visible:ring-offset-2"
         >
           {loggedIn ? '리뷰 작성하기' : '로그인하고 리뷰 작성하기'}
         </Button>
