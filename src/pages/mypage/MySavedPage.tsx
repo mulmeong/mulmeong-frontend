@@ -240,11 +240,7 @@ export default function MySavedPage() {
       */}
       {(shownCategories.length > 0 || category !== 'all') && (
         <div className="border-border-default mt-3 flex flex-wrap gap-2 border-t pt-3">
-          <Chip
-            variant="plain"
-            selected={category === 'all'}
-            onClick={() => handleCategory('all')}
-          >
+          <Chip variant="plain" selected={category === 'all'} onClick={() => handleCategory('all')}>
             전체 {data?.counts.all ?? 0}
           </Chip>
           {shownCategories.map((option) => (
