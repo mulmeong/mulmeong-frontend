@@ -30,7 +30,7 @@ export type SignupResponse = {
 }
 
 export async function login(body: LoginRequest): Promise<LoginResponse> {
-  const result = env.useMock
+  const result = env.useMockAuth
     ? await mockLogin(body)
     : await api.post<LoginResponse>('/auth/login', body, { skipAuth: true })
   tokenStorage.set(result.accessToken)
@@ -39,7 +39,7 @@ export async function login(body: LoginRequest): Promise<LoginResponse> {
 
 /** 201만 받고 끝난다. 로그인은 사용자가 다시 한다 (명세 AUTH-07). */
 export function signup(body: SignupRequest): Promise<SignupResponse> {
-  if (env.useMock) return mockSignup(body)
+  if (env.useMockAuth) return mockSignup(body)
   return api.post<SignupResponse>('/auth/signup', body, { skipAuth: true })
 }
 
@@ -48,32 +48,28 @@ export type Availability = { available: boolean }
 /**
  * 가입 폼 blur 시점 닉네임 중복 확인. 중복이어도 200 + available:false로 온다.
  * 서버 제약과 같은 2~10자를 통과한 값만 넘길 것 — 길이가 어긋나면 400이다.
+ *
+ * ⚠️ 서버 permitAll에 이 경로가 빠져 있어 지금은 비로그인이 401이다(email/check만 열림).
+ * BE 수정 대기 중 — 고쳐지면 그대로 통한다.
  */
 export function checkNickname(nickname: string): Promise<Availability> {
-  if (env.useMock) return mockCheckNickname(nickname)
+  if (env.useMockAuth) return mockCheckNickname(nickname)
   return api.get<Availability>('/auth/nickname/check', {
     params: { nickname },
     skipAuth: true,
   })
 }
 
-/**
- * 이메일 중복 확인.
- *
- * ⚠️ 서버의 `/auth/email/check`는 **주석 처리되어 있어 404다** (UserController). 그래서
- * 실서버에서는 확인을 건너뛰고 `undefined`(미확인)를 돌려준다 — 최종 판정은 가입 API의
- * 409(DUPLICATE_EMAIL)가 한다. 서버에서 주석이 풀리면 아래 주석을 살리면 된다.
- */
+/** 이메일 중복 확인. 중복이어도 200 + available:false로 온다. */
 export async function checkEmail(email: string): Promise<Availability | undefined> {
-  if (env.useMock) return mockCheckEmail(email)
-  // return api.get<Availability>('/auth/email/check', { params: { email }, skipAuth: true })
-  return undefined
+  if (env.useMockAuth) return mockCheckEmail(email)
+  return api.get<Availability>('/auth/email/check', { params: { email }, skipAuth: true })
 }
 
 /** 서버 Refresh Token까지 폐기한다. 이미 로그아웃 상태여도 204(멱등). */
 export async function logout() {
   try {
-    if (env.useMock) mockLogout()
+    if (env.useMockAuth) mockLogout()
     else await api.post<void>('/auth/logout')
   } catch {
     // 서버 폐기에 실패해도 로컬 토큰은 지운다 — 사용자 입장에선 로그아웃이다.
@@ -90,7 +86,7 @@ export async function logout() {
  * 쿠키는 `credentials: 'include'`로 자동 전송된다.
  */
 export async function reissue(): Promise<LoginResponse> {
-  const result = env.useMock
+  const result = env.useMockAuth
     ? await mockReissue()
     : await api.post<LoginResponse>('/auth/reissue', undefined, { skipAuth: true })
   tokenStorage.set(result.accessToken)
@@ -100,8 +96,13 @@ export async function reissue(): Promise<LoginResponse> {
 // 401을 받은 요청이 재발급 후 스스로 재시도할 수 있게 클라이언트에 연결한다.
 setReissueHandler(reissue)
 
-/** 마이페이지 프로필 (MY-01). 로그인 응답보다 넓어 진입 시 따로 받는다. */
+/**
+ * 마이페이지 프로필 (MY-01). 로그인 응답보다 넓어 진입 시 따로 받는다.
+ *
+ * ⚠️ 서버에 아직 이 경로가 없다 — UserController가 `/api/v1/auth`만 매핑해 404다.
+ * BE 수정 대기 중 — 만들어지면 그대로 통한다.
+ */
 export function getMe(): Promise<MyProfile> {
-  if (env.useMock) return mockGetMe()
+  if (env.useMockAuth) return mockGetMe()
   return api.get<MyProfile>('/users/me')
 }

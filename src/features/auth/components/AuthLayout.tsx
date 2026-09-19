@@ -1,6 +1,8 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
+import { cn } from '@/lib/cn'
+
 type AuthLayoutProps = {
   /** public/images 아래 파일명 */
   image: string
@@ -9,6 +11,9 @@ type AuthLayoutProps = {
   /** 줄바꿈은 배열로 */
   headline: string[]
   caption?: string[]
+  formPage?: boolean
+  panelClassName?: string
+  contentClassName?: string
   children: ReactNode
 }
 
@@ -17,12 +22,18 @@ export default function AuthLayout({
   imageRatio,
   headline,
   caption,
+  formPage = false,
+  panelClassName,
+  contentClassName,
   children,
 }: AuthLayoutProps) {
   return (
     <div className="bg-surface flex min-h-dvh flex-col lg:h-dvh lg:min-h-0 lg:flex-row lg:overflow-hidden">
       <div
-        className="relative h-[240px] shrink-0 overflow-hidden sm:h-[320px] lg:h-full lg:w-[var(--image-width)] lg:max-w-[55%] lg:min-w-[280px]"
+        className={cn(
+          'relative shrink-0 overflow-hidden lg:h-full lg:w-[var(--image-width)] lg:max-w-[55%] lg:min-w-[280px]',
+          formPage ? 'h-[200px] sm:h-[260px]' : 'h-[240px] sm:h-[320px]',
+        )}
         style={{ '--image-width': `calc(100dvh * ${imageRatio})` } as CSSProperties}
       >
         <img src={`/images/${image}`} alt="" className="size-full object-cover" />
@@ -44,7 +55,12 @@ export default function AuthLayout({
             ))}
           </h2>
           {caption && (
-            <p className="mt-3 text-[13px] leading-[1.6] text-white/75 sm:text-[14px]">
+            <p
+              className={cn(
+                'mt-3 text-[13px] leading-[1.6] text-white/75 sm:text-[14px]',
+                formPage && 'hidden sm:block',
+              )}
+            >
               {caption.map((line) => (
                 <span key={line} className="block">
                   {line}
@@ -55,8 +71,22 @@ export default function AuthLayout({
         </div>
       </div>
 
-      <div className="flex flex-1 items-center justify-center px-6 py-12 sm:px-10 lg:min-h-0 lg:overflow-y-auto lg:px-14">
-        <div className="w-full max-w-[420px]">{children}</div>
+      <div
+        className={cn(
+          'flex flex-1 justify-center px-6 py-12 sm:px-10 lg:min-h-0 lg:overflow-y-auto lg:px-14',
+          formPage ? 'min-w-0 flex-col justify-start py-10 sm:py-12 lg:px-12' : 'items-center',
+          panelClassName,
+        )}
+      >
+        <div
+          className={cn(
+            'w-full',
+            formPage ? 'mx-auto my-auto max-w-[480px] shrink-0' : 'max-w-[420px]',
+            contentClassName,
+          )}
+        >
+          {children}
+        </div>
       </div>
     </div>
   )

@@ -19,6 +19,7 @@ export const env = {
    * 하나를 붙이려고 `VITE_USE_MOCK=false`로 전부 켜면 아직 안 되는 쪽이 깨진다.
    * 값이 없으면 전역 `useMock`을 따르므로 기존 동작은 그대로다.
    */
+  useMockAuth: mockFlag(import.meta.env.VITE_USE_MOCK_AUTH),
   useMockMagazine: mockFlag(import.meta.env.VITE_USE_MOCK_MAGAZINE),
   useMockSuggest: mockFlag(import.meta.env.VITE_USE_MOCK_SUGGEST),
   useMockOnsenList: mockFlag(import.meta.env.VITE_USE_MOCK_ONSEN_LIST),
