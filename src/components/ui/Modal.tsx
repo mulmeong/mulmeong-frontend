@@ -15,6 +15,8 @@ type ModalProps = {
   kicker?: string
   title: ReactNode
   description?: ReactNode
+  children?: ReactNode
+  showCloseButton?: boolean
   /** 왼쪽 채움 버튼 */
   primaryAction?: ModalAction
   /** 오른쪽 테두리 버튼 */
@@ -39,6 +41,8 @@ export default function Modal({
   kicker,
   title,
   description,
+  children,
+  showCloseButton = false,
   primaryAction,
   secondaryAction,
   className,
@@ -59,7 +63,9 @@ export default function Modal({
     <dialog
       ref={ref}
       // Escape로 닫혔을 때도 부모 상태를 맞춘다.
-      onClose={onClose}
+      onClose={() => {
+        if (open && !ref.current?.open) onClose()
+      }}
       // 배경을 누르면 닫는다. 내용 안을 누른 경우는 target이 dialog가 아니다.
       onClick={(event) => {
         if (event.target === ref.current) onClose()
@@ -72,7 +78,18 @@ export default function Modal({
         className,
       )}
     >
-      <div className="px-[30px] pt-7 pb-6">
+      <div className="relative px-[30px] pt-7 pb-6">
+        {showCloseButton && (
+          <button
+            type="button"
+            aria-label="닫기"
+            title="닫기"
+            onClick={onClose}
+            className="text-text-secondary hover:text-text-primary absolute top-3 right-3 flex size-11 items-center justify-center text-[18px] leading-none"
+          >
+            ✕
+          </button>
+        )}
         {kicker && (
           <span className="text-[11.5px] font-bold tracking-[0.14em] text-[#8A9491]">{kicker}</span>
         )}
@@ -82,6 +99,7 @@ export default function Modal({
           className={cn(
             'text-[24px] leading-[1.35] font-bold tracking-[-0.04em]',
             kicker && 'mt-3',
+            showCloseButton && 'pr-8 tracking-normal',
           )}
         >
           {title}
@@ -90,6 +108,7 @@ export default function Modal({
         {description && (
           <p className="mt-4 text-[12.5px] leading-[1.7] text-[#8A9491]">{description}</p>
         )}
+        {children && <div className="mt-6">{children}</div>}
       </div>
 
       {(primaryAction || secondaryAction) && (

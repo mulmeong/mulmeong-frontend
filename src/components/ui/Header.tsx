@@ -10,6 +10,7 @@ type HeaderProps = {
   /** standard 전용. 로그인/로그아웃 등 */
   authLabel?: string
   onAuthClick?: () => void
+  showMy?: boolean
   /** detail 전용. 좌측 뒤로가기 라벨과 이동 경로. */
   backLabel?: ReactNode
   backTo?: string
@@ -29,6 +30,7 @@ export default function Header({
   type = 'standard',
   authLabel = '로그인',
   onAuthClick,
+  showMy = false,
   backLabel = 'MAGAZINE',
   backTo = '/magazine',
   trailing,
@@ -37,15 +39,27 @@ export default function Header({
   const isStandard = type === 'standard'
 
   return (
-    <header className={cn('bg-inverse flex items-center justify-between px-6 py-4', className)}>
-      <div className={cn('flex items-center', isStandard ? 'gap-7' : 'gap-4')}>
-        <Link to="/" className="text-text-inverse text-[16px] font-medium tracking-[1.2px]">
+    <header
+      className={cn(
+        'bg-inverse flex flex-wrap items-center justify-between gap-y-4 px-6 py-4 sm:flex-nowrap',
+        className,
+      )}
+    >
+      <div
+        className={cn(
+          isStandard ? 'contents sm:flex sm:items-center sm:gap-7' : 'flex items-center gap-4',
+        )}
+      >
+        <Link
+          to="/"
+          className="text-text-inverse shrink-0 text-[16px] font-medium tracking-[1.2px] whitespace-nowrap"
+        >
           물멍
         </Link>
 
         {isStandard ? (
-          <nav className="flex items-center gap-7">
-            {NAV_ITEMS.map((item) => (
+          <nav className="order-last flex w-full items-center gap-7 sm:order-none sm:w-auto">
+            {NAV_ITEMS.filter((item) => item.to !== '/my' || showMy).map((item) => (
               <NavItem key={item.to} to={item.to}>
                 {item.label}
               </NavItem>
@@ -65,7 +79,7 @@ export default function Header({
         <button
           type="button"
           onClick={onAuthClick}
-          className="bg-surface text-text-primary rounded-full px-4 py-[7px] text-[12px] font-bold"
+          className="bg-surface text-text-primary shrink-0 rounded-full px-4 py-[7px] text-[12px] font-bold whitespace-nowrap"
         >
           {authLabel}
         </button>
