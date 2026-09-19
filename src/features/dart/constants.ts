@@ -14,71 +14,59 @@
  *   map-bg      #F2F4F3  지도 배경
  */
 
-import type { Onsen } from '@/types/onsen'
+import type { DartMaxMinutes, DartStayType, DartTransport } from '@/types/dart'
 
-export type TransportId = 'walk' | 'transit' | 'car'
-export type DurationId = '1h' | '2h' | '3h' | 'any'
-export type ScheduleId = 'day' | 'overnight'
+/** 상한 없음. 칩 id는 문자열이어야 해서 분(分) 값과 섞이지 않는 값을 쓴다. */
+export const DURATION_ANY = 'any'
+
+export type DurationId = `${DartMaxMinutes}` | typeof DURATION_ANY
 
 export type ChipOption<T extends string> = {
   id: T
   label: string
 }
 
+/**
+ * 조건 패널이 들고 있는 값. 출발지는 서버 목록(DART-404)에서 고르므로
+ * 여기 두지 않고 useDartOrigins가 따로 들고 있다.
+ */
 export type DartConditions = {
-  origin: string
-  transport: TransportId
+  transport: DartTransport
   duration: DurationId
-  schedule: ScheduleId
-}
-
-export const TRANSPORT_OPTIONS: ChipOption<TransportId>[] = [
-  { id: 'walk', label: '도보' },
-  { id: 'transit', label: '대중교통' },
-  { id: 'car', label: '자동차' },
-]
-
-export const DURATION_OPTIONS: ChipOption<DurationId>[] = [
-  { id: '1h', label: '1시간' },
-  { id: '2h', label: '2시간' },
-  { id: '3h', label: '3시간' },
-  { id: 'any', label: '무관' },
-]
-
-export const SCHEDULE_OPTIONS: ChipOption<ScheduleId>[] = [
-  { id: 'day', label: '당일치기' },
-  { id: 'overnight', label: '1박 이상' },
-]
-
-/** 시안의 기본 선택 상태. */
-export const DEFAULT_CONDITIONS: DartConditions = {
-  origin: '서울역',
-  transport: 'transit',
-  duration: '2h',
-  schedule: 'day',
+  stayType: DartStayType
 }
 
 /**
- * TODO: 추첨 API가 붙으면 지운다. 시안(dart-5a)에 적힌 값 그대로다.
- * 필드는 전부 types/onsen.ts의 Onsen 스키마에 있는 것만 쓴다.
+ * 도보는 없다 — 서버가 받는 값이 TRANSIT·CAR 둘뿐이다.
+ * 걸어갈 수 있는지는 조건이 아니라 결과의 accessLevel로 내려온다.
  */
-export const SAMPLE_RESULT: Onsen = {
-  id: 1,
-  name: '덕구온천',
-  address: '경북 울진',
-  lat: 36.99,
-  lng: 129.29,
-  rating: 4.5,
-  reviewCount: 162,
-  tags: ['노천탕'],
-  waterTempC: 74,
-  waterQuality: '약알칼리성 중탄산',
-  ph: 7.8,
-  phLabel: '약알칼리성',
-  description:
-    '1984년에 문을 연 노포 온천. 낮은 천장과 오래된 타일이 그대로 남아 있고, 노천탕에서는 능선이 보인다.',
-  features: ['천연 온천수', '노천탕 운영', '높은 원수 온도'],
-  openingHours: '10:00 — 22:00',
-  admissionFee: 12000,
-  parking: '가능',
+export const TRANSPORT_OPTIONS: ChipOption<DartTransport>[] = [
+  { id: 'TRANSIT', label: '대중교통' },
+  { id: 'CAR', label: '자동차' },
+]
+
+// 칩 다섯 개가 한 줄에 들어가야 해서 '1시간 30분' 대신 '90분'으로 줄였다.
+export const DURATION_OPTIONS: ChipOption<DurationId>[] = [
+  { id: '90', label: '90분' },
+  { id: '120', label: '2시간' },
+  { id: '180', label: '3시간' },
+  { id: '240', label: '4시간' },
+  { id: DURATION_ANY, label: '무관' },
+]
+
+export const STAY_OPTIONS: ChipOption<DartStayType>[] = [
+  { id: 'DAY', label: '당일치기' },
+  { id: 'OVERNIGHT', label: '1박 이상' },
+]
+
+/** 칩 id를 추첨 요청의 maxMinutes로 바꾼다. '무관'은 필드를 아예 빼야 한다. */
+export function toMaxMinutes(duration: DurationId): DartMaxMinutes | undefined {
+  return duration === DURATION_ANY ? undefined : (Number(duration) as DartMaxMinutes)
+}
+
+/** 시안의 기본 선택 상태. */
+export const DEFAULT_CONDITIONS: DartConditions = {
+  transport: 'TRANSIT',
+  duration: '120',
+  stayType: 'DAY',
 }
