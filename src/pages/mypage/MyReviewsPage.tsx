@@ -8,6 +8,7 @@ import Modal from '@/components/ui/Modal'
 import { deleteReview } from '@/features/mypage/api/reviews'
 import Pagination from '@/features/mypage/components/Pagination'
 import ReviewFormPanel from '@/features/mypage/components/ReviewFormPanel'
+import ReviewWritePanel from '@/features/mypage/components/ReviewWritePanel'
 import ReviewItem from '@/features/mypage/components/ReviewItem'
 import { useMyReviews } from '@/features/mypage/hooks/useMyReviews'
 
@@ -54,6 +55,7 @@ export default function MyReviewsPage() {
 
   /** 수정 패널이 열려 있는 리뷰. null이면 닫힌 상태. */
   const [editingId, setEditingId] = useState<number | null>(null)
+  const [writing, setWriting] = useState(false)
   const [editDone, setEditDone] = useState(false)
 
   /**
@@ -121,6 +123,16 @@ export default function MyReviewsPage() {
   }
 
   /**
+   * 리뷰를 새로 남겼다.
+   * 수정과 달리 포도알·레벨·리뷰 수가 바뀌므로(REV-06) 헤더도 다시 받아온다.
+   */
+  const handleCreated = () => {
+    setWriting(false)
+    reload()
+    reloadProfile()
+  }
+
+  /**
    * 지역 칩 목록. 불러오는 동안에는 직전 것을 그대로 쓴다 —
    * 칩을 누를 때마다 응답이 올 때까지 칩 줄이 통째로 사라졌다 나타난다.
    * 값이 같으면 덮어써도 결과가 같아 렌더 중에 담아둬도 안전하다.
@@ -150,9 +162,10 @@ export default function MyReviewsPage() {
         {/*
           같은 줄의 정렬 칩(py-2 / 13px)과 높이를 맞춘다 — Button 기본값은
           한 단계 커서 이 줄에서는 혼자 튄다.
-          TODO: 리뷰 작성 화면(REV-*)이 아직 없다. 어느 온천에 쓸지 고르는 단계도 미정.
         */}
-        <Button className="ml-auto px-4 py-2 text-[13px]">리뷰 작성하기</Button>
+        <Button onClick={() => setWriting(true)} className="ml-auto px-4 py-2 text-[13px]">
+          리뷰 작성하기
+        </Button>
       </div>
 
       {/*
@@ -217,6 +230,12 @@ export default function MyReviewsPage() {
           </p>
         </div>
       )}
+
+      <ReviewWritePanel
+        open={writing}
+        onClose={() => setWriting(false)}
+        onCreated={handleCreated}
+      />
 
       <ReviewFormPanel
         reviewId={editingId}
