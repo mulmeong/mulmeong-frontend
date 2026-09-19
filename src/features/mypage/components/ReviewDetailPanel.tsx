@@ -40,7 +40,6 @@ export default function ReviewDetailPanel({ reviewId, id }: ReviewDetailPanelPro
     }
 
     // 서버에서 값을 받아오는 일은 effect가 맞는 자리다. useMyReviews도 같은 구조다.
-    // oxlint-disable-next-line react/set-state-in-effect
     void fetchDetail()
 
     return () => {
