@@ -1,6 +1,6 @@
-import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
+import MagazineLikeButton from '@/features/magazine/components/MagazineLikeButton'
 import { useMagazine } from '@/features/magazine/hooks/useMagazine'
 import { useReadingProgress } from '@/features/magazine/hooks/useReadingProgress'
 import { cn } from '@/lib/cn'
@@ -19,8 +19,6 @@ export default function MagazineDetailPage() {
   const { id } = useParams()
   const { magazine, loading, error } = useMagazine(Number(id))
   const progress = useReadingProgress()
-
-  const [liked, setLiked] = useState(false)
 
   if (loading) return <p className="text-text-secondary py-20 text-[14px]">불러오는 중…</p>
 
@@ -42,7 +40,7 @@ export default function MagazineDetailPage() {
 
   const { title, subtitle, categoryLabel, readMinutes, publishedAt, author, photographer } =
     magazine
-  const { body, likeCount, heroImageUrl } = magazine
+  const { body, likeCount, isLiked, heroImageUrl, magazineId } = magazine
   // body는 MULMUNG_TEXT 문자열 한 덩어리로 온다 — 빈 줄 기준으로 문단을 나눈다.
   const paragraphs = body
     .split(/\n{2,}/)
@@ -76,21 +74,7 @@ export default function MagazineDetailPage() {
             />
           </div>
 
-          <button
-            type="button"
-            onClick={() => setLiked((prev) => !prev)}
-            aria-pressed={liked}
-            aria-label="좋아요"
-            className={cn(
-              'flex size-10 items-center justify-center rounded-full border text-[15px] transition-colors outline-none',
-              liked
-                ? 'bg-inverse text-text-inverse border-border-strong'
-                : 'border-border-default text-text-primary hover:border-border-strong',
-            )}
-          >
-            {liked ? '♥' : '♡'}
-            <span className="ml-[2px] text-[9px]">{likeCount + (liked ? 1 : 0)}</span>
-          </button>
+          <MagazineLikeButton magazineId={magazineId} isLiked={isLiked} likeCount={likeCount} />
         </div>
       </aside>
 
@@ -103,9 +87,15 @@ export default function MagazineDetailPage() {
 
         {subtitle && <p className="text-text-primary mt-[18px] text-[19px]">{subtitle}</p>}
 
-        <div className="border-border-default text-text-secondary mt-9 flex justify-between border-b pb-7 text-[13px]">
-          <span>{byline}</span>
-          <span>{readMinutes}분</span>
+        <div className="border-border-default text-text-secondary mt-9 flex items-center justify-between gap-4 border-b pb-7 text-[13px]">
+          <span className="min-w-0">{byline}</span>
+          <span className="flex shrink-0 items-center gap-3">
+            <span>{readMinutes}분</span>
+            {/* 왼쪽 레일은 lg 이상에서만 보여서, 좁은 화면에는 여기에 하트를 둔다. */}
+            <span className="lg:hidden">
+              <MagazineLikeButton magazineId={magazineId} isLiked={isLiked} likeCount={likeCount} />
+            </span>
+          </span>
         </div>
 
         {heroImageUrl ? (
