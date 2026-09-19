@@ -1,5 +1,4 @@
 import Button from '@/components/ui/Button'
-import Tab from '@/components/ui/Tab'
 import RoutePlaceInput from '@/features/map/components/RoutePlaceInput'
 import {
   formatRouteDistance,
@@ -14,26 +13,18 @@ import type { useDirections } from '@/features/map/hooks/useDirections'
 
 export default function DirectionsPanel({
   directions,
-  onSearchTab,
 }: {
   directions: ReturnType<typeof useDirections>
-  onSearchTab: () => void
 }) {
   const { origin, destination, mode, loading, error, locating, result, selectedRoute } = directions
 
   return (
     <div className="bg-surface scrollbar-thin h-full min-h-0 overflow-y-auto overscroll-contain px-5 pb-6">
-      <div role="tablist" aria-label="지도 탐색" className="flex gap-5 pt-6">
-        <Tab onClick={onSearchTab}>장소 검색</Tab>
-        <Tab selected>길찾기</Tab>
-      </div>
-
       <form
         onSubmit={(event) => {
           event.preventDefault()
           directions.search()
         }}
-        className="pt-5"
       >
         <div className="mb-5 flex items-center justify-between gap-3">
           <h2 className="text-text-primary text-[15px] font-semibold">온천까지 가는 길</h2>
@@ -210,7 +201,15 @@ export default function DirectionsPanel({
             </ul>
             {selectedRoute && selectedRoute.path.length < 2 && (
               <p className="text-text-secondary mt-3 text-[12px]">
-                경로선 정보가 없어 출발지와 도착지만 표시합니다.
+                지도에는 출발지와 도착지만 표시됩니다.
+                <a
+                  href={kakaoDirectionsUrl(result)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-text-primary mt-2 block underline underline-offset-4"
+                >
+                  카카오맵에서 실제 경로 확인
+                </a>
               </p>
             )}
             {selectedRoute && (

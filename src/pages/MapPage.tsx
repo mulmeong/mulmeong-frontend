@@ -11,10 +11,14 @@ import { onsenFromDetail } from '@/features/map/utils/onsenFromDetail'
 import DirectionsPanel from '@/features/map/components/DirectionsPanel'
 import MapCanvas from '@/features/map/components/MapCanvas'
 import MapSidebar from '@/features/map/components/MapSidebar'
+import MapSidebarLayout from '@/features/map/components/MapSidebarLayout'
 import MapSavedControls from '@/features/map/components/MapSavedControls'
 import OnsenDetailPanel from '@/features/map/components/OnsenDetailPanel'
 import PoiFilter from '@/features/map/components/PoiFilter'
-import { REGION_PREVIEW_COUNT } from '@/features/map/constants'
+import { usePoiLoadingIndicator } from '@/features/map/hooks/usePoiLoadingIndicator'
+import { POI_HIDE_LEVEL, POI_VISIBLE_LEVEL, REGION_PREVIEW_COUNT } from '@/features/map/constants'
+import { fetchPamphletDetail } from '@/features/map/api/pamphlets'
+import { useNearby } from '@/features/map/hooks/useNearby'
 import { useOnsenMapPoints } from '@/features/map/hooks/useOnsenMapPoints'
 import { useOnsens } from '@/features/map/hooks/useOnsens'
 import { useDirections } from '@/features/map/hooks/useDirections'
@@ -25,7 +29,9 @@ import { REGION_VIEWS } from '@/types/onsen'
 
 import type { OnsenMapPoint } from '@/features/map/types/mapPoint'
 import type { MapBounds, MapView, Region } from '@/types/onsen'
-import type { PoiCategory } from '@/types/poi'
+import type { Pamphlet, PamphletPlace } from '@/types/pamphlet'
+import type { MapPoi, PoiCategory } from '@/types/poi'
+import { poiKey } from '@/types/poi'
 
 /** 검색 결과가 하나뿐일 때 지도를 얼마나 당길지. */
 const SINGLE_RESULT_LEVEL = 5
@@ -39,6 +45,24 @@ export default function MapPage() {
   const [savedMode, setSavedMode] = useState(searchParams.get('saved') === '1')
   const fitSaved = useRef(searchParams.get('saved') === '1')
   const showingSaved = savedMode && !!user
+  /**
+   * 지도에 띄워 둔 팜플렛. 드롭다운 열림 상태(MapSavedControls 내부)와 분리해,
+   * 목록을 닫아도 마커는 남는다. 같은 팜플렛을 다시 고르면 표시를 해제한다.
+   *
+   * 장소 마커는 아직 붙이지 않았다 — 팜플렛 id로 장소를 가져오는 API가 없다
+   * (features/map/api/pamphlets.ts 주석 참고). BE가 열어주면 여기서 이어받는다.
+   */
+  const [activePamphlet, setActivePamphlet] = useState<Pamphlet>()
+  /**
+   * 주변 탭이 열려 있으면 그 장소들을 지도에 띄운다. POI 토글과 둘 다 '주변에 뭐가
+   * 있나'를 보는 기능이라 동시에 켜면 마커가 섞여 읽기 어렵다 — 탭이 열리면 POI를 끈다.
+   */
+  const [nearbyOpen, setNearbyOpen] = useState(false)
+  const handleSelectPamphlet = useCallback((pamphlet: Pamphlet) => {
+    setActivePamphlet((current) =>
+      current?.pamphletId === pamphlet.pamphletId ? undefined : pamphlet,
+    )
+  }, [])
   const linkedId = Number(searchParams.get('onsen')) || undefined
   const linkedDetail = useOnsenDetail(linkedId)
   const linkedOnsen = useMemo(
@@ -49,6 +73,33 @@ export default function MapPage() {
   const { onsens, loading, error, load } = useOnsens(REGION_PREVIEW_COUNT)
   const nationalMap = useOnsenMapPoints()
   const [selectedId, setSelectedId] = useState<number>()
+  const nearby = useNearby(selectedId, nearbyOpen)
+  /**
+   * 주변 장소를 POI 마커로 그린다 — 지도 위 표현을 하나로 맞추고 아이콘도 재사용한다.
+   * 관광지는 PoiCategory에 없어 공원 아이콘을 빌려 쓴다.
+   */
+  const nearbyPois = useMemo<MapPoi[]>(
+    () =>
+      nearbyOpen
+        ? (nearby.result?.items ?? [])
+            .filter((place) => place.lat != null && place.lng != null)
+            .map((place) => ({
+              externalId: place.externalId,
+              name: place.name,
+              categoryName: place.categoryLabel,
+              roadAddress: place.address ?? undefined,
+              lat: place.lat,
+              lng: place.lng,
+              distanceM: place.distanceM ?? 0,
+              kakaoPlaceUrl: place.kakaoPlaceUrl ?? undefined,
+              category:
+                place.category === 'RESTAURANT' || place.category === 'CAFE'
+                  ? place.category
+                  : 'PARK',
+            }))
+        : [],
+    [nearbyOpen, nearby.result],
+  )
   const [selectedPoint, setSelectedPoint] = useState<OnsenMapPoint>()
   const [externalPlace, setExternalPlace] = useState<Favorite>()
   const [detailClosing, setDetailClosing] = useState(false)
@@ -130,6 +181,44 @@ export default function MapPage() {
   const filtersRef = useRef<SearchFilters>({})
   const [hasFilter, setHasFilter] = useState(false)
   const [focus, setFocus] = useState<MapView>()
+  /**
+   * 고른 팜플렛의 장소. 목록 응답에는 좌표가 없어 상세를 따로 받는다.
+   * 실패해도 지도 탐색은 계속돼야 해서 조용히 비운다.
+   */
+  const [pamphletPlaces, setPamphletPlaces] = useState<PamphletPlace[]>([])
+  useEffect(() => {
+    const id = activePamphlet?.pamphletId
+    if (id === undefined) {
+      setPamphletPlaces([])
+      return
+    }
+    let cancelled = false
+    fetchPamphletDetail(id)
+      .then((detail) => {
+        if (cancelled) return
+        const placed = detail.places.filter((place) => place.lat != null && place.lng != null)
+        setPamphletPlaces(placed)
+        // 저장한 곳이 한눈에 들어오게 범위를 맞춘다. 한 곳뿐이면 과하게 당기지 않는다.
+        if (placed.length > 1) {
+          setFocus({
+            bounds: {
+              swLat: Math.min(...placed.map((place) => place.lat!)),
+              swLng: Math.min(...placed.map((place) => place.lng!)),
+              neLat: Math.max(...placed.map((place) => place.lat!)),
+              neLng: Math.max(...placed.map((place) => place.lng!)),
+            },
+          })
+        } else if (placed[0]) {
+          setFocus({ lat: placed[0].lat!, lng: placed[0].lng!, level: SINGLE_RESULT_LEVEL })
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setPamphletPlaces([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [activePamphlet])
 
   useEffect(() => {
     const key = searchParams.toString()
@@ -219,17 +308,46 @@ export default function MapPage() {
         lat: place.lat,
         lng: place.lng,
         address: place.address ?? undefined,
+        imageUrl: place.placeType === 'ONSEN' ? (place.thumbnail ?? undefined) : undefined,
       })),
     [favorites.items],
   )
-  const basePoints = showingSaved ? savedPoints : hasFilter ? onsens : nationalMap.points
-  const mapOnsens = useMemo(
+  // 팜플렛을 띄운 동안에는 그 장소만 보여준다 — 전국 마커와 섞이면 뭘 저장했는지 묻힌다.
+  const pamphletPoints = useMemo<OnsenMapPoint[]>(
     () =>
+      pamphletPlaces.map((place) => ({
+        id: place.placeId,
+        name: place.name,
+        lat: place.lat!,
+        lng: place.lng!,
+        address: place.address ?? undefined,
+        imageUrl: place.imageUrl ?? undefined,
+      })),
+    [pamphletPlaces],
+  )
+  const basePoints = pamphletPoints.length
+    ? pamphletPoints
+    : showingSaved
+      ? savedPoints
+      : hasFilter
+        ? onsens
+        : nationalMap.points
+  const mapOnsens = useMemo(() => {
+    const points =
       !showingSaved && linkedOnsen && !basePoints.some((place) => place.id === linkedOnsen.id)
         ? [...basePoints, linkedOnsen]
-        : basePoints,
-    [showingSaved, linkedOnsen, basePoints],
-  )
+        : basePoints
+    // 검색 미리보기에서 선택한 온천도 전국 마커 응답 유무와 무관하게 계속 보여준다.
+    if (
+      selectedPoint?.id === selectedId &&
+      externalPlace?.placeId !== selectedId &&
+      selectedPoint &&
+      !points.some((place) => place.id === selectedPoint.id)
+    ) {
+      return [...points, selectedPoint]
+    }
+    return points
+  }, [showingSaved, linkedOnsen, basePoints, selectedPoint, selectedId, externalPlace])
   // 첫 화면의 미리보기에 없는 마커도 선택할 수 있다. 상세는 선택한 id로 조회한다.
   const selected =
     onsens.find((onsen) => onsen.id === selectedId) ??
@@ -275,26 +393,73 @@ export default function MapPage() {
 
   function handleNationalView() {
     setCollapsed(false)
-    setCategories([])
+    setCategory(undefined)
     setSidebarVersion((version) => version + 1)
     void handleSearch({})
   }
 
-  // MAP-04 카테고리 POI — 켜진 것만 지도 중심 기준으로 불러온다.
-  const [categories, setCategories] = useState<PoiCategory[]>([])
-  const [center, setCenter] = useState<{ lat: number; lng: number }>()
-  const { pois } = usePois(mode === 'search' ? categories : [], center)
-
+  const [category, setCategory] = useState<PoiCategory>()
+  const [viewportCenter, setViewportCenter] = useState<{ lat: number; lng: number }>()
+  const [poiZoomVisible, setPoiZoomVisible] = useState(false)
   const handleCenterChange = useCallback(
-    (next: { lat: number; lng: number }) => setCenter(next),
+    (viewport: { lat: number; lng: number; level: number }) => {
+      setPoiZoomVisible((visible) =>
+        visible ? viewport.level < POI_HIDE_LEVEL : viewport.level <= POI_VISIBLE_LEVEL,
+      )
+      // Ignore sub-block drift caused by relayout and floating-point projection.
+      const lat = Number(viewport.lat.toFixed(3))
+      const lng = Number(viewport.lng.toFixed(3))
+      setViewportCenter((current) =>
+        current?.lat === lat && current.lng === lng ? current : { lat, lng },
+      )
+    },
     [],
   )
+  const poiOnsen = !externalSelected ? selected : undefined
+  // 주변 탭이 열린 동안에는 POI를 내린다 — 둘 다 주변 장소라 마커가 섞이면 읽기 어렵다.
+  const poiEnabled = mode === 'search' && poiZoomVisible && !nearbyOpen
+  const poiCenter = poiOnsen ? { lat: poiOnsen.lat, lng: poiOnsen.lng } : viewportCenter
+  const poiScope =
+    poiEnabled && poiCenter
+      ? `${poiOnsen?.id ?? 'viewport'}:${poiCenter.lat}:${poiCenter.lng}`
+      : undefined
+  const {
+    pois,
+    loading: poiLoading,
+    error: poiError,
+    retry: retryPois,
+    requestKey: poiRequestKey,
+  } = usePois(poiEnabled && category ? [category] : [], poiCenter)
+  const poiLoadingVisible = usePoiLoadingIndicator(
+    poiLoading,
+    poiRequestKey,
+    poiEnabled && category !== undefined,
+  )
+  const [selectedPoi, setSelectedPoi] = useState<{ scope: string; key: string }>()
+  const selectedPoiKey =
+    selectedPoi?.scope === poiScope && pois.some((poi) => poiKey(poi) === selectedPoi?.key)
+      ? selectedPoi?.key
+      : undefined
 
-  const handleToggleCategory = useCallback((category: PoiCategory) => {
-    setCategories((prev) =>
-      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category],
-    )
-  }, [])
+  useEffect(() => {
+    setSelectedPoi(undefined)
+  }, [poiScope])
+
+  const handleSelectPoi = useCallback(
+    (key?: string) => {
+      setSelectedPoi(key && poiScope ? { scope: poiScope, key } : undefined)
+    },
+    [poiScope],
+  )
+
+  const handleToggleCategory = useCallback(
+    (category: PoiCategory) => {
+      if (!poiScope) return
+      setSelectedPoi(undefined)
+      setCategory((current) => (current === category ? undefined : category))
+    },
+    [poiScope],
+  )
 
   return (
     // 지도는 화면을 꽉 채워야 해서 RootLayout(max-w-5xl 본문) 밖에 두고 헤더만 직접 쓴다.
@@ -311,21 +476,20 @@ export default function MapPage() {
             selected ? 'hidden lg:flex' : 'flex',
           )}
         >
-          <div className={cn('h-full min-h-0', mode !== 'search' && 'hidden')}>
-            <MapSidebar
-              key={sidebarVersion}
-              onsens={onsens}
-              loading={loading}
-              error={error}
-              selectedId={selectedId}
-              onSelect={handleSelect}
-              onSearch={handleSearch}
-              onDirections={() => openDirections()}
-            />
-          </div>
-          {mode === 'directions' && (
-            <DirectionsPanel directions={directions} onSearchTab={openSearch} />
-          )}
+          <MapSidebarLayout mode={mode} onSearch={openSearch} onDirections={() => openDirections()}>
+            <div className={cn('h-full min-h-0', mode !== 'search' && 'hidden')}>
+              <MapSidebar
+                key={sidebarVersion}
+                onsens={onsens}
+                loading={loading}
+                error={error}
+                selectedId={selectedId}
+                onSelect={handleSelect}
+                onSearch={handleSearch}
+              />
+            </div>
+            {mode === 'directions' && <DirectionsPanel directions={directions} />}
+          </MapSidebarLayout>
         </aside>
 
         {/* 접기 손잡이 — 패널 경계에 붙여 지도를 최대한 넓게 쓸 수 있게 한다. */}
@@ -415,6 +579,7 @@ export default function MapPage() {
                     <OnsenDetailPanel
                       onsen={selected}
                       onDirections={() => openDirections(selected)}
+                      onNearbyOpenChange={setNearbyOpen}
                     />
                   )}
                 </div>
@@ -449,8 +614,10 @@ export default function MapPage() {
             onNationalViewChange={setNationalView}
             onSelect={handleSelect}
             onBoundsChange={handleBoundsChange}
-            pois={pois}
             onCenterChange={handleCenterChange}
+            pois={nearbyOpen ? nearbyPois : pois}
+            selectedPoiKey={selectedPoiKey}
+            onSelectPoi={handleSelectPoi}
             focus={focus}
             directions={mode === 'directions' ? directions.result : undefined}
             route={mode === 'directions' ? directions.selectedRoute : undefined}
@@ -500,9 +667,28 @@ export default function MapPage() {
           */}
           {mode === 'search' && (
             <>
-              <div className="pointer-events-none absolute inset-x-0 top-3 z-[100] flex items-center gap-3 px-3">
-                <div className="min-w-0 flex-1">
-                  <PoiFilter selected={categories} onToggle={handleToggleCategory} />
+              <div className="pointer-events-none absolute inset-x-0 top-3 z-[100] flex items-start gap-3 px-3">
+                <div
+                  inert={!poiEnabled}
+                  aria-hidden={!poiEnabled}
+                  className={cn(
+                    'min-w-0 flex-1 transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none',
+                    poiEnabled ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-0',
+                  )}
+                >
+                  <div className="pointer-events-auto w-fit max-w-full rounded-xl bg-white/95 p-3 shadow-[0_2px_8px_#0000000d]">
+                    <p
+                      role="status"
+                      className="text-text-primary mb-2 h-5 truncate text-[13px] leading-5 font-semibold"
+                    >
+                      {poiLoadingVisible
+                        ? '주변을 찾고 있어요…'
+                        : poiOnsen
+                          ? '온천 주변도 둘러보세요'
+                          : '주변도 함께 둘러보세요'}
+                    </p>
+                    <PoiFilter selected={category} onToggle={handleToggleCategory} />
+                  </div>
                 </div>
                 {(!nationalView || selectedId !== undefined || hasFilter) && (
                   <button
@@ -513,8 +699,34 @@ export default function MapPage() {
                     전국 보기
                   </button>
                 )}
-                <MapSavedControls showingSaved={showingSaved} onToggleSaved={toggleSavedMap} />
+                <MapSavedControls
+                  showingSaved={showingSaved}
+                  onToggleSaved={toggleSavedMap}
+                  activePamphlet={activePamphlet}
+                  onSelectPamphlet={handleSelectPamphlet}
+                />
               </div>
+              {poiEnabled &&
+                category !== undefined &&
+                !poiLoading &&
+                !poiLoadingVisible &&
+                (poiError || pois.length === 0) && (
+                  <div
+                    role="status"
+                    className="bg-white/95 text-text-secondary absolute top-28 left-3 z-[100] max-w-[calc(100%-1.5rem)] rounded-sm px-3 py-2 text-[12px] leading-5"
+                  >
+                    {poiError ?? '선택한 카테고리의 주변 장소가 없어요.'}
+                    {!poiLoading && poiError && (
+                      <button
+                        type="button"
+                        onClick={retryPois}
+                        className="text-text-primary ml-2 underline underline-offset-2"
+                      >
+                        다시 시도
+                      </button>
+                    )}
+                  </div>
+                )}
             </>
           )}
         </main>

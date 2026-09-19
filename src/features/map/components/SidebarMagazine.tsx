@@ -1,18 +1,39 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import { fetchMagazinesByRegion } from '@/features/magazine/api/magazine'
 import MagazineImage from '@/features/magazine/components/MagazineImage'
 import { useMagazines } from '@/features/magazine/hooks/useMagazines'
 
+import type { Magazine } from '@/types/magazine'
+
 /** 좁은 패널에서는 대표 기사 한 편의 제목과 읽기 동작을 충분히 보여준다. */
 export default function SidebarMagazine({ region }: { region?: string }) {
-  // 매거진은 sidoCode(행안부 2자리)로 거르는데 지도는 8개 권역이라 코드가 1:1로 안 맞는다.
-  // 목록을 받아 regionName으로 좁힌다 — 권역명이 지역명에 포함되는지로 판단한다.
-  const { magazines, loading, error } = useMagazines({ size: 12 })
+  // 지역을 고르지 않았을 때만 최신 글을 그대로 쓴다.
+  const latest = useMagazines({ size: 5 })
+  // 매거진은 sidoCode(행안부 2자리)로만 거를 수 있고 지도는 8개 권역이라 1:1이 아니다.
+  // 목록 size 상한이 30이라 전부 받아 프론트에서 좁힐 수도 없다 — 코드별로 나눠 받는다.
+  const [byRegion, setByRegion] = useState<{ items: Magazine[]; failed: boolean }>()
 
-  const visible = region
-    ? magazines.filter((magazine) => magazine.regionName.includes(region))
-    : magazines
-  const story = visible[0]
+  useEffect(() => {
+    if (!region) return
+    let cancelled = false
+    setByRegion(undefined)
+    fetchMagazinesByRegion(region)
+      .then((items) => {
+        if (!cancelled) setByRegion({ items, failed: false })
+      })
+      .catch(() => {
+        if (!cancelled) setByRegion({ items: [], failed: true })
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [region])
+
+  const loading = region ? !byRegion : latest.loading
+  const error = region ? byRegion?.failed : latest.error
+  const story = region ? byRegion?.items[0] : latest.magazines[0]
 
   // 보조 영역이라 실패하면 조용히 감춘다 — 지도 탐색을 막지 않는다.
   // 고른 지역에 글이 없을 때도 마찬가지다 (전체 글로 대체하지 않는다).

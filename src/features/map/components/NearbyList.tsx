@@ -4,6 +4,8 @@ import type { FavoriteRequest } from '@/features/favorites/api'
 
 import type { NearbyPlace } from '@/types/nearby'
 
+const DEFAULT_PLACE_IMAGE = '/images/place-placeholder.svg'
+
 type NearbyListProps = {
   onsenId: number
   /** 탭이 열렸을 때만 부른다 — 안 보는 탭 때문에 쿼터를 쓰지 않는다. */
@@ -15,7 +17,12 @@ function formatDistance(m: number) {
 }
 
 function PlaceRow({ place }: { place: NearbyPlace }) {
-  const meta = `${place.categoryLabel} · ${formatDistance(place.distanceM)}`
+  const meta = [
+    place.categoryLabel,
+    place.distanceM != null ? formatDistance(place.distanceM) : undefined,
+  ]
+    .filter(Boolean)
+    .join(' · ')
   const category =
     place.category === 'RESTAURANT' ||
     place.category === 'CAFE' ||
@@ -40,25 +47,22 @@ function PlaceRow({ place }: { place: NearbyPlace }) {
 
   const body = (
     <>
-      {place.cardType === 'PHOTO' && place.imageUrl ? (
-        <img
-          src={place.imageUrl}
-          alt=""
-          loading="lazy"
-          className="bg-surface-dim size-16 shrink-0 rounded-[2px] object-cover"
-        />
-      ) : (
-        // INFO 카드(카카오 맛집·카페)는 사진이 없다 — 자리를 비우면 줄이 흔들려 라벨을 넣는다.
-        <div className="bg-surface-dim text-text-secondary flex size-16 shrink-0 items-center justify-center rounded-sm text-[11px]">
-          {place.categoryLabel}
-        </div>
-      )}
+      <img
+        src={place.imageUrl || DEFAULT_PLACE_IMAGE}
+        alt=""
+        loading="lazy"
+        onError={(event) => {
+          event.currentTarget.onerror = null
+          event.currentTarget.src = DEFAULT_PLACE_IMAGE
+        }}
+        className="bg-surface-dim size-16 shrink-0 rounded-[2px] object-cover"
+      />
 
       <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
         <p className="text-text-primary text-[14px] leading-[1.5] font-semibold break-keep [overflow-wrap:anywhere]">
           {place.name}
         </p>
-        <p className="text-text-secondary text-[12px] leading-5">{meta}</p>
+        {meta && <p className="text-text-secondary text-[12px] leading-5">{meta}</p>}
         {place.description && (
           <p className="text-text-secondary line-clamp-2 text-[12px] leading-[1.65] [overflow-wrap:anywhere]">
             {place.description}
@@ -82,7 +86,7 @@ function PlaceRow({ place }: { place: NearbyPlace }) {
       ) : (
         <div className="flex min-w-0 flex-1 items-start gap-3 py-4">{body}</div>
       )}
-      <FavoriteButton target={target} name={place.name} />
+      <FavoriteButton target={target} name={place.name} className="size-7 [&>svg]:size-4" />
     </div>
   )
 }
