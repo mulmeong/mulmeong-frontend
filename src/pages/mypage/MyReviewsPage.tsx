@@ -77,7 +77,7 @@ export default function MyReviewsPage() {
       await deleteReview(pendingDelete.id)
       setPendingDelete(null)
       setDeleteDone(true)
-      await reload()
+      reload()
     } catch (cause) {
       // 실패하면 확인 모달을 닫고 목록 위에 사유를 보여준다.
       setPendingDelete(null)
@@ -87,11 +87,11 @@ export default function MyReviewsPage() {
     }
   }
 
-  const handleSaved = async () => {
+  const handleSaved = () => {
     setEditingId(null)
     setEditDone(true)
     setDetailVersion((current) => current + 1)
-    await reload()
+    reload()
   }
 
   const message = error ?? actionError
@@ -179,7 +179,7 @@ export default function MyReviewsPage() {
       <ReviewFormPanel
         reviewId={editingId}
         onClose={() => setEditingId(null)}
-        onSaved={() => void handleSaved()}
+        onSaved={handleSaved}
       />
 
       <Modal
