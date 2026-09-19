@@ -32,14 +32,58 @@ type KoreaMapProps = {
 const JEJU_INDEX = 0
 
 /**
- * 시안 기준 폭 400px일 때 마커 지름이 22px.
- * viewBox 폭이 300이라 1.333배 확대되므로 r은 8.25다 (22 ÷ 1.333 ÷ 2).
- * 중앙 흰 점은 지름 8px -> r 3.
+ * 물방울 마커. 지도 화면(MapCanvas)의 핀과 같은 모양이다 — 거기서는 CSS
+ * `border-radius: 50% 50% 50% 10px` + `rotate(-45deg)`로 만드는 도형을,
+ * 여기서는 SVG라 같은 윤곽을 path로 그린다.
+ *
+ * 사진은 넣지 않는다. 저 지도의 핀은 48px이지만 이 지도의 핀은 20px 남짓이라
+ * 안에 사진을 깔아도 알아볼 수 없다. 추첨 응답에 사진이 없어 상세가 도착해야
+ * 생기는 값이기도 하다.
  *
  * 지도를 크게 그리면 마커도 같은 비율로 커진다. 지도 대비 비율은 그대로다.
  */
-const MARKER_RADIUS = 8.25
-const MARKER_INNER_RADIUS = 3
+const PIN_RADIUS = 9
+/** 핀 가운데에서 뾰족한 끝까지. 정사각형을 45° 돌려 대각선이 아래를 향한다. */
+const PIN_TIP = PIN_RADIUS * Math.SQRT2
+/** 뾰족한 쪽 모서리. 지도 핀의 48px : 10px 비율을 따른다. */
+const PIN_CORNER = PIN_RADIUS * 0.42
+
+const INNER_RADIUS = 6.4
+
+/**
+ * 돌리기 전 도형. 세 모서리는 반지름만큼 둥글고(= 원의 3/4) 한 모서리만 살짝
+ * 둥글다. 이 상태로 -45° 돌리면 그 모서리가 아래를 향한다.
+ */
+const PIN_PATH = [
+  `M ${-PIN_RADIUS} 0`,
+  `A ${PIN_RADIUS} ${PIN_RADIUS} 0 0 1 0 ${-PIN_RADIUS}`,
+  `A ${PIN_RADIUS} ${PIN_RADIUS} 0 0 1 ${PIN_RADIUS} 0`,
+  `A ${PIN_RADIUS} ${PIN_RADIUS} 0 0 1 0 ${PIN_RADIUS}`,
+  `L ${-PIN_RADIUS + PIN_CORNER} ${PIN_RADIUS}`,
+  `A ${PIN_CORNER} ${PIN_CORNER} 0 0 1 ${-PIN_RADIUS} ${PIN_RADIUS - PIN_CORNER}`,
+  'Z',
+].join(' ')
+
+/**
+ * 온천 기호. MapCanvas의 마커 글리프를 옮겨 그렸다 — 기기별 글꼴·이모지 차이
+ * 없이 같은 모양이 나오게 선으로 그린다. 원본이 36×36 기준이라 내용 가운데
+ * (18, 18.6)를 원점으로 옮긴 뒤 줄인다.
+ *
+ * (MapCanvas는 다른 담당자 코드라 지금 공통으로 빼지 않는다. 결과 카드의 탭과
+ * 같은 이유다 — 나중에 협의해서 합칠 것.)
+ */
+/** 원본에서 기호가 실제로 차지하는 폭 (36×36 안에서 x 10~26). */
+const GLYPH_SOURCE_WIDTH = 16
+/**
+ * 기호가 차지할 폭. 안쪽 원 **지름**이 아니라 그보다 작게 잡는다 — 지름에
+ * 맞추면 가로로는 들어가도 위아래 끝이 원 밖으로 밀려난다.
+ */
+const GLYPH_WIDTH = INNER_RADIUS * 1.4
+const GLYPH_SCALE = GLYPH_WIDTH / GLYPH_SOURCE_WIDTH
+const GLYPH_TRANSFORM = `scale(${GLYPH_SCALE}) translate(-18 -18.6)`
+
+/** 줄인 만큼 선도 가늘어진다. 작은 핀에서도 획이 보이게 원본(1.6)보다 굵게 잡는다. */
+const GLYPH_STROKE = 2
 
 const LAND_FILL = '#E6E9E8'
 const LAND_STROKE = '#FFFFFF'
@@ -157,8 +201,22 @@ export default function KoreaMap({ marker, markerLabel, className }: KoreaMapPro
         // transform은 위 effect가 DOM에 직접 쓴다. 여기 두면 서로 덮어쓴다.
         style={{ opacity: visible ? 1 : 0 }}
       >
-        <circle r={MARKER_RADIUS} fill="#0E1513" />
-        <circle r={MARKER_INNER_RADIUS} fill="#FFFFFF" />
+        {/* 뾰족한 끝이 좌표에 닿도록 핀 전체를 위로 올린다. */}
+        <g transform={`translate(0 ${-PIN_TIP})`}>
+          <path d={PIN_PATH} transform="rotate(-45)" fill="#0E1513" />
+          <circle r={INNER_RADIUS} fill="#FFFFFF" />
+          <g
+            transform={GLYPH_TRANSFORM}
+            fill="none"
+            stroke="#0E1513"
+            strokeWidth={GLYPH_STROKE}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M13 18c-2-2 2-3.5 0-5.5M18 18c-2-2 2-3.5 0-5.5M23 18c-2-2 2-3.5 0-5.5" />
+            <path d="M12 20.5c-1.3.4-2 1-2 1.7 0 1.4 3.6 2.5 8 2.5s8-1.1 8-2.5c0-.7-.7-1.3-2-1.7" />
+          </g>
+        </g>
       </g>
     </svg>
   )
