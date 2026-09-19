@@ -90,6 +90,8 @@ export default function MapPage() {
               name: place.name,
               categoryName: place.categoryLabel,
               address: place.address ?? undefined,
+              phone: place.phone ?? undefined,
+              description: place.description ?? undefined,
               lat: place.lat,
               lng: place.lng,
               distanceM: place.distanceM ?? 0,

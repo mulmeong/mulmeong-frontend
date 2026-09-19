@@ -54,6 +54,8 @@ export type Poi = {
   address?: string | null
   roadAddress?: string | null
   phone?: string | null
+  description?: string | null
+  homepageUrl?: string | null
   lat: number
   lng: number
   distanceM?: number | null
@@ -62,6 +64,25 @@ export type Poi = {
   firstImage?: string | null
   firstimage?: string | null
   thumbnail?: string | null
+}
+
+/**
+ * `/external/tour/{externalId}` 상세. TourAPI를 실시간으로 긁어 내려주므로
+ * 서버가 저장하지 않고, 목록에 없는 소개글·홈페이지가 여기에 있다.
+ */
+export type PoiDetail = {
+  externalId: string
+  contentId?: string | null
+  contentTypeId?: string | null
+  name: string
+  description?: string | null
+  imageUrl?: string | null
+  thumbnailUrl?: string | null
+  address?: string | null
+  phone?: string | null
+  homepageUrl?: string | null
+  lat?: number | null
+  lng?: number | null
 }
 
 export type PoiResult = {

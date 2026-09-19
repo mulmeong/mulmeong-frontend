@@ -1,6 +1,7 @@
 import { placeholderImageOf } from '@/constants/images'
 import FavoriteButton from '@/features/favorites/FavoriteButton'
 import type { FavoriteCategory, FavoriteRequest } from '@/features/favorites/api'
+import { usePoiDetail } from '@/features/map/hooks/usePoiDetail'
 import { POI_CATEGORY_LABELS, type MapPoi, type PoiCategory } from '@/types/poi'
 
 function formatDistance(m?: number | null) {
@@ -21,8 +22,12 @@ function favoriteCategoryOf(category: PoiCategory): Exclude<FavoriteCategory, 'O
   return 'ETC'
 }
 
-function favoriteTargetOf(poi: MapPoi, imageUrl?: string | null): FavoriteRequest | undefined {
-  const address = poi.address ?? poi.roadAddress
+function favoriteTargetOf(
+  poi: MapPoi,
+  imageUrl?: string | null,
+  address?: string | null,
+  phone?: string | null,
+): FavoriteRequest | undefined {
   if (poi.placeId != null) return { placeId: poi.placeId }
   if (!poi.externalId) return undefined
   return {
@@ -33,7 +38,7 @@ function favoriteTargetOf(poi: MapPoi, imageUrl?: string | null): FavoriteReques
     lng: poi.lng,
     category: favoriteCategoryOf(poi.category),
     address,
-    phone: poi.phone,
+    phone,
     imageUrl,
   }
 }
@@ -51,11 +56,24 @@ export default function PoiDetailPanel({
   onBack,
   onDirections,
 }: PoiDetailPanelProps) {
-  const imageUrl = poi.imageUrl ?? poi.image ?? poi.firstImage ?? poi.firstimage ?? poi.thumbnail
-  const address = poi.address ?? poi.roadAddress
+  const { detail, loading: detailLoading } = usePoiDetail(poi.externalId || undefined)
+
+  // 목록 응답이 이미 있는 값은 그대로 쓰고, 빈 칸만 상세로 메운다 — 패널이 늦게 뜨지 않게.
+  const imageUrl =
+    poi.imageUrl ??
+    poi.image ??
+    poi.firstImage ??
+    poi.firstimage ??
+    poi.thumbnail ??
+    detail?.imageUrl ??
+    detail?.thumbnailUrl
+  const address = poi.address ?? poi.roadAddress ?? detail?.address
+  const phone = poi.phone ?? detail?.phone
+  const description = poi.description ?? detail?.description
+  const homepageUrl = poi.homepageUrl ?? detail?.homepageUrl
   const category = poi.categoryName || POI_CATEGORY_LABELS[poi.category]
   const distance = formatDistance(poi.distanceM)
-  const favoriteTarget = favoriteTargetOf(poi, imageUrl)
+  const favoriteTarget = favoriteTargetOf(poi, imageUrl, address, phone)
   const fallbackImage = placeholderImageOf(poi.category)
 
   return (
@@ -76,9 +94,7 @@ export default function PoiDetailPanel({
         <h2 className="text-text-primary mt-1 text-[20px] leading-[1.4] font-semibold tracking-tight break-keep [overflow-wrap:anywhere]">
           {poi.name}
         </h2>
-        {distance && (
-          <p className="text-text-secondary mt-1.5 text-[12px] leading-5">{distance}</p>
-        )}
+        {distance && <p className="text-text-secondary mt-1.5 text-[12px] leading-5">{distance}</p>}
       </div>
 
       <img
@@ -111,6 +127,21 @@ export default function PoiDetailPanel({
         </button>
       </div>
 
+      {description ? (
+        <section className="mt-7">
+          <h3 className="text-text-primary text-[15px] leading-6 font-semibold">소개</h3>
+          <p className="text-text-secondary mt-3 text-[13px] leading-[1.75] break-keep whitespace-pre-line [overflow-wrap:anywhere]">
+            {description}
+          </p>
+        </section>
+      ) : (
+        detailLoading && (
+          <p role="status" className="text-text-secondary mt-7 text-[13px] leading-6">
+            소개를 불러오는 중…
+          </p>
+        )
+      )}
+
       <section className="mt-7">
         <h3 className="text-text-primary text-[15px] leading-6 font-semibold">기본 정보</h3>
         <dl className="mt-4 space-y-4">
@@ -122,10 +153,10 @@ export default function PoiDetailPanel({
               </dd>
             </div>
           )}
-          {poi.phone && (
+          {phone && (
             <div className="grid grid-cols-[64px_minmax(0,1fr)] items-start gap-3">
               <dt className="text-text-secondary text-[11px] leading-6">전화번호</dt>
-              <dd className="text-text-primary text-[13px] leading-6 font-medium">{poi.phone}</dd>
+              <dd className="text-text-primary text-[13px] leading-6 font-medium">{phone}</dd>
             </div>
           )}
           {distance && (
@@ -134,9 +165,23 @@ export default function PoiDetailPanel({
               <dd className="text-text-primary text-[13px] leading-6 font-medium">{distance}</dd>
             </div>
           )}
+          {homepageUrl && (
+            <div className="grid grid-cols-[64px_minmax(0,1fr)] items-start gap-3">
+              <dt className="text-text-secondary text-[11px] leading-6">홈페이지</dt>
+              <dd className="text-[13px] leading-6 font-medium">
+                <a
+                  href={homepageUrl}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="text-text-primary underline decoration-border-default underline-offset-2 outline-none hover:decoration-current focus-visible:ring-1 focus-visible:ring-inverse [overflow-wrap:anywhere]"
+                >
+                  {homepageUrl}
+                </a>
+              </dd>
+            </div>
+          )}
         </dl>
       </section>
     </div>
   )
 }
-

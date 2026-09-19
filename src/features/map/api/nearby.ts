@@ -1,5 +1,6 @@
 import { api } from '@/api'
 import { mockNearby } from '@/features/map/api/nearbyMock'
+import { secureImageUrl } from '@/features/map/utils/tourApiText'
 import { env } from '@/lib/env'
 
 import type { NearbyCategory, NearbyPlace, NearbyResult } from '@/types/nearby'
@@ -76,7 +77,9 @@ function categoryOf(item: NearbyResponseItem): NearbyCategory {
 
 function normalizeNearby(item: NearbyResponseItem): NearbyPlace {
   const category = categoryOf(item)
-  const imageUrl = item.imageUrl ?? item.image ?? item.firstImage ?? item.firstimage ?? item.thumbnail
+  const imageUrl = secureImageUrl(
+    item.imageUrl ?? item.image ?? item.firstImage ?? item.firstimage ?? item.thumbnail,
+  )
   return {
     externalId: String(item.contentId ?? item.placeId ?? ''),
     source: 'TOUR_API',
