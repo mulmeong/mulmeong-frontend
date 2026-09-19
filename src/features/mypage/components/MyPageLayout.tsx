@@ -13,10 +13,19 @@ const TABS = [
   { to: '/my/account', label: '내정보' },
 ]
 
+/**
+ * 탭 화면이 헤더를 다시 받아오게 하는 통로.
+ * 리뷰를 지우면 방문 온천 수·리뷰 수·레벨이 다시 계산되는데(REV-05),
+ * 헤더는 탭 바깥이라 저절로 바뀌지 않는다.
+ */
+export type MyPageOutletContext = {
+  reloadProfile: () => void
+}
+
 export default function MyPageLayout() {
   // RequireAuth를 통과했으므로 user는 반드시 있다. 통계는 프로필 API가 채운다.
   const { user } = useAuth()
-  const { profile } = useMyProfile()
+  const { profile, reload: reloadProfile } = useMyProfile()
 
   // 프로필이 도착하기 전에도 헤더가 비지 않게 로그인 응답의 값을 먼저 쓴다.
   const nickname = profile?.nickname ?? user?.nickname ?? ''
@@ -80,7 +89,7 @@ export default function MyPageLayout() {
       </nav>
 
       <div className="py-6">
-        <Outlet />
+        <Outlet context={{ reloadProfile } satisfies MyPageOutletContext} />
       </div>
     </div>
   )
