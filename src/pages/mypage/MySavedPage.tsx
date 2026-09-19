@@ -98,8 +98,6 @@ export default function MySavedPage() {
   const handleShowOnMap = (place: SavedPlace) => {
     if (place.placeType === 'ONSEN' || !place.placeType) {
       void navigate(`/map?onsen=${place.onsenId}`)
-    } else if (place.kakaoPlaceUrl && /^https?:\/\//i.test(place.kakaoPlaceUrl)) {
-      window.open(place.kakaoPlaceUrl, '_blank', 'noopener,noreferrer')
     } else if (place.lat !== undefined && place.lng !== undefined) {
       void navigate(`/map?lat=${place.lat}&lng=${place.lng}`)
     }

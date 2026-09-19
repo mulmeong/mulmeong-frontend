@@ -10,7 +10,7 @@ export type PoiParams = {
   lng: number
   /** 기본 2000, 최대 20000(m). */
   radius?: number
-  /** 카카오가 한 번에 최대 15개만 준다. */
+  /** 서버의 TourAPI 조회 결과 개수. */
   size?: number
 }
 

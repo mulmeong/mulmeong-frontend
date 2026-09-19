@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
+import { DEFAULT_ONSEN_IMAGE } from '@/constants/images'
 import { loadKakaoMap } from '@/features/map/utils/loadKakaoMap'
 import PoiMarkers from '@/features/map/components/PoiMarkers'
 import {
@@ -15,7 +16,7 @@ import type { MapViewportLimits } from '@/features/map/utils/mapViewportLimits'
 import type { DirectionsResult, RouteOption } from '@/features/map/types/directions'
 import type { OnsenMapPoint } from '@/features/map/types/mapPoint'
 import type { MapBounds, MapView } from '@/types/onsen'
-import type { MapPoi } from '@/types/poi'
+import { poiKey, type MapPoi } from '@/types/poi'
 
 type MapCanvasProps = {
   onsens: OnsenMapPoint[]
@@ -30,6 +31,7 @@ type MapCanvasProps = {
   pois?: MapPoi[]
   selectedPoiKey?: string
   onSelectPoi?: (key?: string) => void
+  simplePoiLabels?: boolean
   /** POI 조회 기준점. 영역과 함께 알린다. */
   onCenterChange?: (center: { lat: number; lng: number; level: number }) => void
   /** 지역을 고르거나 검색하면 그쪽으로 지도를 옮긴다. 없으면 전국 뷰 그대로. */
@@ -106,6 +108,7 @@ export default function MapCanvas({
   pois,
   selectedPoiKey,
   onSelectPoi,
+  simplePoiLabels = false,
   onCenterChange,
   focus,
   directions,
@@ -248,9 +251,18 @@ export default function MapCanvas({
       image.alt = ''
       image.style.cssText = 'display:block;width:100%;height:100%;object-fit:cover;'
       const showFallback = () => {
-        image.onerror = null
-        photoWrap.style.border = '0'
-        image.src = favoriteMarkers ? FAVORITE_MARKER : ONSEN_MARKER
+        if (favoriteMarkers) {
+          image.onerror = null
+          photoWrap.style.border = '0'
+          image.src = FAVORITE_MARKER
+          return
+        }
+        image.onerror = () => {
+          image.onerror = null
+          photoWrap.style.border = '0'
+          image.src = ONSEN_MARKER
+        }
+        image.src = DEFAULT_ONSEN_IMAGE
       }
       image.onerror = showFallback
       if (onsen.imageUrl && (!onsen.markerType || onsen.markerType === 'REGISTERED'))
@@ -501,6 +513,30 @@ export default function MapCanvas({
     }
   }, [selectedId, selectedLat, selectedLng, ready])
 
+  useEffect(() => {
+    const map = mapRef.current
+    const container = containerRef.current
+    const limits = viewportLimitsRef.current
+    if (!ready || !map || !container || !limits || !selectedPoiKey) return
+    const selectedPoi = (pois ?? EMPTY_POIS).find((poi) => poiKey(poi) === selectedPoiKey)
+    if (!selectedPoi) return
+
+    let frame = requestAnimationFrame(() => {
+      const target = new window.kakao.maps.LatLng(selectedPoi.lat, selectedPoi.lng)
+      const destination = limitMapViewport(map, container, limits, target)
+      const point = map.getProjection().containerPointFromCoords(destination)
+      const margin = Math.min(120, Math.max(56, Math.min(container.clientWidth, container.clientHeight) * 0.18))
+      const outsideComfortableView =
+        point.x < margin ||
+        point.y < margin ||
+        point.x > container.clientWidth - margin ||
+        point.y > container.clientHeight - margin
+      if (outsideComfortableView) map.panTo(destination)
+    })
+
+    return () => cancelAnimationFrame(frame)
+  }, [ready, pois, selectedPoiKey])
+
   if (error) {
     return (
       <div className="bg-surface-dim flex h-full items-center justify-center p-8">
@@ -520,6 +556,7 @@ export default function MapCanvas({
           pois={pois ?? EMPTY_POIS}
           selectedKey={selectedPoiKey}
           onSelect={onSelectPoi}
+          simpleLabels={simplePoiLabels}
         />
       )}
       {busy && (

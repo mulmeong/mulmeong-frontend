@@ -38,7 +38,6 @@ export type PamphletPlace = {
   imageUrl?: string | null
   lat?: number | null
   lng?: number | null
-  kakaoPlaceUrl?: string | null
 }
 
 /** 팜플렛 상세 (GET /pamphlets/{id}). 지도에는 places의 좌표만 쓴다. */

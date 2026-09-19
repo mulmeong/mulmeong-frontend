@@ -4,7 +4,7 @@ export type FavoriteCategory = 'ONSEN' | 'SPA' | 'RESTAURANT' | 'CAFE' | 'ATTRAC
 export type FavoriteRequest =
   | { placeId: number }
   | {
-      source: 'KAKAO' | 'TOUR_API'
+      source: 'TOUR_API'
       externalId: string
       name: string
       lat: number
@@ -30,7 +30,6 @@ export type Favorite = {
   subText: string | null
   isRegistered: boolean
   source: string
-  kakaoPlaceUrl: string | null
   createdAt: string
 }
 
