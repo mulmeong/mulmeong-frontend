@@ -27,6 +27,7 @@ import { REGION_VIEWS } from '@/types/onsen'
 
 import type { OnsenMapPoint } from '@/features/map/types/mapPoint'
 import type { MapBounds, MapView, Region } from '@/types/onsen'
+import type { Pamphlet } from '@/types/pamphlet'
 import type { PoiCategory } from '@/types/poi'
 import { poiKey } from '@/types/poi'
 
@@ -42,6 +43,19 @@ export default function MapPage() {
   const [savedMode, setSavedMode] = useState(searchParams.get('saved') === '1')
   const fitSaved = useRef(searchParams.get('saved') === '1')
   const showingSaved = savedMode && !!user
+  /**
+   * 지도에 띄워 둔 팜플렛. 드롭다운 열림 상태(MapSavedControls 내부)와 분리해,
+   * 목록을 닫아도 마커는 남는다. 같은 팜플렛을 다시 고르면 표시를 해제한다.
+   *
+   * 장소 마커는 아직 붙이지 않았다 — 팜플렛 id로 장소를 가져오는 API가 없다
+   * (features/map/api/pamphlets.ts 주석 참고). BE가 열어주면 여기서 이어받는다.
+   */
+  const [activePamphlet, setActivePamphlet] = useState<Pamphlet>()
+  const handleSelectPamphlet = useCallback((pamphlet: Pamphlet) => {
+    setActivePamphlet((current) =>
+      current?.pamphletId === pamphlet.pamphletId ? undefined : pamphlet,
+    )
+  }, [])
   const linkedId = Number(searchParams.get('onsen')) || undefined
   const linkedDetail = useOnsenDetail(linkedId)
   const linkedOnsen = useMemo(
@@ -592,7 +606,12 @@ export default function MapPage() {
                     전국 보기
                   </button>
                 )}
-                <MapSavedControls showingSaved={showingSaved} onToggleSaved={toggleSavedMap} />
+                <MapSavedControls
+                  showingSaved={showingSaved}
+                  onToggleSaved={toggleSavedMap}
+                  activePamphlet={activePamphlet}
+                  onSelectPamphlet={handleSelectPamphlet}
+                />
               </div>
               {poiEnabled &&
                 category !== undefined &&
