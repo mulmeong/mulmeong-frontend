@@ -163,18 +163,9 @@ export default function MyMapPage() {
       </div>
 
       <aside className="border-border-default flex w-full flex-col rounded-sm border p-5 lg:w-[280px]">
-        <div className="flex items-start justify-between">
-          <span className="text-text-secondary text-[12px]">
-            {selected ? '선택한 지역' : '내 온천 기록'}
-          </span>
-          {/* TODO: 공유 기능(MY-01)은 아직 없다. */}
-          <button
-            type="button"
-            className="border-border-strong rounded-full border px-3 py-1 text-[11px]"
-          >
-            링크 공유
-          </button>
-        </div>
+        <span className="text-text-secondary text-[12px]">
+          {selected ? '선택한 지역' : '내 온천 기록'}
+        </span>
 
         {selected ? (
           <p className="mt-3 flex items-baseline gap-2">
