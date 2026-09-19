@@ -13,7 +13,12 @@ const NATIONAL_EXTENT = [
   [37.24, 131.95],
 ] as const
 const EDGE_PADDING = 20
-const WEST_SHIFT_MAX_PX = 72
+/**
+ * 가로 중심을 잡는 기준점들 — 독도(131.95)는 뺀다.
+ * 전체 범위로 중심을 잡으면 멀리 떨어진 독도가 중심을 1.15도쯤 동쪽으로 끌어
+ * 남한이 왼쪽으로 밀린다. 독도는 가로로 여유가 있어 중심을 본토에 맞춰도 남는다.
+ */
+const MAINLAND_EXTENT = NATIONAL_EXTENT.filter(([, lng]) => lng < 131)
 const ROAD_MAP_MAX_LEVEL = 14
 
 export type NationalMapView = { center: kakao.maps.LatLng; level: number }
@@ -28,6 +33,11 @@ export function getNationalMapView(map: kakao.maps.Map, container: HTMLElement):
   )
   const left = Math.min(...corners.map((point) => point.x))
   const right = Math.max(...corners.map((point) => point.x))
+  const mainland = MAINLAND_EXTENT.map(([lat, lng]) =>
+    projection.containerPointFromCoords(new maps.LatLng(lat, lng)),
+  )
+  const mainlandLeft = Math.min(...mainland.map((point) => point.x))
+  const mainlandRight = Math.max(...mainland.map((point) => point.x))
   const top = Math.min(...corners.map((point) => point.y))
   const bottom = Math.max(...corners.map((point) => point.y))
   const width = Math.max(1, container.clientWidth - EDGE_PADDING * 2)
@@ -39,9 +49,11 @@ export function getNationalMapView(map: kakao.maps.Map, container: HTMLElement):
   const scale = 2 ** (level - map.getLevel())
   const halfWidth = (container.clientWidth / 2 - EDGE_PADDING) * scale
   const halfHeight = (container.clientHeight / 2 - EDGE_PADDING) * scale
-  // 동쪽 섬까지 남기는 범위에서 서쪽으로 치우쳐 일본 노출을 줄인다.
-  const westShift = Math.min(WEST_SHIFT_MAX_PX, container.clientWidth * 0.08) * scale
-  const centerX = Math.max(right - halfWidth, (left + right) / 2 - westShift)
+  // 남한이 가운데 오도록 본토 기준으로 맞추되, 동쪽 끝(독도)이 화면 밖으로 나가지 않게 한다.
+  const centerX = Math.min(
+    Math.max((mainlandLeft + mainlandRight) / 2, left + halfWidth),
+    right - halfWidth,
+  )
   // 북쪽 끝점을 상단 여백에 맞춘다. 위에서 높이도 맞췄으므로 제주·마라도는 유지된다.
   const centerY = top + halfHeight
   return {
