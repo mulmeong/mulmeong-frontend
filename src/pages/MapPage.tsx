@@ -628,26 +628,33 @@ export default function MapPage() {
                 )}
               >
                 <div className="h-full min-h-0 w-full">
-                  {selectedPoiDetail ? (
-                    <>
-                      {selected && (
-                        <div className="hidden h-full min-h-0 w-full">
-                          <OnsenDetailPanel
-                            onsen={selected}
-                            onDirections={() => openDirections(selected)}
-                            onNearbyOpenChange={setNearbyOpen}
-                            selectedNearbyKey={selectedPoiKey}
-                            onSelectNearby={handleSelectNearbyPoi}
-                          />
-                        </div>
-                      )}
-                      <PoiDetailPanel
-                        poi={selectedPoiDetail}
-                        hasOnsenBack={Boolean(selected)}
-                        onBack={() => setSelectedPoi(undefined)}
-                        onDirections={() => openPoiDirections(selectedPoiDetail)}
+                  {/*
+                    selectedPoiDetail(주변 POI 선택)로 갈렸을 때는 OnsenDetailPanel을
+                    조건부로 안 그리고 hidden 처리만 했었다 — 그러면 selectedPoiDetail이
+                    생기고 없어질 때마다 JSX 트리 위치가 바뀌어(형제 구조 자체가
+                    달라짐) React가 언마운트·재마운트를 시키고, 패널 내부의 탭
+                    상태(useState('한눈에'))가 초기화되는 회귀가 있었다. 두 상태를
+                    같은 자리에서 함께 그리고 PoiDetailPanel만 위에 겹쳐 보이게 해서
+                    OnsenDetailPanel의 마운트 여부가 selected에만 달리게 한다.
+                  */}
+                  {selected && (
+                    <div className={cn('h-full min-h-0 w-full', selectedPoiDetail && 'hidden')}>
+                      <OnsenDetailPanel
+                        onsen={selected}
+                        onDirections={() => openDirections(selected)}
+                        onNearbyOpenChange={setNearbyOpen}
+                        selectedNearbyKey={selectedPoiKey}
+                        onSelectNearby={handleSelectNearbyPoi}
                       />
-                    </>
+                    </div>
+                  )}
+                  {selectedPoiDetail ? (
+                    <PoiDetailPanel
+                      poi={selectedPoiDetail}
+                      hasOnsenBack={Boolean(selected)}
+                      onBack={() => setSelectedPoi(undefined)}
+                      onDirections={() => openPoiDirections(selectedPoiDetail)}
+                    />
                   ) : externalSelected ? (
                     <div className="bg-surface h-full overflow-y-auto px-4 py-6">
                       <p className="text-text-secondary text-[12px]">
@@ -674,17 +681,7 @@ export default function MapPage() {
                         <p className="mt-4 text-[13px]">{externalSelected.subText}</p>
                       )}
                     </div>
-                  ) : (
-                    selected && (
-                      <OnsenDetailPanel
-                        onsen={selected}
-                        onDirections={() => openDirections(selected)}
-                        onNearbyOpenChange={setNearbyOpen}
-                        selectedNearbyKey={selectedPoiKey}
-                        onSelectNearby={handleSelectNearbyPoi}
-                      />
-                    )
-                  )}
+                  ) : null}
                 </div>
               </div>
             </div>

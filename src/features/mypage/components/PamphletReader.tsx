@@ -27,7 +27,6 @@ export default function PamphletReader({
   onClose,
 }: PamphletReaderProps) {
   const [phase, setPhase] = useState<Phase>('opening')
-  const [spread, setSpread] = useState(0)
   const dialogRef = useRef<HTMLDialogElement>(null)
   const dimRef = useRef<HTMLDivElement>(null)
   const windowRef = useRef<HTMLDivElement>(null)
@@ -35,9 +34,9 @@ export default function PamphletReader({
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const closeRef = useRef<() => void>(() => {})
   const onCloseRef = useRef(onClose)
-  const pageCount = Math.max(1, Math.ceil(pamphlet.places.length / 2))
-  const firstPlace = pamphlet.places[spread * 2]
-  const secondPlace = pamphlet.places[spread * 2 + 1]
+  const places = pamphlet.places.map((place, index) => ({ place, index }))
+  const middlePlaces = places.filter((entry) => entry.index % 2 === 0)
+  const rightPlaces = places.filter((entry) => entry.index % 2 === 1)
 
   useLayoutEffect(() => {
     onCloseRef.current = onClose
@@ -264,12 +263,6 @@ export default function PamphletReader({
     }
   }, [source, fromCard])
 
-  const turnSpread = (next: number) => {
-    if (phase !== 'open') return
-    setSpread(Math.max(0, Math.min(pageCount - 1, next)))
-    if (windowRef.current) windowRef.current.scrollTop = 0
-  }
-
   return createPortal(
     <dialog
       ref={dialogRef}
@@ -316,18 +309,22 @@ export default function PamphletReader({
               <div className="pamphlet-reader-back" aria-hidden="true" />
             </div>
             <div className="pamphlet-reader-panel pamphlet-reader-middle">
-              <div className="pamphlet-reader-face">
-                {firstPlace ? (
-                  <PamphletPlace key={firstPlace.id} place={firstPlace} index={spread * 2} />
+              <div className="pamphlet-reader-face pamphlet-place-stack">
+                {middlePlaces.length > 0 ? (
+                  middlePlaces.map(({ place, index }) => (
+                    <PamphletPlace key={place.id} place={place} index={index} />
+                  ))
                 ) : (
                   <PamphletEnd count={0} />
                 )}
               </div>
             </div>
             <div className="pamphlet-reader-panel pamphlet-reader-right">
-              <div className="pamphlet-reader-face">
-                {secondPlace ? (
-                  <PamphletPlace key={secondPlace.id} place={secondPlace} index={spread * 2 + 1} />
+              <div className="pamphlet-reader-face pamphlet-place-stack">
+                {rightPlaces.length > 0 ? (
+                  rightPlaces.map(({ place, index }) => (
+                    <PamphletPlace key={place.id} place={place} index={index} />
+                  ))
                 ) : (
                   <PamphletEnd count={pamphlet.places.length} />
                 )}
@@ -357,30 +354,7 @@ export default function PamphletReader({
         </div>
         <div className="pamphlet-reader-footer">
           <span>MULMEONG · {pamphlet.createdAt}</span>
-          {pageCount > 1 && (
-            <nav aria-label="팜플렛 장소 탐색">
-              <button
-                type="button"
-                disabled={spread === 0 || phase !== 'open'}
-                onClick={() => turnSpread(spread - 1)}
-                aria-label="이전 장소 보기"
-              >
-                ← 이전
-              </button>
-              <span role="status" aria-live="polite">
-                {spread * 2 + 1}–{Math.min(spread * 2 + 2, pamphlet.places.length)} /{' '}
-                {pamphlet.places.length}곳
-              </span>
-              <button
-                type="button"
-                disabled={spread === pageCount - 1 || phase !== 'open'}
-                onClick={() => turnSpread(spread + 1)}
-                aria-label="다음 장소 보기"
-              >
-                다음 →
-              </button>
-            </nav>
-          )}
+          <span>{pamphlet.places.length} PLACES</span>
         </div>
       </div>
     </dialog>,

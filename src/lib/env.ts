@@ -29,4 +29,9 @@ export const env = {
   useMockOnsenDetail: mockFlag(import.meta.env.VITE_USE_MOCK_ONSEN_DETAIL),
   useMockPoiDetail: mockFlag(import.meta.env.VITE_USE_MOCK_POI_DETAIL),
   useMockPamphlet: mockFlag(import.meta.env.VITE_USE_MOCK_PAMPHLET),
+  /**
+   * 서버 /magazines가 권역 이름(?region=충청)을 받는지. 아직 시도코드만 받아서
+   * 기본은 꺼둔다 — 켜지면 프론트가 코드별로 나눠 부르지 않는다.
+   */
+  magazineRegionParam: import.meta.env.VITE_MAGAZINE_REGION_PARAM === 'true',
 }

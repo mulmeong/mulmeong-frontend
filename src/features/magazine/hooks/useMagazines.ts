@@ -1,8 +1,13 @@
 ﻿import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { fetchMagazines, magazineChanges } from '@/features/magazine/api/magazine'
+import {
+  fetchMagazines,
+  fetchMagazinesByRegionName,
+  magazineChanges,
+} from '@/features/magazine/api/magazine'
 import type { MagazineList, MagazineListParams } from '@/types/magazine'
 
-export function useMagazines(params: MagazineListParams = {}) {
+/** region(권역 이름)이 있으면 시도코드 여러 개를 합쳐 받는다. */
+export function useMagazines(params: MagazineListParams & { region?: string } = {}) {
   const revision = useSyncExternalStore(magazineChanges.subscribe, magazineChanges.snapshot)
   const key = JSON.stringify(params)
   const [attempt, setAttempt] = useState(0)
@@ -15,31 +20,36 @@ export function useMagazines(params: MagazineListParams = {}) {
   const filter = JSON.stringify({
     category: params.category,
     sidoCode: params.sidoCode,
+    region: params.region,
     sort: params.sort,
     featured: params.featured,
     size: params.size,
   })
   useEffect(() => {
     let cancelled = false
-    void fetchMagazines(JSON.parse(key) as MagazineListParams)
+    const parsed = JSON.parse(key) as MagazineListParams & { region?: string }
+    const load = parsed.region
+      ? fetchMagazinesByRegionName(parsed.region, parsed)
+      : fetchMagazines(parsed)
+    void load
       .then(async (data) => {
         // 직접 2페이지로 진입한 경우에도 page=0에서만 제공하는 필터 정보를 확보한다.
+        // 서버가 regions를 늘 null로 주므로 그것 때문에 page=0을 다시 부르지 않는다.
         let first = data
-        if (
-          (data.categories === null || data.regions === null) &&
-          metadata.current?.filter !== filter
-        ) {
-          first = await fetchMagazines({ ...JSON.parse(key), page: 0 } as MagazineListParams)
+        if (data.categories === null && metadata.current?.filter !== filter && !parsed.region) {
+          first = await fetchMagazines({ ...parsed, page: 0 })
         }
         if (cancelled) return
-        if (first.categories !== null && first.regions !== null)
-          metadata.current = { filter, categories: first.categories, regions: first.regions }
+        const categories = first.categories ?? metadata.current?.categories ?? null
+        const regions = first.regions ?? metadata.current?.regions ?? null
+        if (first.categories !== null || first.regions !== null || metadata.current)
+          metadata.current = { filter, categories, regions }
         setState({
           identity,
           data: {
             ...data,
-            categories: data.categories ?? metadata.current?.categories ?? [],
-            regions: data.regions ?? metadata.current?.regions ?? [],
+            categories: data.categories ?? categories ?? [],
+            regions: data.regions ?? regions ?? [],
           },
         })
       })
@@ -54,7 +64,7 @@ export function useMagazines(params: MagazineListParams = {}) {
   const current = state?.identity === identity ? state : undefined
   return {
     magazines: current?.data?.content ?? [],
-    data: current?.data,
+    data: current?.data ?? state?.data,
     loading: !current,
     error: current?.error,
     retry: () => setAttempt((value) => value + 1),

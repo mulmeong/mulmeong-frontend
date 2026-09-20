@@ -6,12 +6,15 @@ export default function MagazineArchivePage() {
       <Link to="/magazine" className="text-text-secondary text-[12px]">
         ← 매거진 홈
       </Link>
-      <header className="mt-6">
-        <p className="text-text-secondary text-[10px] tracking-[0.24em]">MULMEONG JOURNAL</p>
-        <h1 className="mt-2 text-[40px] font-medium tracking-tight sm:text-[56px]">Archive</h1>
-        <p className="text-text-secondary mt-3 text-[13px]">
-          물과 마을, 그리고 여행의 기록을 모았습니다.
-        </p>
+      {/* 데모의 타이틀 밴드 — 히어로 대신 얇게, 오른쪽에 편수를 둔다. */}
+      <header className="border-border-default mt-6 flex items-end justify-between gap-4 border-b pb-6">
+        <div>
+          <p className="text-text-secondary text-[12px] tracking-[0.2em]">MAGAZINE</p>
+          <h1 className="mt-2.5 text-[40px] leading-none font-black tracking-[0.04em] sm:text-[44px]">
+            ARCHIVE
+          </h1>
+        </div>
+        <p className="text-text-secondary shrink-0 text-[13px]">물과 마을, 그리고 여행의 기록.</p>
       </header>
       <MagazineCollection archive />
     </div>

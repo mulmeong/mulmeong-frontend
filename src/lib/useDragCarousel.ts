@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
+// 지도 사이드바 캐러셀에서 시작한 훅이다. 매거진 필름스트립도 같은 마우스 드래그
+// 스크롤이 필요해져(두 번째 사용) 도메인 폴더 밖 공용으로 옮겼다.
 const DRAG_THRESHOLD = 6
 const DRAG_SENSITIVITY = 1.4
 const SNAP_DURATION = 120
@@ -8,7 +10,7 @@ function scrollBehavior(): ScrollBehavior {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'
 }
 
-export function useSidebarCarousel(itemCount: number, disabled = false) {
+export function useDragCarousel(itemCount: number, disabled = false) {
   const trackRef = useRef<HTMLUListElement>(null)
   const interruptSnapRef = useRef<(() => void) | null>(null)
   const [scroll, setScroll] = useState({ previous: false, next: false })
