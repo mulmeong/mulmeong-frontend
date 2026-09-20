@@ -35,6 +35,7 @@ export function fetchMagazines(params: MagazineListParams = {}): Promise<Magazin
   const normalized = {
     category: params.category ?? 'ALL',
     sidoCode: params.sidoCode,
+    region: params.region,
     sort: params.sort ?? 'LATEST',
     featured: params.featured ?? false,
     page: Math.max(0, params.page ?? 0),
@@ -69,6 +70,9 @@ export async function fetchMagazinesByRegionName(
   region: string,
   params: MagazineListParams = {},
 ): Promise<MagazineList> {
+  // 서버가 권역을 직접 받으면 합칠 필요가 없다. 지원되면 .env에서 켠다.
+  if (env.magazineRegionParam) return fetchMagazines({ ...params, region })
+
   const codes = MAGAZINE_REGION_CODES[region]
   if (!codes?.length) return fetchMagazines(params)
   if (codes.length === 1) return fetchMagazines({ ...params, sidoCode: codes[0] })

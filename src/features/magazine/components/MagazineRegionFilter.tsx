@@ -4,17 +4,23 @@ import { MAGAZINE_REGIONS } from '@/types/magazine'
 import { cn } from '@/lib/cn'
 
 /**
- * 지역 고르기. 서버 목록(regions)이 늘 null이라 권역 상수로 그린다 —
- * 편수(count)는 서버만 알아서 보여주지 않는다.
+ * 지역 고르기. 권역 목록은 화면 상수로 그린다 — 서버가 목록 응답의 regions를
+ * 아직 null로 주기 때문이다(BE 요청 중).
  *
- * select 대신 팝오버인 이유는 권역이 9개라 한 번에 늘어놓는 편이 고르기 쉬워서다.
+ * counts가 들어오면 권역마다 편수를 같이 보여준다. 서버가 regions를 채우면
+ * 호출부에서 넘겨 주기만 하면 된다.
+ *
+ * select 대신 팝오버인 이유는 권역이 여럿이라 한 번에 늘어놓는 편이 고르기 쉬워서다.
  */
 export default function MagazineRegionFilter({
   value,
+  counts,
   onChange,
 }: {
   /** 선택된 권역 이름. 비어 있으면 전국. */
   value?: string
+  /** 권역별 편수. 서버가 주면 칩에 함께 찍는다. */
+  counts?: Record<string, number>
   onChange: (region: string) => void
 }) {
   const [open, setOpen] = useState(false)
@@ -64,6 +70,7 @@ export default function MagazineRegionFilter({
         >
           {['전국', ...MAGAZINE_REGIONS].map((region) => {
             const selected = region === '전국' ? !value : value === region
+            const count = region === '전국' ? undefined : counts?.[region]
             return (
               <button
                 key={region}
@@ -78,6 +85,9 @@ export default function MagazineRegionFilter({
                 )}
               >
                 {region}
+                {count !== undefined && (
+                  <span className="ml-1 text-[10px] tabular-nums opacity-60">{count}</span>
+                )}
               </button>
             )
           })}

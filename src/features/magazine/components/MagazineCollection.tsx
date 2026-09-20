@@ -1,7 +1,12 @@
 ﻿import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useMagazines } from '@/features/magazine/hooks/useMagazines'
-import { MAGAZINE_CATEGORIES, MAGAZINE_REGIONS, regionNameOfSido } from '@/types/magazine'
+import {
+  MAGAZINE_CATEGORIES,
+  MAGAZINE_REGIONS,
+  regionCountsOf,
+  regionNameOfSido,
+} from '@/types/magazine'
 import { cn } from '@/lib/cn'
 import MagazineCard from './MagazineCard'
 import MagazineImage from './MagazineImage'
@@ -60,7 +65,11 @@ export default function MagazineCollection({ archive = false }: { archive?: bool
       >
         {/* 지역은 카테고리보다 앞에 둔다 — 어느 지역 이야기인지가 먼저 좁혀진다. */}
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <MagazineRegionFilter value={region} onChange={(next) => change('region', next)} />
+          <MagazineRegionFilter
+            value={region}
+            counts={regionCountsOf(data?.regions)}
+            onChange={(next) => change('region', next)}
+          />
           <nav aria-label="매거진 카테고리" className="flex flex-wrap items-center gap-x-4 gap-y-1">
             {[{ code: 'ALL', label: '전체' }, ...MAGAZINE_CATEGORIES].map((item) => {
               const count = data?.categories?.find((entry) => entry.code === item.code)?.count

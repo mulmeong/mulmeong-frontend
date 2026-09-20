@@ -41,8 +41,19 @@ export default function MagazineAside({ magazine }: { magazine: MagazineDetail }
   )
 }
 
+/** 데모의 스펙 칩(수온 42℃ · 유황천 · 노천). 값이 있는 것만 만든다. */
+function specsOf(place: MagazinePlace): string[] {
+  const specs: string[] = []
+  const temp = place.waterTemp == null ? undefined : Number(place.waterTemp)
+  if (temp !== undefined && Number.isFinite(temp)) specs.push(`수온 ${temp}℃`)
+  if (place.waterType) specs.push(place.waterType)
+  if (place.hasOutdoor) specs.push('노천')
+  return specs
+}
+
 function RelatedPlace({ place }: { place: MagazinePlace }) {
   const navigate = useNavigate()
+  const specs = specsOf(place)
   const region = [place.sido, place.sigungu].filter(Boolean).join(' ')
   const meta = [region, place.subText].filter(Boolean).join(' · ')
 
@@ -62,6 +73,20 @@ function RelatedPlace({ place }: { place: MagazinePlace }) {
 
       <p className="mt-3 text-[15px] font-bold">{place.name}</p>
       {meta && <p className="text-text-secondary mt-0.5 text-[11px]">{meta}</p>}
+
+      {/* 서버가 수온·수질을 실어 주면 칩으로 뜬다. 없으면 줄째로 빠진다. */}
+      {specs.length > 0 && (
+        <ul className="mt-2.5 flex flex-wrap gap-1">
+          {specs.map((spec) => (
+            <li
+              key={spec}
+              className="bg-surface-dim text-text-primary rounded-sm px-1.5 py-1 text-[10px]"
+            >
+              {spec}
+            </li>
+          ))}
+        </ul>
+      )}
       {place.accessSummary && (
         <p className="text-text-secondary mt-1.5 text-[11px] leading-[1.6]">
           {place.accessSummary}
