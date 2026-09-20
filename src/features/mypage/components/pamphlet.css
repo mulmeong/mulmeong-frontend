@@ -390,6 +390,54 @@
   overflow-wrap: anywhere;
 }
 
+/* 온천의 성질 — 제목 바로 아래, 가운뎃점으로 잇는다. */
+.pamphlet-place-water {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 10px;
+  color: var(--color-text-primary);
+  font-size: 12px;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+}
+
+.pamphlet-place-water > span + span::before {
+  content: '·';
+  margin-right: 10px;
+  color: var(--color-text-secondary);
+}
+
+/* 방문 정보 — 얇은 선으로만 구분한다. 카드·배지를 만들지 않는다. */
+.pamphlet-place-spec {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border-default);
+}
+
+.pamphlet-place-spec > div {
+  display: flex;
+  gap: 14px;
+  padding: 3px 0;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.pamphlet-place-spec dt {
+  flex-shrink: 0;
+  width: 64px;
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  line-height: 1.9;
+}
+
+.pamphlet-place-spec dd {
+  min-width: 0;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
 .pamphlet-place-location {
   margin-top: 20px;
   color: var(--color-text-secondary);

@@ -1,3 +1,4 @@
+import type { OnsenDetail } from '@/types/onsenDetail'
 import type { PamphletDetail } from '@/types/pamphlet'
 import type { SavedCategory } from '@/types/saved'
 
@@ -24,6 +25,28 @@ export type PamphletViewPlace = {
   imageUrl?: string
   /** 서버가 준 한 줄 설명. 온천은 수온·수질, 그 외는 분류다. */
   description?: string
+  /**
+   * 온천 상세(GET /onsens/{id})로 채우는 보강 정보. 팜플렛 응답에는 없어서
+   * 화면에서 따로 받아 붙인다 — 없으면 해당 줄을 숨긴다.
+   */
+  spec?: PamphletPlaceSpec
+}
+
+/** 팜플렛에 싣는 온천 정보. 실제로 값이 있는 필드만 추렸다. */
+export type PamphletPlaceSpec = {
+  /** 온천 자체를 설명하는 값 — 수온·수질·pH. */
+  tempC?: number
+  waterType?: string
+  ph?: number
+  /** 방문에 참고하는 값. 서버가 hours·price·holiday·parking을 아직 안 채운다. */
+  hours?: string
+  price?: number
+  closed?: string
+  parking?: string
+  accessLabel?: string
+  facilityType?: string
+  /** 한 줄 소개. benefit(효능)이 없으면 지역 코멘트를 쓴다. */
+  note?: string
 }
 
 /** 서버 placeType → 화면 카테고리. SPA는 온천과 같은 칸으로 묶는다. */
@@ -56,4 +79,32 @@ export function toPamphletView(detail: PamphletDetail, number: string): Pamphlet
 /** 목록 안에서의 순번. 페이지를 넘겨도 이어지게 앞 페이지 수를 더한다. */
 export function coverNumber(index: number, page: number, size: number): string {
   return String((page - 1) * size + index + 1).padStart(2, '0')
+}
+
+/**
+ * 온천 상세를 팜플렛에 실을 형태로 줄인다.
+ *
+ * 실측(표본 13곳) 기준 hours·price·holiday·parking은 서버가 아직 전부 null이라
+ * 대부분 수온·수질·효능만 남는다. 값이 없는 항목은 아예 넣지 않아 화면이 빈
+ * 라벨을 그리지 않게 한다.
+ */
+export function toPlaceSpec(detail: OnsenDetail): PamphletPlaceSpec {
+  const water = detail.water ?? undefined
+  const spec: PamphletPlaceSpec = {
+    tempC: water?.temp ?? undefined,
+    waterType: water?.type ?? water?.component ?? undefined,
+    ph: water?.ph ?? undefined,
+    hours: detail.hours ?? undefined,
+    price: detail.priceMin ?? undefined,
+    closed: detail.holiday ?? undefined,
+    parking: detail.parkingInfo ?? undefined,
+    accessLabel: detail.access?.accessLevelLabel ?? undefined,
+    facilityType: detail.facilities?.facilityType ?? undefined,
+    note: water?.benefit ?? detail.regionComment ?? undefined,
+  }
+  // undefined 키를 남기면 호출부가 값이 있는지 세기 번거롭다.
+  ;(Object.keys(spec) as (keyof PamphletPlaceSpec)[]).forEach((key) => {
+    if (spec[key] === undefined) delete spec[key]
+  })
+  return spec
 }
