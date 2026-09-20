@@ -47,8 +47,9 @@ export default function MagazineCollection({ archive = false }: { archive?: bool
           {data ? `${data.totalElements}편` : ''}
         </span>
       </div>
-      <div className="border-border-default border-y py-4">
-        <nav aria-label="매거진 카테고리" className="flex flex-wrap gap-x-5 gap-y-2">
+      {/* 필터는 목록으로 넘어가는 길잡이라 divider 하나로만 구분하고 톤을 낮춘다. */}
+      <div className="border-border-default flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b pb-3">
+        <nav aria-label="매거진 카테고리" className="flex flex-wrap items-center gap-x-4 gap-y-1">
           {[{ code: 'ALL', label: '전체' }, ...MAGAZINE_CATEGORIES].map((item) => {
             const count = data?.categories?.find((entry) => entry.code === item.code)?.count
             return (
@@ -58,26 +59,27 @@ export default function MagazineCollection({ archive = false }: { archive?: bool
                 onClick={() => change('category', item.code === 'ALL' ? '' : item.code)}
                 aria-pressed={category === item.code}
                 className={cn(
-                  'py-1 text-[12px]',
+                  'py-1 text-[12px] transition-colors',
                   category === item.code
-                    ? 'font-semibold underline underline-offset-8'
+                    ? 'text-text-primary font-medium underline underline-offset-[6px]'
                     : 'text-text-secondary hover:text-text-primary',
                 )}
               >
                 {item.label}
                 {count !== undefined && (
-                  <span className="ml-1 text-[10px] tabular-nums">{count}</span>
+                  <span className="ml-1 text-[10px] tabular-nums opacity-60">{count}</span>
                 )}
               </button>
             )
           })}
         </nav>
-        <div className="mt-5 flex flex-wrap items-center gap-3">
+        {/* 지역·정렬은 보조 컨트롤이라 오른쪽에 작게 묶는다. */}
+        <div className="text-text-secondary ml-auto flex items-center gap-1 text-[11px]">
           <select
             aria-label="지역"
             value={sidoCode ?? ''}
             onChange={(event) => change('sidoCode', event.target.value)}
-            className="border-border-default max-w-[170px] rounded-sm border bg-transparent px-2 py-2 text-[12px]"
+            className="hover:text-text-primary max-w-[130px] cursor-pointer bg-transparent py-1 text-[11px]"
           >
             <option value="">전국</option>
             {sidoCode && !data?.regions?.some((item) => item.sidoCode === sidoCode) && (
@@ -89,30 +91,39 @@ export default function MagazineCollection({ archive = false }: { archive?: bool
               </option>
             ))}
           </select>
+          <span aria-hidden className="opacity-40">
+            ·
+          </span>
           <select
             aria-label="정렬"
             value={sort}
             onChange={(event) => change('sort', event.target.value)}
-            className="bg-transparent py-2 text-[12px]"
+            className="hover:text-text-primary cursor-pointer bg-transparent py-1 text-[11px]"
           >
             <option value="LATEST">최신순</option>
             <option value="POPULAR">인기순</option>
             <option value="READ_TIME">읽는 시간 짧은 순</option>
           </select>
           {archive && (
-            <div className="ml-auto flex gap-3">
+            <>
+              <span aria-hidden className="opacity-40">
+                ·
+              </span>
               {(['grid', 'list'] as const).map((mode) => (
                 <button
                   key={mode}
                   type="button"
                   aria-pressed={view === mode}
                   onClick={() => setView(mode)}
-                  className={cn('py-2 text-[11px]', view !== mode && 'text-text-secondary')}
+                  className={cn(
+                    'px-1 py-1 text-[11px]',
+                    view === mode ? 'text-text-primary font-medium' : 'hover:text-text-primary',
+                  )}
                 >
                   {mode === 'grid' ? '그리드' : '리스트'}
                 </button>
               ))}
-            </div>
+            </>
           )}
         </div>
       </div>
@@ -120,12 +131,17 @@ export default function MagazineCollection({ archive = false }: { archive?: bool
       {!loading &&
         !error &&
         (view === 'grid' ? (
-          <ul className="mt-7 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
-            {magazines.map((magazine, index) => (
-              <li key={magazine.magazineId}>
-                <MagazineCard magazine={magazine} index={page * 12 + index} />
-              </li>
-            ))}
+          <ul className="mt-8 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+            {magazines.map((magazine, index) => {
+              // 첫 화면 첫 글만 두 칸을 써서 리듬을 준다. 아카이브·2페이지부터는
+              // 훑어보는 화면이라 크기를 고르게 둔다.
+              const featured = !archive && page === 0 && index === 0
+              return (
+                <li key={magazine.magazineId} className={cn(featured && 'sm:col-span-2')}>
+                  <MagazineCard magazine={magazine} featured={featured} />
+                </li>
+              )
+            })}
           </ul>
         ) : (
           <ul>
