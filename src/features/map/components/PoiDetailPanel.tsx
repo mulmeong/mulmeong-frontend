@@ -56,7 +56,10 @@ export default function PoiDetailPanel({
   onBack,
   onDirections,
 }: PoiDetailPanelProps) {
-  const { detail, loading: detailLoading } = usePoiDetail(poi.externalId || undefined)
+  const { detail, loading: detailLoading } = usePoiDetail(
+    poi.externalId || undefined,
+    poi.contentTypeId,
+  )
 
   // 목록 응답이 이미 있는 값은 그대로 쓰고, 빈 칸만 상세로 메운다 — 패널이 늦게 뜨지 않게.
   const imageUrl =

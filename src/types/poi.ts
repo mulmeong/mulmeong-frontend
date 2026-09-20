@@ -49,6 +49,11 @@ export const POI_FILTER_CATEGORY_MAP: Record<PoiFilterId, readonly PoiCategory[]
 export type Poi = {
   externalId: string
   placeId?: number | null
+  /**
+   * TourAPI 콘텐츠 타입(39=음식점 등). 상세 요청에 같이 넘기면 서버가 타입을
+   * 순회하지 않고 한 번에 조회한다 — 없어도 동작은 한다.
+   */
+  contentTypeId?: string | number | null
   name: string
   categoryName?: string | null
   address?: string | null

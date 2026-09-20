@@ -23,7 +23,10 @@ const pending = new Map<string, Promise<PoiDetail>>()
  * 서버가 TourAPI를 매번 호출하므로(DB·Redis 저장 없음) 같은 장소를 다시 열 때는
  * 프론트 캐시로 막는다 — TourAPI 일일 쿼터를 카드 클릭마다 쓰지 않는다.
  */
-export function fetchPoiDetail(externalId: string): Promise<PoiDetail> {
+export function fetchPoiDetail(
+  externalId: string,
+  contentTypeId?: string | number | null,
+): Promise<PoiDetail> {
   const cached = cache.get(externalId)
   if (cached && cached.expiresAt > Date.now()) return Promise.resolve(cached.detail)
   const inFlight = pending.get(externalId)
@@ -34,7 +37,10 @@ export function fetchPoiDetail(externalId: string): Promise<PoiDetail> {
     env.useMockPoiDetail
       ? mockPoiDetail(externalId)
       : api
-          .get<PoiDetail>(`/external/tour/${encodeURIComponent(externalId)}`, { skipAuth: true })
+          .get<PoiDetail>(`/external/tour/${encodeURIComponent(externalId)}`, {
+            params: contentTypeId ? { contentTypeId } : undefined,
+            skipAuth: true,
+          })
           .then(normalize)
   )
     .then((detail) => {
