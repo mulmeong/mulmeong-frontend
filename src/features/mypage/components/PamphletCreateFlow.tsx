@@ -173,7 +173,7 @@ export default function PamphletCreateFlow({
               onClick={() => onManage(created.pamphletId)}
               className="shrink-0 border border-[#D8DCDB] px-6 py-3.5 text-[13.5px] font-normal text-[#0E1513]"
             >
-              팜플렛 관리
+              팜플렛 상세
             </button>
           </div>
           {/* 복사된 링크는 화면에도 남긴다 — 클립보드가 막힌 환경에서 직접 집을 수 있게. */}

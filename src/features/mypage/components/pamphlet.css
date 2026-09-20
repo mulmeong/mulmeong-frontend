@@ -68,6 +68,41 @@
   right: 7%;
 }
 
+/* 사진 표지 — 사진 위에서도 번호·브랜드가 읽히게 어둡게 깔고 흰 글자를 쓴다. */
+.pamphlet-cover-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pamphlet-cover-art[data-photo]::before,
+.pamphlet-cover-art[data-photo]::after {
+  background: color-mix(in srgb, #ffffff 55%, transparent);
+  z-index: 1;
+}
+
+.pamphlet-cover-art[data-photo] > span {
+  position: relative;
+  z-index: 1;
+  color: #ffffff;
+  text-shadow: 0 1px 6px rgb(0 0 0 / 45%);
+}
+
+/* 사진이 밝아도 글자가 묻히지 않게 아주 옅은 그늘을 둔다. */
+.pamphlet-cover-art[data-photo] .pamphlet-cover-photo::after {
+  content: '';
+}
+
+.pamphlet-cover-art[data-photo] {
+  background: #1c1b18;
+}
+
+.pamphlet-cover-art[data-photo] .pamphlet-cover-photo {
+  opacity: 0.82;
+}
+
 .pamphlet-cover-brand {
   position: absolute;
   top: 16px;
@@ -632,6 +667,15 @@
   color: var(--color-text-secondary);
   font-size: 11px;
   letter-spacing: 0.04em;
+}
+
+/* 장소 목록 머리말 — 나열이 아니라 여행 순서임을 알린다. */
+.pamphlet-preview-section {
+  padding: 18px 24px 8px;
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  line-height: 1.8;
 }
 
 .pamphlet-preview-places {

@@ -98,6 +98,7 @@ export default function PamphletPreview({ detail }: { detail: PamphletDetail }) 
         </p>
       </header>
 
+      {detail.places.length > 0 && <p className="pamphlet-preview-section">PLACES · 여행 순서</p>}
       <ol className="pamphlet-preview-places">
         {detail.places.map((place) => (
           <li key={place.placeId} className="pamphlet-preview-place">
