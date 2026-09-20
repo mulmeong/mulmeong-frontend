@@ -12,7 +12,8 @@ export default function MagazineIssueBanner() {
   const { magazines, loading } = useMagazines({ featured: true, size: 1 })
   const magazine = magazines[0]
 
-  if (loading || !magazine) return null
+  if (loading) return <MagazineIssueBannerSkeleton />
+  if (!magazine) return null
 
   const meta = [magazine.categoryLabel, `${magazine.readMinutes}분`, magazine.regionName]
     .filter(Boolean)
@@ -41,6 +42,28 @@ export default function MagazineIssueBanner() {
             읽어보기
           </Link>
           <span className="text-[12px] text-white/60">{meta}</span>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function MagazineIssueBannerSkeleton() {
+  return (
+    <section
+      role="status"
+      aria-label="이슈 매거진을 불러오는 중"
+      className="bg-inverse -mx-[calc(50vw-50%)] px-6 py-20 sm:py-28"
+    >
+      <div className="mx-auto max-w-5xl motion-safe:animate-pulse">
+        <div aria-hidden="true" className="h-3 w-28 rounded-[2px] bg-white/15" />
+        <div aria-hidden="true" className="mt-8 max-w-2xl space-y-4">
+          <div className="h-12 w-full rounded-[2px] bg-white/20 sm:h-16" />
+          <div className="h-12 w-3/4 rounded-[2px] bg-white/15 sm:h-16" />
+        </div>
+        <div aria-hidden="true" className="mt-9 flex flex-wrap items-center gap-4">
+          <div className="h-11 w-24 bg-white/20" />
+          <div className="h-3 w-40 rounded-[2px] bg-white/15" />
         </div>
       </div>
     </section>

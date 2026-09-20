@@ -69,3 +69,32 @@ export default function MagazineFilmstrip({ magazines }: { magazines: Magazine[]
     </div>
   )
 }
+
+export function MagazineFilmstripSkeleton({ count = 5 }: { count?: number }) {
+  return (
+    <div role="status" aria-label="매거진을 불러오는 중" className="motion-safe:animate-pulse">
+      <ul
+        aria-hidden="true"
+        className="scrollbar-thin -mx-6 flex touch-pan-x items-start gap-7 overflow-hidden px-6 pb-2"
+      >
+        {Array.from({ length: count }).map((_, index) => (
+          <li key={index} className={cn('w-[240px] shrink-0', OFFSETS[index % OFFSETS.length])}>
+            <div className="bg-border-default/35 aspect-[3/4] rounded-sm" />
+            <div className="mt-3 flex items-start gap-2">
+              <div className="bg-border-default/35 mt-1 h-3 w-5 shrink-0 rounded-[2px]" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="bg-border-default/40 h-3.5 w-full rounded-[2px]" />
+                <div className="bg-border-default/30 h-3.5 w-3/4 rounded-[2px]" />
+              </div>
+            </div>
+            <div className="bg-border-default/30 mt-3 h-2.5 w-24 rounded-[2px]" />
+          </li>
+        ))}
+      </ul>
+      <div aria-hidden="true" className="mt-4 flex items-center justify-between">
+        <div className="bg-border-default/30 h-2.5 w-24 rounded-[2px]" />
+        <div className="bg-border-default/30 h-3 w-28 rounded-[2px]" />
+      </div>
+    </div>
+  )
+}

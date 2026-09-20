@@ -1,7 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
 
 import MagazineAside from '@/features/magazine/components/MagazineAside'
-import MagazineJumpBar from '@/features/magazine/components/MagazineJumpBar'
 import MagazineLikeButton from '@/features/magazine/components/MagazineLikeButton'
 import MagazineShareButton from '@/features/magazine/components/MagazineShareButton'
 import { useMagazine } from '@/features/magazine/hooks/useMagazine'
@@ -61,7 +60,6 @@ export default function MagazineDetailPage() {
 
   return (
     <>
-      <MagazineJumpBar current={magazine.category} />
       {/*
         RootLayout의 main은 max-w-5xl(px-6)라 좌우 보조 영역 둘을 넉넉히 못
         수용한다. 히어로 사진이 article 밖으로 넘치는(풀블리드) 채로 gap만

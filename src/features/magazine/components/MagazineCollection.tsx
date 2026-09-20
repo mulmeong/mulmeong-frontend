@@ -1,4 +1,5 @@
 ﻿import { useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useMagazines } from '@/features/magazine/hooks/useMagazines'
 import {
@@ -13,6 +14,12 @@ import MagazineImage from './MagazineImage'
 import MagazineRegionFilter from './MagazineRegionFilter'
 import MagazineFeedback from './MagazineFeedback'
 import type { MagazineCategory, MagazineSort } from '@/types/magazine'
+
+const SORT_OPTIONS: { value: MagazineSort; label: string }[] = [
+  { value: 'LATEST', label: '최신순' },
+  { value: 'POPULAR', label: '인기순' },
+  { value: 'READ_TIME', label: '읽는 시간 짧은 순' },
+]
 
 export default function MagazineCollection({ archive = false }: { archive?: boolean }) {
   const [params, setParams] = useSearchParams()
@@ -96,41 +103,42 @@ export default function MagazineCollection({ archive = false }: { archive?: bool
           </nav>
         </div>
         {/* 정렬·보기는 보조 컨트롤이라 오른쪽에 작게 묶는다. */}
-        <div className="text-text-secondary ml-auto flex items-center gap-1 text-[11px]">
-          <select
-            aria-label="정렬"
-            value={sort}
-            onChange={(event) => change('sort', event.target.value)}
-            className="hover:text-text-primary cursor-pointer bg-transparent py-1 text-[11px]"
-          >
-            <option value="LATEST">최신순</option>
-            <option value="POPULAR">인기순</option>
-            <option value="READ_TIME">읽는 시간 짧은 순</option>
-          </select>
+        <div className="text-text-secondary ml-auto flex items-center gap-7 text-[12px]">
+          <MagazineSortMenu value={sort} onChange={(next) => change('sort', next)} />
           {archive && (
-            <>
-              <span aria-hidden className="opacity-40">
-                ·
-              </span>
-              {(['grid', 'list'] as const).map((mode) => (
+            <div
+              className="border-border-default inline-flex h-8 overflow-hidden rounded-md border"
+              aria-label="보기 방식"
+            >
+              {(['list', 'grid'] as const).map((mode) => (
                 <button
                   key={mode}
                   type="button"
                   aria-pressed={view === mode}
                   onClick={() => setView(mode)}
                   className={cn(
-                    'px-1 py-1 text-[11px]',
-                    view === mode ? 'text-text-primary font-medium' : 'hover:text-text-primary',
+                    'min-w-16 px-4 text-[12px] font-medium transition-colors',
+                    view === mode
+                      ? 'bg-inverse text-text-inverse'
+                      : 'bg-surface text-text-primary hover:bg-surface-dim',
                   )}
                 >
-                  {mode === 'grid' ? '그리드' : '리스트'}
+                  {mode === 'list' ? '리스트' : '그리드'}
                 </button>
               ))}
-            </>
+            </div>
           )}
         </div>
       </div>
-      <MagazineFeedback loading={loading} error={error} empty={!magazines.length} retry={retry} />
+      {loading && (
+        <MagazineCollectionSkeleton archive={archive} count={archive ? 12 : 6} view={view} />
+      )}
+      <MagazineFeedback
+        loading={false}
+        error={error}
+        empty={!loading && !magazines.length}
+        retry={retry}
+      />
       {!loading &&
         !error &&
         (view === 'grid' ? (
@@ -174,7 +182,7 @@ export default function MagazineCollection({ archive = false }: { archive?: bool
                     행에 마우스를 올리면 세로 사진이 뜬다. 목차만 보고 고르기
                     어려운 걸 덜어 준다. 포인터가 없는 기기에선 띄우지 않는다.
                   */}
-                  <span className="pointer-events-none absolute top-1/2 right-44 hidden h-[150px] w-[120px] -translate-y-1/2 rotate-[-2deg] overflow-hidden rounded-sm opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 xl:[@media(hover:hover)]:block">
+                  <span className="pointer-events-none absolute top-1/2 right-44 z-50 hidden h-[150px] w-[120px] -translate-y-1/2 rotate-[-2deg] overflow-hidden rounded-sm opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 xl:[@media(hover:hover)]:block">
                     <MagazineImage
                       src={magazine.thumbnailUrl}
                       seed={magazine.magazineId}
@@ -228,5 +236,146 @@ export default function MagazineCollection({ archive = false }: { archive?: bool
         </Link>
       )}
     </section>
+  )
+}
+
+function MagazineSortMenu({
+  value,
+  onChange,
+}: {
+  value: MagazineSort
+  onChange: (sort: MagazineSort) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const selected = SORT_OPTIONS.find((option) => option.value === value) ?? SORT_OPTIONS[0]
+
+  useEffect(() => {
+    if (!open) return
+    const close = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
+    }
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', close)
+    document.addEventListener('keydown', escape)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      document.removeEventListener('keydown', escape)
+    }
+  }, [open])
+
+  const pick = (sort: MagazineSort) => {
+    onChange(sort)
+    setOpen(false)
+  }
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        aria-expanded={open}
+        aria-haspopup="true"
+        className="hover:text-text-primary inline-flex h-7 items-center gap-2 text-[12px] text-text-secondary transition-colors"
+      >
+        {selected.label}
+        <span aria-hidden="true" className="text-[13px] leading-none text-text-secondary/70">
+          ˅
+        </span>
+      </button>
+
+      {open && (
+        <div
+          className="border-border-default bg-surface absolute top-[calc(100%+6px)] right-0 z-50 w-[154px] rounded-[2px] border px-2 py-1.5"
+          role="group"
+          aria-label="정렬"
+        >
+          {SORT_OPTIONS.map((option) => {
+            const active = option.value === value
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => pick(option.value)}
+                aria-pressed={active}
+                className={cn(
+                  'relative flex h-8 w-full items-center text-left text-[12px] transition-colors',
+                  active
+                    ? 'text-text-primary font-semibold after:absolute after:bottom-1 after:left-0 after:h-px after:w-4 after:bg-text-primary after:content-[""]'
+                    : 'text-text-secondary hover:bg-surface-dim hover:text-text-primary',
+                )}
+              >
+                {option.label}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function MagazineCollectionSkeleton({
+  archive,
+  count,
+  view,
+}: {
+  archive: boolean
+  count: number
+  view: 'grid' | 'list'
+}) {
+  if (view === 'list')
+    return (
+      <ul role="status" aria-label="매거진을 불러오는 중" className="motion-safe:animate-pulse">
+        {Array.from({ length: count }).map((_, index) => (
+          <li key={index} className="border-border-default border-b px-2 py-6">
+            <div
+              aria-hidden="true"
+              className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6"
+            >
+              <div className="bg-border-default/30 h-3 w-8 shrink-0 rounded-[2px]" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="bg-border-default/40 h-5 w-full max-w-lg rounded-[2px]" />
+                <div className="bg-border-default/30 h-3 w-2/3 rounded-[2px] sm:hidden" />
+              </div>
+              <div className="bg-border-default/30 h-3 w-32 shrink-0 rounded-[2px]" />
+              <div className="bg-border-default/30 h-3 w-12 shrink-0 rounded-[2px]" />
+            </div>
+          </li>
+        ))}
+      </ul>
+    )
+
+  return (
+    <ul
+      role="status"
+      aria-label="매거진을 불러오는 중"
+      className={cn(
+        'mt-8 grid gap-x-7 gap-y-9 motion-safe:animate-pulse sm:grid-cols-2',
+        archive ? 'lg:grid-cols-4' : 'lg:grid-cols-3',
+      )}
+    >
+      {Array.from({ length: count }).map((_, index) => {
+        const featured = !archive && index === 0
+        return (
+          <li key={index} className={cn(featured && 'sm:col-span-2')}>
+            <div
+              aria-hidden="true"
+              className={cn(
+                'bg-border-default/35 rounded-sm',
+                featured ? 'aspect-[16/9]' : archive ? 'aspect-[3/4]' : 'aspect-[4/3]',
+              )}
+            />
+            <div aria-hidden="true" className="mt-4 space-y-2">
+              <div className="bg-border-default/40 h-4 w-11/12 rounded-[2px]" />
+              <div className="bg-border-default/30 h-4 w-2/3 rounded-[2px]" />
+              <div className="bg-border-default/30 mt-3 h-2.5 w-28 rounded-[2px]" />
+            </div>
+          </li>
+        )
+      })}
+    </ul>
   )
 }
