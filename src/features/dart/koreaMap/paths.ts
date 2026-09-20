@@ -1,6 +1,11 @@
 /**
- * 대한민국 시·도 경계 17개. dart-5a.html의 <path d=\"...\"> 를 스크립트로 추출했다.
+ * 대한민국 시·도 경계 17개.
  *
+ * 출처: southkorea/southkorea-maps (https://github.com/southkorea/southkorea-maps)
+ *       kostat/2013 — 통계청 경계 데이터. 원 출처는 통계지리정보서비스(SGIS)이며
+ *       공공누리 제1유형(출처 표시)이다.
+ *
+ * 받은 GeoJSON을 SVG로 굽고 dart-5a.html에서 <path d="..."> 를 추출했다.
  * 실제 경계 좌표이므로 손으로 고치거나 단순화하지 말 것.
  * viewBox 300x430 좌표계이며, 위경도 변환은 projection.ts를 쓴다.
  */
