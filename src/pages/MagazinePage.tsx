@@ -22,9 +22,9 @@ export default function MagazinePage() {
   })
 
   return (
-    // overflow-x-hidden: 배너가 w-screen으로 화면 전체폭까지 나가는데,
-    // 세로 스크롤바 폭만큼 100vw가 뷰포트보다 커져 가로 스크롤이 생기는 걸 막는다.
-    <div className="-mt-10 overflow-x-hidden pb-16">
+    // overflow는 여기 두지 않는다 — RootLayout 최상위에 있다. 여기 걸면 그 폭
+    // (max-w-5xl 안쪽)이 아래 배너의 calc(50vw - 50%) 계산에 섞여 밀려 보인다.
+    <div className="-mt-10 pb-16">
       <MagazineIssueBanner />
 
       <div className="mt-10">
