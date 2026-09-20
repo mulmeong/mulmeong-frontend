@@ -5,6 +5,7 @@ import type { MyProfile } from '@/types/user'
 
 import { useAuth } from '@/features/auth/hooks/authContext'
 import { useMyProfile } from '@/features/mypage/hooks/useMyProfile'
+import { LEVEL_COUNT, visitsToNextLevel } from '@/features/mypage/levels'
 import { cn } from '@/lib/cn'
 
 const TABS = [
@@ -37,6 +38,13 @@ export default function MyPageLayout() {
   const nickname = profile?.nickname ?? user?.nickname ?? ''
   const level = profile?.level ?? user?.level
   const title = profile?.title ?? user?.title
+
+  /**
+   * 다음 레벨까지 남은 온천 수. 서버가 남은 수를 안 줘서 방문 수로 센다.
+   * 프로필이 오기 전에는 세지 않는다 — 0개로 보였다가 바뀌면 눈에 거슬린다.
+   */
+  const toNextLevel =
+    profile === undefined ? undefined : visitsToNextLevel(profile.visitedOnsenCount)
 
   // 방문 온천 수와 리뷰 수는 다르다 — 재방문은 리뷰만 올라간다 (MY-01 비고).
   const stats = [
@@ -99,6 +107,36 @@ export default function MyPageLayout() {
                 )}
               </div>
             </div>
+
+            {/*
+              레벨 눈금. 한 칸이 레벨 하나다 — Lv.3이면 5칸 중 3칸이 찬다.
+              레벨은 배지와 같은 값(서버)을 쓰고, 남은 수만 방문 수로 센다.
+            */}
+            {level !== undefined && (
+              <div className="mt-1 flex w-full flex-col gap-1.5">
+                <div
+                  role="img"
+                  aria-label={`레벨 ${LEVEL_COUNT}단계 중 ${level}단계`}
+                  className="flex gap-1.5"
+                >
+                  {Array.from({ length: LEVEL_COUNT }, (_, index) => (
+                    <span
+                      key={index}
+                      className={cn(
+                        'h-1.5 flex-1 rounded-full',
+                        index < level ? 'bg-inverse' : 'bg-border-default/60',
+                      )}
+                    />
+                  ))}
+                </div>
+                {/* 마지막 레벨이면 더 갈 곳이 없어 줄째로 사라진다. */}
+                {toNextLevel !== undefined && (
+                  <span className="text-text-secondary text-[12px]">
+                    다음 레벨까지 리뷰 {toNextLevel}개
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
