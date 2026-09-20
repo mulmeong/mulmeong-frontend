@@ -22,6 +22,7 @@ import {
   type CreatedPamphlet,
   type PamphletDetail,
 } from '@/types/pamphlet'
+import type { PoiFilterId } from '@/types/poi'
 import {
   SAVED_CATEGORIES,
   SAVED_PAGE_SIZE,
@@ -30,6 +31,18 @@ import {
   type SavedPlace,
   type SavedSort,
 } from '@/types/saved'
+
+/**
+ * 찜 카테고리 -> 지도의 POI 갈래.
+ *
+ * 관광지는 지도 쪽에서 문화·레저·쇼핑·축제를 '볼거리·즐길거리' 하나로 묶어 둬서
+ * 거기에 붙인다. 기타(etc)는 맞는 갈래가 없어 좌표만 넘긴다.
+ */
+const POI_FILTER_BY_CATEGORY: Partial<Record<SavedCategory, PoiFilterId>> = {
+  restaurant: 'RESTAURANT',
+  cafe: 'CAFE',
+  attraction: 'SIGHTS',
+}
 
 /** 찜한 장소 · 담당: 예린 */
 export default function MySavedPage() {
@@ -167,11 +180,27 @@ export default function MySavedPage() {
   }
 
   const handleShowOnMap = (place: SavedPlace) => {
+    // 온천은 전용 통로가 있다 — 지도가 상세까지 열어준다.
     if (place.placeType === 'ONSEN' || !place.placeType) {
       void navigate(`/map?onsen=${place.onsenId}`)
-    } else if (place.lat !== undefined && place.lng !== undefined) {
-      void navigate(`/map?lat=${place.lat}&lng=${place.lng}`)
+      return
     }
+
+    if (place.lat === undefined || place.lng === undefined) return
+
+    /*
+      온천 아닌 장소는 지도에 띄울 전용 통로가 없다. 좌표로 옮기고, 그 종류의
+      POI 갈래를 켜서 마커가 보이게 한다 — 그러면 넘어가자마자 찾던 가게가
+      화면 가운데에 찍혀 있다.
+
+      그 한 곳만 콕 집어 열어주지는 못한다. 찜 응답에 externalId가 없어서
+      지도의 POI와 짝지을 값이 없다.
+    */
+    const params = new URLSearchParams({ lat: String(place.lat), lng: String(place.lng) })
+    const poi = POI_FILTER_BY_CATEGORY[place.category]
+    if (poi) params.set('poi', poi)
+
+    void navigate(`/map?${params.toString()}`)
   }
 
   /**
