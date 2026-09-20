@@ -1,7 +1,9 @@
 import { useState } from 'react'
 
 import MagazineFeedback from '@/features/magazine/components/MagazineFeedback'
-import MagazineFilmstrip from '@/features/magazine/components/MagazineFilmstrip'
+import MagazineFilmstrip, {
+  MagazineFilmstripSkeleton,
+} from '@/features/magazine/components/MagazineFilmstrip'
 import MagazineIssueBanner from '@/features/magazine/components/MagazineIssueBanner'
 import MagazineRegionFilter from '@/features/magazine/components/MagazineRegionFilter'
 import { useMagazines } from '@/features/magazine/hooks/useMagazines'
@@ -56,7 +58,13 @@ export default function MagazinePage() {
       <div className="border-border-default mt-3 border-b" />
 
       <div className="mt-10">
-        <MagazineFeedback loading={loading} error={error} empty={!magazines.length} retry={retry} />
+        {loading && <MagazineFilmstripSkeleton />}
+        <MagazineFeedback
+          loading={false}
+          error={error}
+          empty={!loading && !magazines.length}
+          retry={retry}
+        />
         {!loading && !error && magazines.length > 0 && <MagazineFilmstrip magazines={magazines} />}
       </div>
     </div>

@@ -58,7 +58,7 @@ function RelatedPlace({ place }: { place: MagazinePlace }) {
   const meta = [region, place.subText].filter(Boolean).join(' · ')
 
   return (
-    <div className="border-border-default rounded-md border p-3.5">
+    <div className="border-border-default/55 rounded-sm border p-3.5">
       <p className="text-text-secondary text-[9px] font-bold tracking-[0.2em]">이 글의 온천</p>
 
       <img
