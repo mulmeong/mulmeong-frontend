@@ -4,6 +4,7 @@ import MagazineLikeButton from '@/features/magazine/components/MagazineLikeButto
 import { useMagazine } from '@/features/magazine/hooks/useMagazine'
 import { useReadingProgress } from '@/features/magazine/hooks/useReadingProgress'
 import { cn } from '@/lib/cn'
+import { DEFAULT_MAGAZINE_IMAGE } from '@/constants/images'
 
 function formatDate(iso: string) {
   // 서버는 ISO 전체(2025-09-19T15:00:00Z)를 주므로 날짜 부분만 쓴다.
@@ -98,15 +99,16 @@ export default function MagazineDetailPage() {
           </span>
         </div>
 
-        {heroImageUrl ? (
-          <img
-            src={heroImageUrl}
-            alt=""
-            className="mt-9 h-[420px] w-full rounded-sm object-cover"
-          />
-        ) : (
-          <div className="bg-surface-dim mt-9 h-[420px] w-full rounded-sm" />
-        )}
+        {/* 사진이 없거나 깨지면 기본 표지로 대체한다 — 빈 회색 칸을 두지 않는다. */}
+        <img
+          src={heroImageUrl || DEFAULT_MAGAZINE_IMAGE}
+          alt=""
+          onError={(event) => {
+            event.currentTarget.onerror = null
+            event.currentTarget.src = DEFAULT_MAGAZINE_IMAGE
+          }}
+          className="mt-9 h-[420px] w-full rounded-sm object-cover"
+        />
 
         {paragraphs.map((paragraph, index) => (
           <p

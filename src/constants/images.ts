@@ -3,6 +3,9 @@ import type { PoiCategory } from '@/types/poi'
 
 export const DEFAULT_ONSEN_IMAGE = '/images/default_sauna.jpg'
 
+/** 대표 사진이 없는 매거진에 쓰는 기본 표지. */
+export const DEFAULT_MAGAZINE_IMAGE = '/images/magazine_default.jpg'
+
 const PLACE_PLACEHOLDER_BY_CATEGORY: Record<NearbyCategory, string> = {
   CAFE: '/images/placeholders/cafe.svg',
   RESTAURANT: '/images/placeholders/restaurant.svg',

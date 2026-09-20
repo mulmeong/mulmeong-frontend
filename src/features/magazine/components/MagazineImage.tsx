@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { DEFAULT_MAGAZINE_IMAGE } from '@/constants/images'
 import { cn } from '@/lib/cn'
 
 /**
@@ -78,6 +79,16 @@ export default function MagazineImage({
           : undefined
       }
     >
+      {/* 사진이 없으면 기본 표지를 깔고, 그 위에 워드마크만 남긴다. */}
+      {showFallback && (
+        <img
+          src={DEFAULT_MAGAZINE_IMAGE}
+          alt=""
+          aria-hidden
+          loading={eager ? 'eager' : 'lazy'}
+          className="absolute inset-0 size-full object-cover"
+        />
+      )}
       {/* 사이드바의 96px 썸네일에서는 워드마크가 갑갑해 감춘다. */}
       {showFallback && (
         <span
