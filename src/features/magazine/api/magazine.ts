@@ -1,7 +1,14 @@
 ﻿import { api, ApiError, tokenStorage } from '@/api'
 import { env } from '@/lib/env'
 import { mockFetchMagazine, mockFetchMagazines, mockSetMagazineLike } from './magazineMock'
-import type { MagazineDetail, MagazineList, MagazineListParams } from '@/types/magazine'
+import { MAGAZINE_REGION_CODES } from '@/types/magazine'
+import type {
+  Magazine,
+  MagazineDetail,
+  MagazineList,
+  MagazineListParams,
+  MagazineSort,
+} from '@/types/magazine'
 
 export type { MagazineListParams } from '@/types/magazine'
 
@@ -52,6 +59,54 @@ export function fetchMagazines(params: MagazineListParams = {}): Promise<Magazin
   pending.set(key, request)
   return request
 }
+/**
+ * 권역으로 거른 목록. 한 권역이 여러 시도코드를 쓰는데(충청=30·36·43·44) 서버는
+ * sidoCode를 하나만 받아, 코드별로 받아 합친 뒤 화면에서 정렬·페이징한다.
+ *
+ * 코드가 하나뿐인 권역은 그냥 평소 경로를 탄다.
+ */
+export async function fetchMagazinesByRegionName(
+  region: string,
+  params: MagazineListParams = {},
+): Promise<MagazineList> {
+  const codes = MAGAZINE_REGION_CODES[region]
+  if (!codes?.length) return fetchMagazines(params)
+  if (codes.length === 1) return fetchMagazines({ ...params, sidoCode: codes[0] })
+
+  const size = Math.min(30, Math.max(1, params.size ?? 12))
+  const page = Math.max(0, params.page ?? 0)
+  // 코드마다 앞쪽을 넉넉히 받아 합친다. 서버가 권역을 지원하면 이 함수는 사라진다.
+  const pages = await Promise.all(
+    codes.map((sidoCode) =>
+      fetchMagazines({ ...params, sidoCode, page: 0, size: 30 }).catch(() => null),
+    ),
+  )
+  const seen = new Set<number>()
+  const merged = pages
+    .flatMap((item) => item?.content ?? [])
+    .filter((magazine) => !seen.has(magazine.magazineId) && seen.add(magazine.magazineId))
+  const sorted = sortMagazines(merged, params.sort ?? 'LATEST')
+  const start = page * size
+  const slice = sorted.slice(start, start + size)
+  return {
+    content: slice,
+    page,
+    size,
+    totalElements: sorted.length,
+    totalPages: Math.max(1, Math.ceil(sorted.length / size)),
+    last: start + size >= sorted.length,
+    categories: pages.find((item) => item?.categories?.length)?.categories ?? null,
+    regions: null,
+  }
+}
+
+function sortMagazines(items: Magazine[], sort: MagazineSort): Magazine[] {
+  const copy = [...items]
+  if (sort === 'POPULAR') return copy.sort((a, b) => b.likeCount - a.likeCount)
+  if (sort === 'READ_TIME') return copy.sort((a, b) => a.readMinutes - b.readMinutes)
+  return copy.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
+}
+
 export async function fetchMagazine(id: number): Promise<MagazineDetail> {
   if (!Number.isSafeInteger(id) || id <= 0) throw new ApiError(404, '글을 찾을 수 없습니다.')
   if (env.useMockMagazine) return mockFetchMagazine(id)

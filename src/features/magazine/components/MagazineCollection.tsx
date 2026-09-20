@@ -1,9 +1,10 @@
 ﻿import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useMagazines } from '@/features/magazine/hooks/useMagazines'
-import { MAGAZINE_CATEGORIES } from '@/types/magazine'
+import { MAGAZINE_CATEGORIES, MAGAZINE_REGIONS, regionNameOfSido } from '@/types/magazine'
 import { cn } from '@/lib/cn'
 import MagazineCard from './MagazineCard'
+import MagazineRegionFilter from './MagazineRegionFilter'
 import MagazineFeedback from './MagazineFeedback'
 import type { MagazineCategory, MagazineSort } from '@/types/magazine'
 
@@ -12,8 +13,8 @@ export default function MagazineCollection({ archive = false }: { archive?: bool
   const category = MAGAZINE_CATEGORIES.some((item) => item.code === params.get('category'))
     ? (params.get('category') as MagazineCategory)
     : 'ALL'
-  const sidoCode = /^\d{2}$/.test(params.get('sidoCode') ?? '')
-    ? params.get('sidoCode')!
+  const region = MAGAZINE_REGIONS.includes(params.get('region') ?? '')
+    ? params.get('region')!
     : undefined
   const sort = ['LATEST', 'POPULAR', 'READ_TIME'].includes(params.get('sort') ?? '')
     ? (params.get('sort') as MagazineSort)
@@ -23,7 +24,7 @@ export default function MagazineCollection({ archive = false }: { archive?: bool
   const [view, setView] = useState<'grid' | 'list'>('grid')
   const { magazines, data, loading, error, retry } = useMagazines({
     category,
-    sidoCode,
+    region,
     sort,
     page,
     size: archive ? 12 : 6,
@@ -49,51 +50,36 @@ export default function MagazineCollection({ archive = false }: { archive?: bool
       </div>
       {/* 필터는 목록으로 넘어가는 길잡이라 divider 하나로만 구분하고 톤을 낮춘다. */}
       <div className="border-border-default flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b pb-3">
-        <nav aria-label="매거진 카테고리" className="flex flex-wrap items-center gap-x-4 gap-y-1">
-          {[{ code: 'ALL', label: '전체' }, ...MAGAZINE_CATEGORIES].map((item) => {
-            const count = data?.categories?.find((entry) => entry.code === item.code)?.count
-            return (
-              <button
-                type="button"
-                key={item.code}
-                onClick={() => change('category', item.code === 'ALL' ? '' : item.code)}
-                aria-pressed={category === item.code}
-                className={cn(
-                  'py-1 text-[12px] transition-colors',
-                  category === item.code
-                    ? 'text-text-primary font-medium underline underline-offset-[6px]'
-                    : 'text-text-secondary hover:text-text-primary',
-                )}
-              >
-                {item.label}
-                {count !== undefined && (
-                  <span className="ml-1 text-[10px] tabular-nums opacity-60">{count}</span>
-                )}
-              </button>
-            )
-          })}
-        </nav>
-        {/* 지역·정렬은 보조 컨트롤이라 오른쪽에 작게 묶는다. */}
+        {/* 지역은 카테고리보다 앞에 둔다 — 어느 지역 이야기인지가 먼저 좁혀진다. */}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <MagazineRegionFilter value={region} onChange={(next) => change('region', next)} />
+          <nav aria-label="매거진 카테고리" className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            {[{ code: 'ALL', label: '전체' }, ...MAGAZINE_CATEGORIES].map((item) => {
+              const count = data?.categories?.find((entry) => entry.code === item.code)?.count
+              return (
+                <button
+                  type="button"
+                  key={item.code}
+                  onClick={() => change('category', item.code === 'ALL' ? '' : item.code)}
+                  aria-pressed={category === item.code}
+                  className={cn(
+                    'py-1 text-[12px] transition-colors',
+                    category === item.code
+                      ? 'text-text-primary font-medium underline underline-offset-[6px]'
+                      : 'text-text-secondary hover:text-text-primary',
+                  )}
+                >
+                  {item.label}
+                  {count !== undefined && (
+                    <span className="ml-1 text-[10px] tabular-nums opacity-60">{count}</span>
+                  )}
+                </button>
+              )
+            })}
+          </nav>
+        </div>
+        {/* 정렬·보기는 보조 컨트롤이라 오른쪽에 작게 묶는다. */}
         <div className="text-text-secondary ml-auto flex items-center gap-1 text-[11px]">
-          <select
-            aria-label="지역"
-            value={sidoCode ?? ''}
-            onChange={(event) => change('sidoCode', event.target.value)}
-            className="hover:text-text-primary max-w-[130px] cursor-pointer bg-transparent py-1 text-[11px]"
-          >
-            <option value="">전국</option>
-            {sidoCode && !data?.regions?.some((item) => item.sidoCode === sidoCode) && (
-              <option value={sidoCode}>선택 지역</option>
-            )}
-            {data?.regions?.map((item) => (
-              <option key={item.sidoCode} value={item.sidoCode}>
-                {item.name} ({item.count})
-              </option>
-            ))}
-          </select>
-          <span aria-hidden className="opacity-40">
-            ·
-          </span>
           <select
             aria-label="정렬"
             value={sort}
@@ -145,18 +131,25 @@ export default function MagazineCollection({ archive = false }: { archive?: bool
           </ul>
         ) : (
           <ul>
-            {magazines.map((magazine) => (
+            {magazines.map((magazine, index) => (
               <li key={magazine.magazineId}>
                 <Link
                   to={`/magazine/${magazine.magazineId}`}
-                  className="border-border-default group flex flex-col gap-2 border-b py-6 sm:flex-row sm:items-baseline sm:justify-between"
+                  className="border-border-default hover:bg-surface-dim/50 group flex flex-col gap-2 border-b px-2 py-6 transition-colors sm:flex-row sm:items-baseline sm:gap-6"
                 >
-                  <h3 className="text-[20px] font-medium group-hover:underline">
+                  {/* 잡지 목차처럼 번호 → 제목 → 정보 → 지역 순으로 읽힌다. */}
+                  <span className="text-text-secondary w-8 shrink-0 text-[13px] tabular-nums">
+                    {String(index + 1 + page * (archive ? 12 : 6)).padStart(2, '0')}
+                  </span>
+                  <h3 className="flex-1 text-[20px] font-medium group-hover:underline group-hover:underline-offset-[6px]">
                     {magazine.title}
                   </h3>
-                  <span className="text-text-secondary shrink-0 text-[11px]">
+                  <span className="text-text-secondary shrink-0 text-[11px] whitespace-nowrap">
                     {magazine.categoryLabel} · {magazine.readMinutes}분 ·{' '}
                     {magazine.publishedAt.slice(0, 10).replaceAll('-', '.')}
+                  </span>
+                  <span className="text-text-secondary shrink-0 text-[11px] sm:w-14 sm:text-right">
+                    {magazine.regionName || regionNameOfSido(magazine.sidoCode) || '전국'}
                   </span>
                 </Link>
               </li>
