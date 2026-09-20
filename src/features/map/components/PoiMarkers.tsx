@@ -10,13 +10,10 @@ const ICON_PATHS: Record<PoiCategory, string> = {
   PARK: 'm8 3-5 7h3l-4 6h12l-4-6h3ZM8 16v5m6-15 3-4 5 8h-3l4 6h-7m1 0v5M5 21h15',
   ACCOMMODATION:
     'M3 18v3m18-3v3M3 10V4h18v6M2 18v-5a3 3 0 0 1 3-3h14a3 3 0 0 1 3 3v5ZM7 10V7h4v3m2 0V7h4v3',
-  CULTURE:
-    'M4 19V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2Zm4-12h6m-6 4h8m-8 4h5',
+  CULTURE: 'M4 19V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2Zm4-12h6m-6 4h8m-8 4h5',
   LEISURE: 'M6 18 18 6M8 6h10v10M5 19l4-1 9-9a2.1 2.1 0 0 0-3-3l-9 9-1 4Z',
-  SHOPPING:
-    'M6 8h12l-1 13H7L6 8Zm3 0a3 3 0 0 1 6 0M4 8h16',
-  FESTIVAL:
-    'M4 21V5m0 0c4-2 8 2 12 0v10c-4 2-8-2-12 0M18 7l2-2m-2 6 3 1M16 3l1-3',
+  SHOPPING: 'M6 8h12l-1 13H7L6 8Zm3 0a3 3 0 0 1 6 0M4 8h16',
+  FESTIVAL: 'M4 21V5m0 0c4-2 8 2 12 0v10c-4 2-8-2-12 0M18 7l2-2m-2 6 3 1M16 3l1-3',
 }
 
 type Host = {
@@ -223,9 +220,14 @@ export default function PoiMarkers({
           </svg>
           <span
             className={cn(
-              'pointer-events-none absolute bottom-full left-1/2 z-20 mb-3 w-max max-w-[220px] -translate-x-1/2 rounded-sm border border-border-default bg-white px-2 py-1 text-center text-[12px] leading-5 text-text-primary whitespace-normal break-keep shadow-[0_2px_6px_#00000012] [overflow-wrap:anywhere]',
+              'pointer-events-none absolute bottom-full left-1/2 z-20 mb-3 w-max max-w-[220px] -translate-x-1/2 text-center text-[12px] leading-5 whitespace-normal break-keep [overflow-wrap:anywhere]',
+              // 주변 패널이 열리면 말풍선 테두리를 빼고 이름만 둔다 — 패널 뒤 지도가 덜 시끄럽다.
+              simpleLabels
+                ? 'text-text-primary [text-shadow:0_0_3px_#fff,0_0_3px_#fff,0_0_3px_#fff]'
+                : 'rounded-sm border border-border-default bg-white px-2 py-1 text-text-primary shadow-[0_2px_6px_#00000012]',
               labelKey === key && !expandedKey ? 'visible' : 'invisible',
-              selected && 'border-text-primary bg-inverse text-white',
+              selected && !simpleLabels && 'border-text-primary bg-inverse text-white',
+              selected && simpleLabels && 'font-semibold',
             )}
           >
             {poi.name}
