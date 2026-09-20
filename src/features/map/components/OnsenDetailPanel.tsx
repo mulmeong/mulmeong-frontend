@@ -8,6 +8,7 @@ import ReviewSection from '@/features/map/components/ReviewSection'
 import { useOnsenDetail } from '@/features/map/hooks/useOnsenDetail'
 import { onsenFromDetail } from '@/features/map/utils/onsenFromDetail'
 import { cn } from '@/lib/cn'
+import { copyLink } from '@/lib/copyLink'
 
 import type { OnsenListItem } from '@/features/map/api/map'
 import type { OnsenMapPoint } from '@/features/map/types/mapPoint'
@@ -162,25 +163,9 @@ function OnsenDetailContent({
   const reviewCount = detail?.reviewSummary?.count ?? onsen.reviewCount
 
   const share = async () => {
-    const url = shareLinkOf(onsen.id)
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: name, text: `${name} · 물멍`, url })
-        return
-      } catch (cause) {
-        // 공유 시트를 닫은 것뿐이면 복사로 넘어가지 않는다.
-        if (cause instanceof DOMException && cause.name === 'AbortError') return
-      }
-    }
-
-    try {
-      await navigator.clipboard.writeText(url)
+    if (await copyLink(shareLinkOf(onsen.id))) {
       setCopied(true)
       window.setTimeout(() => setCopied(false), 2000)
-    } catch {
-      // 클립보드는 https나 사용자 동작이 아니면 막힌다.
-      setCopied(false)
     }
   }
 
@@ -236,7 +221,7 @@ function OnsenDetailContent({
               className="text-text-primary hover:not-disabled:bg-surface-dim flex min-h-9 items-center justify-center gap-2 text-[12px] font-medium outline-none focus-visible:ring-1 focus-visible:ring-inverse disabled:cursor-not-allowed disabled:opacity-50"
             >
               <ActionIcon kind={action.icon} />
-              {action.icon === 'share' && copied ? '복사됨' : action.label}
+              {action.icon === 'share' && copied ? '복사됨 ✓' : action.label}
             </button>
           ),
         )}

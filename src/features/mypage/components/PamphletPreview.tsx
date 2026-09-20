@@ -16,6 +16,13 @@ function formatDate(value: string): string {
   return value.slice(0, 10)
 }
 
+/** 유형 라벨과 같은 값이면 정보가 아니다 — 온천의 수온·수질만 남는다. */
+function subTextOf(place: PamphletPlace): string | undefined {
+  const value = place.subText?.trim()
+  if (!value || value === place.placeTypeLabel?.trim()) return undefined
+  return value
+}
+
 function PlacePhoto({ place }: { place: PamphletPlace }) {
   const [failed, setFailed] = useState(false)
   const isOnsen = place.placeType === 'ONSEN' || place.placeType === 'SPA'
@@ -101,8 +108,12 @@ export default function PamphletPreview({ detail }: { detail: PamphletDetail }) 
                 {place.placeTypeLabel ? ` · ${place.placeTypeLabel}` : ''}
               </p>
               <h4>{place.name}</h4>
+              {/*
+                온천이 아니면 서버가 subText에 유형 라벨을 그대로 넣는다.
+                위 줄에 이미 유형이 있어서 같은 값이면 '식당 · 식당'이 된다.
+              */}
+              {subTextOf(place) && <p className="pamphlet-preview-sub">{subTextOf(place)}</p>}
               {place.address && <p className="pamphlet-preview-address">{place.address}</p>}
-              {place.subText && <p className="pamphlet-preview-sub">{place.subText}</p>}
             </div>
           </li>
         ))}

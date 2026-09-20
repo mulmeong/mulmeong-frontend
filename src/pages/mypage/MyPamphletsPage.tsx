@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'r
 import { Link, useNavigate, useOutletContext, useSearchParams } from 'react-router-dom'
 
 import { ApiError } from '@/api'
+import { copyLink } from '@/lib/copyLink'
 import { Button } from '@/components/ui'
 import Modal from '@/components/ui/Modal'
 import type { MyPageOutletContext } from '@/features/mypage/components/MyPageLayout'
@@ -86,21 +87,10 @@ export default function MyPamphletsPage() {
     setActionError(undefined)
   }, [selectedNumericId])
 
-  const share = async (shareToken: string, title: string) => {
-    const url = shareLinkOf(shareToken)
-    if (navigator.share) {
-      try {
-        await navigator.share({ title, text: `${title} · 물멍 팜플렛`, url })
-        return
-      } catch (cause) {
-        if (cause instanceof DOMException && cause.name === 'AbortError') return
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url)
+  const share = async (shareToken: string) => {
+    if (await copyLink(shareLinkOf(shareToken))) {
       setCopied(true)
-    } catch {
-      setCopied(false)
+      setTimeout(() => setCopied(false), 2000)
     }
   }
 
@@ -139,7 +129,11 @@ export default function MyPamphletsPage() {
               >
                 <span aria-hidden="true">←</span> 팜플렛 목록
               </Link>
-              <div className="flex flex-wrap items-center gap-2">
+              {/*
+                팜플렛 보기만 채운 버튼으로 두고 나머지는 글자 링크로 낮춘다.
+                넷이 같은 무게로 늘어서면 무엇을 눌러야 할지 읽히지 않는다.
+              */}
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
                 <Button
                   onClick={(event) => openReader(event, selectedNumericId, false)}
                   disabled={!detail}
@@ -147,30 +141,34 @@ export default function MyPamphletsPage() {
                 >
                   팜플렛 보기
                 </Button>
-                <Button
-                  hierarchy="secondary"
+                <button
+                  type="button"
                   disabled={!detail}
                   onClick={() => {
-                    if (detail) void share(detail.shareToken, detail.title)
+                    if (detail) void share(detail.shareToken)
                   }}
+                  className="pamphlet-text-link text-text-secondary hover:text-text-primary inline-flex min-h-11 items-center text-[13px] disabled:opacity-40"
                 >
-                  {copied ? '복사했습니다' : '링크로 공유'}
-                </Button>
+                  {copied ? '복사됨 ✓' : '링크 복사'}
+                </button>
                 {/* 좌표가 있는 장소만 지도에 찍힌다 — 없으면 보낼 이유가 없다. */}
-                <Button
-                  hierarchy="secondary"
+                <button
+                  type="button"
                   disabled={!detail?.places.some((place) => place.lat != null && place.lng != null)}
                   onClick={() => void navigate(`/map?pamphlet=${selectedNumericId}`)}
+                  className="pamphlet-text-link text-text-secondary hover:text-text-primary inline-flex min-h-11 items-center text-[13px] disabled:opacity-40"
                 >
                   지도에서 보기
-                </Button>
-                <Button
-                  hierarchy="secondary"
+                </button>
+                {/* 되돌릴 수 없는 동작이라 가장 끝에, 가장 조용하게 둔다. */}
+                <button
+                  type="button"
                   disabled={!detail}
                   onClick={() => setPendingDelete(true)}
+                  className="pamphlet-text-link text-text-secondary hover:text-danger ml-auto inline-flex min-h-11 items-center text-[12px] disabled:opacity-40"
                 >
                   삭제
-                </Button>
+                </button>
               </div>
             </div>
 

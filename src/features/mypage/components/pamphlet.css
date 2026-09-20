@@ -653,7 +653,7 @@
 }
 
 .pamphlet-preview-head {
-  padding: 46px 30px 26px;
+  padding: 30px 30px 22px;
   border-bottom: 1px solid var(--color-border-default);
 }
 
@@ -707,13 +707,14 @@
 
 .pamphlet-preview-place {
   display: flex;
-  gap: 16px;
-  padding: 20px 30px;
+  gap: 14px;
+  /* 한 화면에 더 많이 보이도록 줄였다. 카드로 감싸지 않고 선으로만 나눈다. */
+  padding: 13px 30px;
   border-bottom: 1px solid var(--color-border-default);
 }
 
 .pamphlet-preview-figure {
-  width: 96px;
+  width: 76px;
   aspect-ratio: 4 / 3;
   flex-shrink: 0;
   overflow: hidden;
@@ -732,8 +733,8 @@
 }
 
 .pamphlet-preview-body h4 {
-  margin-top: 6px;
-  font-size: 16px;
+  margin-top: 4px;
+  font-size: 15px;
   font-weight: 650;
   line-height: 1.35;
   letter-spacing: -0.035em;
@@ -742,7 +743,7 @@
 }
 
 .pamphlet-preview-address {
-  margin-top: 8px;
+  margin-top: 4px;
   color: var(--color-text-secondary);
   font-size: 11px;
   line-height: 1.7;
@@ -750,7 +751,7 @@
 }
 
 .pamphlet-preview-sub {
-  margin-top: 6px;
+  margin-top: 4px;
   color: #62615b;
   font-size: 11px;
   line-height: 1.7;
@@ -918,8 +919,9 @@
 
 .pamphlet-preview-place {
   display: flex;
-  gap: 16px;
-  padding: 18px 24px;
+  gap: 14px;
+  /* 한 화면에 더 많이 보이도록 줄였다. 카드로 감싸지 않고 선으로만 나눈다. */
+  padding: 12px 24px;
   border-bottom: 1px solid color-mix(in srgb, var(--color-border-default) 35%, transparent);
 }
 
@@ -929,7 +931,7 @@
 
 .pamphlet-preview-figure {
   flex-shrink: 0;
-  width: 92px;
+  width: 74px;
   aspect-ratio: 4 / 3;
   overflow: hidden;
   border-radius: var(--radius-sm);
