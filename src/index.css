@@ -19,6 +19,16 @@
   --radius-md: 12px;
   --radius-full: 999px;
 
+  /*
+    기본 CSS 이징은 약해서 의도가 드러나지 않는다. 들어오고 나가는 것은 ease-out,
+    화면 안에서 움직이는 것은 ease-in-out을 쓴다.
+
+    ease-in은 쓰지 않는다 — 시작이 느려서, 사용자가 가장 주의 깊게 보는 첫 순간에
+    반응이 없는 것처럼 느껴진다.
+  */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+
   --font-sans:
     Inter, 'Gothic A1', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo',
     'Malgun Gothic', sans-serif;
@@ -248,4 +258,93 @@ body {
   background-color: var(--color-surface);
   color: var(--color-text-primary);
   font-family: var(--font-sans);
+}
+
+/*
+ * 모달 등장. scale(0)이 아니라 0.96에서 출발한다 — 현실에서 무언가가 완전히
+ * 사라졌다 나타나지는 않아서, 0에서 시작하면 허공에서 튀어나온 것처럼 보인다.
+ *
+ * 모달은 특정 버튼에 매달린 게 아니라 화면 가운데 뜨므로 origin은 center다
+ * (팝오버라면 트리거 쪽에서 자라야 한다).
+ */
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes dialog-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+dialog[open] {
+  animation: dialog-in 200ms var(--ease-out-strong) both;
+}
+
+dialog[open]::backdrop {
+  animation: dialog-backdrop-in 200ms var(--ease-out-strong) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog[open] {
+    /* 크기 변화는 빼고 밝기만 — 전정기관을 자극하지 않는 등가물로 바꾼다. */
+    animation: dialog-backdrop-in 160ms ease both;
+  }
+}
+
+/*
+ * 누르는 순간의 반응. click이 아니라 pointer-down 시점에 바로 줄어들어야
+ * 화면이 듣고 있다는 느낌이 난다 — 떼는 순간에 반응하면 죽은 것처럼 느껴진다.
+ *
+ * 화면마다 버튼이 100개 넘게 흩어져 있어 공용 컴포넌트만으로는 다 닿지 않는다.
+ * 그래서 눌리는 요소 전체에 기본값으로 깔고, 필요한 곳에서 덮어쓴다.
+ * 배율은 0.97 — 0.95보다 작아지면 큰 버튼에서 과하게 보인다.
+ */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  a[href],
+  label:has(> input[type='checkbox']),
+  summary {
+    transition: transform 140ms var(--ease-out-strong);
+  }
+
+  button:not(:disabled):active,
+  [role='button']:not([aria-disabled='true']):active,
+  a[href]:active,
+  label:has(> input[type='checkbox']):active,
+  summary:active {
+    transform: scale(0.97);
+  }
+
+  /*
+    지도 위 요소는 제외한다. 카카오맵이 마커·오버레이 위치를 transform으로
+    직접 잡아서, 여기서 scale을 걸면 좌표가 틀어진다.
+  */
+  .kakao-map button:active,
+  .kakao-map a[href]:active {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @layer base {
+    button:active,
+    [role='button']:active,
+    a[href]:active,
+    label:has(> input[type='checkbox']):active,
+    summary:active {
+      transform: none;
+    }
+  }
 }

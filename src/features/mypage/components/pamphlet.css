@@ -1,0 +1,1084 @@
+.pamphlet-card {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  cursor: pointer;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--color-border-default) 65%, transparent);
+  border-radius: var(--radius-sm);
+  transition:
+    border-color 180ms ease,
+    transform 180ms ease;
+}
+
+.pamphlet-card:hover {
+  border-color: var(--color-text-secondary);
+  transform: translateY(-3px);
+}
+
+.pamphlet-card[data-reading] {
+  visibility: hidden;
+}
+
+.pamphlet-card:focus-visible,
+.pamphlet-create:focus-visible,
+.pamphlet-text-link:focus-visible {
+  outline: 2px solid var(--color-border-strong);
+  outline-offset: 4px;
+}
+
+.pamphlet-create:hover,
+.pamphlet-text-link:hover {
+  color: var(--color-text-primary);
+}
+
+.pamphlet-cover {
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  text-align: left;
+}
+
+.pamphlet-cover-art {
+  position: relative;
+  display: flex;
+  aspect-ratio: 1.55;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--color-surface-dim);
+}
+
+.pamphlet-cover-art::before,
+.pamphlet-cover-art::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: color-mix(in srgb, var(--color-border-default) 45%, transparent);
+  content: '';
+}
+
+.pamphlet-cover-art::before {
+  left: 7%;
+}
+.pamphlet-cover-art::after {
+  right: 7%;
+}
+
+.pamphlet-cover-brand {
+  position: absolute;
+  top: 16px;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--color-text-secondary);
+}
+
+.pamphlet-cover-number {
+  font-family: var(--font-numeral);
+  font-size: clamp(48px, 5vw, 68px);
+  line-height: 1;
+  color: var(--color-text-primary);
+}
+
+.pamphlet-cover-caption {
+  margin-top: 10px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--color-text-secondary);
+}
+
+.pamphlet-cover-description {
+  padding: 16px;
+}
+
+.pamphlet-reader {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  background: transparent;
+  color: var(--color-text-primary);
+}
+
+.pamphlet-reader::backdrop {
+  background: transparent;
+}
+
+.pamphlet-reader-dim {
+  position: absolute;
+  inset: 0;
+  background: rgb(16 16 14 / 55%);
+  pointer-events: none;
+}
+
+.pamphlet-reader-stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  width: min(1140px, calc(100% - 64px));
+  max-height: calc(100% - 48px);
+  flex-direction: column;
+  gap: 8px;
+  transform: translate(-50%, -50%);
+  perspective: 1800px;
+}
+
+.pamphlet-reader-toolbar,
+.pamphlet-reader-footer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 44px;
+  color: var(--color-text-inverse);
+}
+
+.pamphlet-reader-toolbar > span {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+}
+
+.pamphlet-reader button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.pamphlet-reader button:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.pamphlet-reader button:not(:disabled):hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.pamphlet-reader button:focus-visible,
+.pamphlet-reader-window:focus-visible {
+  outline: 1px solid var(--color-text-inverse);
+  outline-offset: 3px;
+}
+
+.pamphlet-reader-window {
+  position: relative;
+  min-height: 0;
+  max-height: calc(100dvh - 144px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-default) var(--color-surface-dim);
+  perspective: 1800px;
+}
+
+.pamphlet-reader[data-phase='opening'] .pamphlet-reader-window,
+.pamphlet-reader[data-phase='closing'] .pamphlet-reader-window {
+  overflow: visible;
+}
+
+.pamphlet-reader-paper {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  min-height: min(540px, calc(100dvh - 144px));
+  transform-style: preserve-3d;
+  transform-origin: center;
+}
+
+.pamphlet-reader-panel {
+  position: relative;
+  min-width: 0;
+  transform-style: preserve-3d;
+}
+
+.pamphlet-reader-left {
+  transform-origin: right center;
+}
+.pamphlet-reader-right {
+  transform-origin: left center;
+}
+
+.pamphlet-reader-face,
+.pamphlet-reader-back {
+  height: 100%;
+  background: var(--color-surface-dim);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.pamphlet-reader-middle > .pamphlet-reader-face,
+.pamphlet-reader-right > .pamphlet-reader-face {
+  border-left: 1px solid color-mix(in srgb, var(--color-border-default) 60%, transparent);
+}
+
+.pamphlet-reader-back {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  transform: rotateY(180deg);
+}
+
+.pamphlet-reader-snapshot {
+  transform-origin: top left;
+}
+
+.pamphlet-reader-mobile-cover {
+  display: none;
+}
+
+.pamphlet-reader-footer {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.pamphlet-reader-footer nav {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.pamphlet-editorial {
+  min-width: 0;
+  height: 100%;
+  padding: 30px clamp(22px, 2.5vw, 36px);
+}
+
+.pamphlet-eyebrow {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  line-height: 1.7;
+  letter-spacing: 0.14em;
+}
+
+.pamphlet-intro {
+  display: flex;
+  flex-direction: column;
+}
+
+.pamphlet-intro-heading {
+  margin: 32px 0 26px;
+}
+
+.pamphlet-edition {
+  color: var(--color-text-secondary);
+  font-family: var(--font-numeral);
+  font-size: 52px;
+  line-height: 1;
+}
+
+.pamphlet-intro h2 {
+  margin-top: 18px;
+  font-size: clamp(26px, 2.7vw, 36px);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.045em;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.pamphlet-intro-copy,
+.pamphlet-place-copy {
+  margin-top: 18px;
+  color: #62615b;
+  font-size: 13px;
+  line-height: 1.9;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.pamphlet-intro-regions {
+  margin-top: 12px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 1.8;
+}
+
+.pamphlet-itinerary {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  margin-bottom: 32px;
+}
+
+.pamphlet-itinerary li {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.pamphlet-itinerary li > :first-child {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pamphlet-colophon {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 22px;
+  border-top: 1px solid var(--color-border-default);
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.pamphlet-place {
+  display: flex;
+  flex-direction: column;
+}
+
+.pamphlet-place-figure {
+  aspect-ratio: 4 / 3;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: #eeeee9;
+}
+
+.pamphlet-place-figure img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pamphlet-photo-placeholder {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.pamphlet-photo-placeholder > :last-child {
+  font-size: 10px;
+}
+
+.pamphlet-place-index {
+  margin-top: 24px;
+}
+
+.pamphlet-place h3 {
+  margin-top: 8px;
+  font-size: clamp(23px, 2.2vw, 29px);
+  font-weight: 650;
+  line-height: 1.3;
+  letter-spacing: -0.04em;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.pamphlet-place-location {
+  margin-top: 20px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 1.8;
+}
+
+.pamphlet-place-rating {
+  display: flex;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 28px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pamphlet-place-rating > :last-child {
+  color: var(--color-text-secondary);
+}
+
+.pamphlet-end {
+  display: flex;
+  min-height: 300px;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 48px;
+}
+
+.pamphlet-end > p {
+  font-size: 23px;
+  line-height: 1.7;
+  letter-spacing: -0.04em;
+  white-space: pre-line;
+  word-break: keep-all;
+}
+
+/* ── 만들기 흐름: 엮는 중 → 표지 → 펼침 ───────────────────────── */
+
+.pamphlet-weaving {
+  display: flex;
+  min-height: 340px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 34px;
+  padding: 56px 30px;
+  text-align: center;
+}
+
+.pamphlet-weaving-stack {
+  position: relative;
+  width: 104px;
+  height: 132px;
+}
+
+.pamphlet-weaving-sheet {
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-surface);
+  transform: rotate(var(--sheet-tilt, 0deg)) translateY(8px);
+  opacity: 0;
+  animation: pamphlet-weave 1.6s ease-in-out infinite;
+}
+
+@keyframes pamphlet-weave {
+  0% {
+    transform: rotate(var(--sheet-tilt, 0deg)) translateY(10px);
+    opacity: 0;
+  }
+  30%,
+  70% {
+    transform: rotate(var(--sheet-tilt, 0deg)) translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(var(--sheet-tilt, 0deg)) translateY(-10px);
+    opacity: 0;
+  }
+}
+
+.pamphlet-weaving-copy {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.pamphlet-weaving-sub {
+  margin-top: 10px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+  word-break: keep-all;
+}
+
+/* 표지는 접힌 팜플렛이 놓이듯 떠오른다 — 튕기지 않게 폭을 좁게 잡는다. */
+.pamphlet-reveal {
+  display: flex;
+  min-height: 340px;
+  align-items: center;
+  justify-content: center;
+  padding: 44px 30px;
+  perspective: 1800px;
+}
+
+.pamphlet-reveal-cover {
+  width: min(260px, 70%);
+  transform-origin: center;
+  animation: pamphlet-reveal-in 380ms cubic-bezier(0.22, 0.68, 0, 1) both;
+}
+
+@keyframes pamphlet-reveal-in {
+  from {
+    transform: scale(0.94) rotateX(10deg);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/*
+ * 펼침. 각 면이 transform-origin: top center를 축으로 차례로 누워서,
+ * 단순 확대가 아니라 종이가 한 장씩 젖혀지는 깊이가 생긴다.
+ *
+ * 펼치는 동안에는 overflow를 열어 둔다 — 스크롤 컨테이너가 되는 순간
+ * preserve-3d가 평면으로 눌려 rotateX가 납작하게 보인다 (리더도 같은 처리).
+ */
+.pamphlet-unfold {
+  overflow: hidden;
+  perspective: 1800px;
+  transform-style: preserve-3d;
+  animation:
+    pamphlet-unfold-lift 320ms cubic-bezier(0.22, 0.68, 0, 1) both,
+    pamphlet-unfold-scroll 0s linear 900ms forwards;
+}
+
+@keyframes pamphlet-unfold-lift {
+  from {
+    transform: translateY(6px) scale(0.985);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* 마지막 면이 다 눕고 나서야 스크롤 컨테이너로 바뀐다. */
+@keyframes pamphlet-unfold-scroll {
+  to {
+    overflow-y: auto;
+  }
+}
+
+.pamphlet-unfold .pamphlet-preview-head,
+.pamphlet-unfold .pamphlet-preview-place {
+  transform-origin: top center;
+  backface-visibility: hidden;
+  animation: pamphlet-unfold-panel 420ms cubic-bezier(0.22, 0.68, 0, 1) both;
+}
+
+.pamphlet-unfold .pamphlet-preview-head {
+  animation-delay: 60ms;
+}
+
+.pamphlet-unfold .pamphlet-preview-place:nth-child(1) {
+  animation-delay: 200ms;
+}
+.pamphlet-unfold .pamphlet-preview-place:nth-child(2) {
+  animation-delay: 290ms;
+}
+.pamphlet-unfold .pamphlet-preview-place:nth-child(3) {
+  animation-delay: 370ms;
+}
+.pamphlet-unfold .pamphlet-preview-place:nth-child(n + 4) {
+  animation-delay: 440ms;
+}
+
+@keyframes pamphlet-unfold-panel {
+  from {
+    transform: rotateX(-72deg);
+    opacity: 0;
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    transform: rotateX(0deg);
+    opacity: 1;
+  }
+}
+
+/* ── 완성된 팜플렛 내용 ─────────────────────────────────────── */
+
+.pamphlet-preview {
+  padding: 0 0 8px;
+}
+
+.pamphlet-preview-head {
+  padding: 46px 30px 26px;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.pamphlet-preview-title {
+  margin-top: 10px;
+  font-size: clamp(24px, 3.4vw, 30px);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.045em;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.pamphlet-preview-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  margin-top: 22px;
+}
+
+.pamphlet-preview-meta div {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.pamphlet-preview-meta dt {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  line-height: 1.9;
+}
+
+.pamphlet-preview-meta dd {
+  font-variant-numeric: tabular-nums;
+}
+
+.pamphlet-preview-byline {
+  margin-top: 20px;
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  line-height: 1.7;
+  letter-spacing: 0.06em;
+}
+
+.pamphlet-preview-places {
+  display: flex;
+  flex-direction: column;
+}
+
+.pamphlet-preview-place {
+  display: flex;
+  gap: 16px;
+  padding: 20px 30px;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.pamphlet-preview-figure {
+  width: 96px;
+  aspect-ratio: 4 / 3;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: #eeeee9;
+}
+
+.pamphlet-preview-figure img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pamphlet-preview-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.pamphlet-preview-body h4 {
+  margin-top: 6px;
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.35;
+  letter-spacing: -0.035em;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.pamphlet-preview-address {
+  margin-top: 8px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 1.7;
+  word-break: keep-all;
+}
+
+.pamphlet-preview-sub {
+  margin-top: 6px;
+  color: #62615b;
+  font-size: 11px;
+  line-height: 1.7;
+  word-break: keep-all;
+}
+
+.pamphlet-preview-empty {
+  padding: 40px 30px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+  text-align: center;
+}
+
+@media (width < 900px) {
+  .pamphlet-reader-stage {
+    width: min(560px, calc(100% - 24px));
+    max-height: calc(100% - 24px);
+    gap: 4px;
+  }
+
+  .pamphlet-reader-window {
+    max-height: calc(100dvh - 128px);
+  }
+
+  .pamphlet-reader[data-phase='opening'] .pamphlet-reader-window,
+  .pamphlet-reader[data-phase='closing'] .pamphlet-reader-window {
+    overflow: hidden;
+  }
+
+  .pamphlet-reader-paper {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .pamphlet-reader-middle > .pamphlet-reader-face,
+  .pamphlet-reader-right > .pamphlet-reader-face {
+    border-top: 1px solid var(--color-border-default);
+    border-left: 0;
+  }
+
+  .pamphlet-reader-back {
+    display: none;
+  }
+
+  .pamphlet-reader-mobile-cover {
+    position: absolute;
+    inset: 0;
+    display: block;
+    overflow: hidden;
+    background: var(--color-surface);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .pamphlet-editorial {
+    padding: 32px 26px;
+  }
+
+  .pamphlet-intro-heading {
+    margin: 24px 0;
+  }
+
+  .pamphlet-intro h2 {
+    font-size: 32px;
+  }
+
+  .pamphlet-reader-footer {
+    flex-wrap: wrap;
+    gap: 0 12px;
+  }
+
+  .pamphlet-reader-footer nav {
+    margin-left: auto;
+    gap: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pamphlet-card {
+    transition: none;
+  }
+
+  .pamphlet-card:hover {
+    transform: none;
+  }
+
+  .pamphlet-weaving-sheet {
+    opacity: 1;
+    animation: none;
+  }
+
+  .pamphlet-reveal-cover,
+  .pamphlet-unfold,
+  .pamphlet-unfold .pamphlet-preview-head,
+  .pamphlet-unfold .pamphlet-preview-place {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .pamphlet-unfold {
+    overflow-y: auto;
+  }
+}
+
+/* ── 팜플렛 미리보기 ───────────────────────────────────────────────
+   만들기 직후·관리 화면·공유 링크가 같은 모양을 쓴다. */
+
+.pamphlet-preview {
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+.pamphlet-preview-head {
+  padding: 28px 24px 24px;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border-default) 55%, transparent);
+}
+
+.pamphlet-preview-title {
+  margin-top: 10px;
+  font-size: clamp(24px, 4vw, 32px);
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: -0.04em;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.pamphlet-preview-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin-top: 18px;
+}
+
+.pamphlet-preview-meta > div {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.pamphlet-preview-meta dt {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.pamphlet-preview-meta dd {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pamphlet-preview-byline {
+  margin-top: 16px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.pamphlet-preview-places {
+  display: flex;
+  flex-direction: column;
+}
+
+.pamphlet-preview-place {
+  display: flex;
+  gap: 16px;
+  padding: 18px 24px;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border-default) 35%, transparent);
+}
+
+.pamphlet-preview-place:last-child {
+  border-bottom: none;
+}
+
+.pamphlet-preview-figure {
+  flex-shrink: 0;
+  width: 92px;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: #eeeee9;
+}
+
+.pamphlet-preview-figure img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pamphlet-preview-figure .pamphlet-photo-placeholder {
+  gap: 4px;
+  font-size: 11px;
+}
+
+.pamphlet-preview-figure .pamphlet-photo-placeholder > :last-child {
+  font-size: 9px;
+  text-align: center;
+}
+
+.pamphlet-preview-body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pamphlet-preview-body h4 {
+  font-size: 16px;
+  font-weight: 640;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.pamphlet-preview-address,
+.pamphlet-preview-sub {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.pamphlet-preview-empty {
+  padding: 48px 24px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ── 만들기: 엮는 중 ─────────────────────────────────────────────── */
+
+.pamphlet-weaving {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  padding: 56px 24px;
+  text-align: center;
+}
+
+/* 고른 장소가 한 장씩 쌓여 책자가 되는 모습. 장수는 최대 5장만 그린다. */
+.pamphlet-weaving-stack {
+  position: relative;
+  width: 104px;
+  height: 76px;
+}
+
+.pamphlet-weaving-sheet {
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--color-border-default);
+  border-radius: 3px;
+  background: var(--color-surface);
+  opacity: 0;
+  animation: pamphlet-stack 1.6s ease-in-out infinite;
+}
+
+@keyframes pamphlet-stack {
+  0% {
+    opacity: 0;
+    transform: translateY(-12px) rotate(-4deg);
+  }
+  30%,
+  70% {
+    opacity: 1;
+    transform: translateY(0) rotate(var(--sheet-tilt, 0deg));
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(0) rotate(var(--sheet-tilt, 0deg));
+  }
+}
+
+.pamphlet-weaving-copy {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.pamphlet-weaving-sub {
+  margin-top: 6px;
+  color: var(--color-text-secondary);
+  font-size: 12.5px;
+  line-height: 1.7;
+  word-break: keep-all;
+}
+
+/* ── 만들기: 표지 → 펼침 ─────────────────────────────────────────── */
+
+.pamphlet-reveal {
+  display: grid;
+  place-items: center;
+  padding: 40px 24px;
+}
+
+.pamphlet-reveal-cover {
+  width: 176px;
+  animation: pamphlet-cover-in 420ms cubic-bezier(0.22, 0.68, 0, 1) both;
+}
+
+@keyframes pamphlet-cover-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * 종이를 펼치듯 연다. scaleY로 늘리면 늘어나 보이기만 해서, 접힌 면이 경첩을 중심으로
+ * 넘어오도록 rotateX를 쓴다. perspective는 리더(.pamphlet-reader-window)와 같은 값이다.
+ */
+.pamphlet-unfold {
+  perspective: 1800px;
+  transform-style: preserve-3d;
+  animation: pamphlet-unfold-lift 320ms cubic-bezier(0.22, 0.68, 0, 1) both;
+}
+
+@keyframes pamphlet-unfold-lift {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 머리말이 먼저 젖혀지고, 장소 면이 뒤따라 한 장씩 넘어온다. */
+.pamphlet-unfold .pamphlet-preview-head {
+  transform-origin: top center;
+  backface-visibility: hidden;
+  animation: pamphlet-unfold-panel 420ms cubic-bezier(0.22, 0.68, 0, 1) both;
+  animation-delay: 60ms;
+}
+
+.pamphlet-unfold .pamphlet-preview-place {
+  transform-origin: top center;
+  backface-visibility: hidden;
+  animation: pamphlet-unfold-panel 420ms cubic-bezier(0.22, 0.68, 0, 1) both;
+}
+
+/* 장수가 많아도 전체 대기가 길어지지 않게 앞쪽 몇 장만 간격을 둔다. */
+.pamphlet-unfold .pamphlet-preview-place:nth-child(1) {
+  animation-delay: 200ms;
+}
+.pamphlet-unfold .pamphlet-preview-place:nth-child(2) {
+  animation-delay: 290ms;
+}
+.pamphlet-unfold .pamphlet-preview-place:nth-child(3) {
+  animation-delay: 370ms;
+}
+.pamphlet-unfold .pamphlet-preview-place:nth-child(n + 4) {
+  animation-delay: 440ms;
+}
+
+@keyframes pamphlet-unfold-panel {
+  from {
+    opacity: 0;
+    transform: rotateX(-72deg);
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: rotateX(0deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pamphlet-weaving-sheet,
+  .pamphlet-reveal-cover,
+  .pamphlet-unfold,
+  .pamphlet-unfold .pamphlet-preview-head,
+  .pamphlet-unfold .pamphlet-preview-place {
+    animation-duration: 1ms;
+    animation-delay: 0ms;
+    animation-iteration-count: 1;
+  }
+}
+
+/* 방금 만든 팜플렛. 목록으로 돌아왔을 때 어느 것이 새 것인지 알아보게 한다. */
+.pamphlet-card[data-fresh] {
+  border-color: var(--color-border-strong);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-border-strong) 12%, transparent);
+}

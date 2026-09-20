@@ -18,7 +18,7 @@ import PoiFilter from '@/features/map/components/PoiFilter'
 import PoiDetailPanel from '@/features/map/components/PoiDetailPanel'
 import { usePoiLoadingIndicator } from '@/features/map/hooks/usePoiLoadingIndicator'
 import { POI_HIDE_LEVEL, POI_VISIBLE_LEVEL, REGION_PREVIEW_COUNT } from '@/features/map/constants'
-import { fetchPamphletDetail } from '@/features/map/api/pamphlets'
+import { fetchPamphletDetail, fetchPamphlets } from '@/features/map/api/pamphlets'
 import { useNearby } from '@/features/map/hooks/useNearby'
 import { useOnsenMapPoints } from '@/features/map/hooks/useOnsenMapPoints'
 import { useOnsens } from '@/features/map/hooks/useOnsens'
@@ -50,10 +50,10 @@ export default function MapPage() {
    * 지도에 띄워 둔 팜플렛. 드롭다운 열림 상태(MapSavedControls 내부)와 분리해,
    * 목록을 닫아도 마커는 남는다. 같은 팜플렛을 다시 고르면 표시를 해제한다.
    *
-   * 장소 마커는 아직 붙이지 않았다 — 팜플렛 id로 장소를 가져오는 API가 없다
-   * (features/map/api/pamphlets.ts 주석 참고). BE가 열어주면 여기서 이어받는다.
    */
   const [activePamphlet, setActivePamphlet] = useState<Pamphlet>()
+  /** 팜플렛 탭의 '지도에서 보기'로 들어온 경우. 목록을 열지 않고 바로 띄운다. */
+  const linkedPamphletId = Number(searchParams.get('pamphlet')) || undefined
   /**
    * 주변 탭이 열려 있으면 그 장소들을 지도에 띄운다. POI 토글과 둘 다 '주변에 뭐가
    * 있나'를 보는 기능이라 동시에 켜면 마커가 섞여 읽기 어렵다 — 탭이 열리면 POI를 끈다.
@@ -212,8 +212,30 @@ export default function MapPage() {
    * 실패해도 지도 탐색은 계속돼야 해서 조용히 비운다.
    */
   const [pamphletPlaces, setPamphletPlaces] = useState<PamphletPlace[]>([])
+
+  /**
+   * 팜플렛 탭에서 '지도에서 보기'로 들어온 경우. 목록을 거치지 않아 제목·장소 수가
+   * 없으므로 목록에서 그 한 권을 찾아 선택 상태로 만든다 — 버튼에도 표시돼야 한다.
+   */
   useEffect(() => {
-    const id = activePamphlet?.pamphletId
+    if (linkedPamphletId === undefined) return
+    let cancelled = false
+    fetchPamphlets(0, 50)
+      .then((page) => {
+        const found = page.content.find((item) => item.pamphletId === linkedPamphletId)
+        if (!cancelled && found) setActivePamphlet(found)
+      })
+      .catch(() => {
+        // 목록을 못 받아도 아래에서 상세로 마커는 띄운다.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [linkedPamphletId])
+
+  useEffect(() => {
+    // 링크로 들어오면 목록을 거치지 않으므로 쿼리의 id를 그대로 쓴다.
+    const id = activePamphlet?.pamphletId ?? linkedPamphletId
     if (id === undefined) {
       setPamphletPlaces([])
       return
@@ -244,7 +266,7 @@ export default function MapPage() {
     return () => {
       cancelled = true
     }
-  }, [activePamphlet])
+  }, [activePamphlet, linkedPamphletId])
 
   useEffect(() => {
     const key = searchParams.toString()

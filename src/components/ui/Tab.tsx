@@ -22,7 +22,7 @@ export default function Tab({
       role="tab"
       aria-selected={selected}
       className={cn(
-        'text-[14px] whitespace-nowrap',
+        'text-[14px] whitespace-nowrap transition-colors duration-150 ease-out',
         filled
           ? cn(
               'border-border-default flex items-center justify-center border-r px-5 py-[14px]',

@@ -127,7 +127,11 @@ export default function SidebarMagazine({ region }: { region?: string }) {
               fading && 'opacity-0',
             )}
           >
-            <MagazineImage src={story.thumbnailUrl} className="size-24 shrink-0 rounded-[2px]" />
+            <MagazineImage
+              src={story.thumbnailUrl}
+              seed={story.magazineId}
+              className="size-24 shrink-0 rounded-[2px]"
+            />
             <div className="flex min-w-0 flex-1 flex-col py-0.5">
               <p className="text-text-secondary truncate text-[10px] leading-4">
                 {story.categoryLabel}

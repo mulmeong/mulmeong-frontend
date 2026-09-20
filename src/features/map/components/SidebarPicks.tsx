@@ -113,7 +113,11 @@ export default function SidebarPicks() {
                   to={`/magazine/${magazine.magazineId}`}
                   className="group block outline-none focus-visible:underline focus-visible:underline-offset-4"
                 >
-                  <MagazineImage src={magazine.thumbnailUrl} className={SIDEBAR_CARD_IMAGE} />
+                  <MagazineImage
+                    src={magazine.thumbnailUrl}
+                    seed={magazine.magazineId}
+                    className={SIDEBAR_CARD_IMAGE}
+                  />
                   <p className="text-text-primary mt-2 truncate text-[13px] group-hover:underline">
                     {magazine.title}
                   </p>

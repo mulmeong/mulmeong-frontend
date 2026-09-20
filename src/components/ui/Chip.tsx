@@ -28,7 +28,8 @@ export default function Chip({
       type={type}
       aria-pressed={selected}
       className={cn(
-        'inline-flex items-center justify-center rounded-full text-[13px] transition-colors',
+        'inline-flex items-center justify-center rounded-full text-[13px]',
+        'transition-colors duration-150 ease-out',
         plain ? 'px-3 py-1.5' : 'px-[14px] py-2 font-medium',
         // 테두리가 없으면 포커스가 어디 있는지 보이지 않는다.
         plain &&

@@ -552,7 +552,8 @@ export default function MapCanvas({
 
   return (
     <div className="relative size-full" aria-busy={busy}>
-      <div ref={containerRef} className="size-full" inert={busy} />
+      {/* kakao-map: 전역 누름 효과(scale)가 마커 위치를 틀지 않게 제외하는 표식이다. */}
+      <div ref={containerRef} className="kakao-map size-full" inert={busy} />
       {ready && onSelectPoi && (
         <PoiMarkers
           map={mapRef.current}
