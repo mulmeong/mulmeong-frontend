@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, ScrollRestoration } from 'react-router-dom'
 
 import { UNAUTHORIZED_EVENT } from '@/api'
 import { login as loginRequest, logout as logoutRequest, reissue } from '@/features/auth/api/auth'
@@ -60,6 +60,16 @@ export default function AuthProvider() {
 
   return (
     <AuthContext value={value}>
+      {/*
+        화면을 옮기면 맨 위에서 시작한다. 브라우저는 스크롤 위치를 그대로 두기
+        때문에, 홈 맨 아래에서 '시작하기'를 누르면 매거진도 맨 아래에서 열린다.
+
+        직접 scrollTo(0)을 부르지 않고 이걸 쓰는 이유는 뒤로 가기 때문이다 —
+        돌아올 때는 보던 자리로 되돌려줘야 하는데, 그 구분을 라우터가 한다.
+
+        모든 라우트를 감싸는 자리에 한 벌만 둔다.
+      */}
+      <ScrollRestoration />
       <FavoritesProvider>
         <Outlet />
       </FavoritesProvider>
