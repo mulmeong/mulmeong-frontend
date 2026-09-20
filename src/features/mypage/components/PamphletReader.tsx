@@ -11,7 +11,8 @@ import type { PamphletView } from '@/features/mypage/data/pamphletView'
 
 type PamphletReaderProps = {
   pamphlet: PamphletView
-  source: HTMLButtonElement
+  /** 눌러서 연 카드. 공유 링크처럼 출발점이 없으면 생략한다. */
+  source?: HTMLButtonElement
   fromCard: boolean
   onClose: () => void
 }
@@ -97,7 +98,7 @@ export default function PamphletReader({
       const centerY = bounds.top + bounds.height / 2
       const panelWidth = bounds.width / (desktop ? 3 : 1)
       const card =
-        fromCard && source.isConnected
+        fromCard && source?.isConnected
           ? source.getBoundingClientRect()
           : {
               left: centerX - panelWidth * 0.42,
@@ -258,7 +259,7 @@ export default function PamphletReader({
       document.body.style.overflow = previousOverflow
       document.body.style.paddingRight = previousPadding
       window.requestAnimationFrame(() => {
-        if (source.isConnected) source.focus({ preventScroll: true })
+        if (source?.isConnected) source.focus({ preventScroll: true })
       })
     }
   }, [source, fromCard])

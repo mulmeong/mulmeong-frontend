@@ -8,6 +8,7 @@ import { cn } from '@/lib/cn'
 
 import type { NearbyCategory, NearbyPlace } from '@/types/nearby'
 import { poiKeyOf, toPoiCategory } from '@/types/poi'
+import { TOUR_API_CREDIT } from '@/constants/credits'
 
 const ALL_FILTER = 'ALL'
 const EMPTY_NEARBY_ITEMS: NearbyPlace[] = []
@@ -278,6 +279,13 @@ export default function NearbyList({
         >
           전체 보기
         </button>
+      )}
+
+      {/* 주변 여행지는 전부 TourAPI다. 카드마다 붙이지 않고 목록 끝에 한 번. */}
+      {result.items.length > 0 && (
+        <p className="text-text-secondary mt-3 text-[10px] leading-[1.8]">
+          장소 정보 · {TOUR_API_CREDIT}
+        </p>
       )}
     </div>
   )

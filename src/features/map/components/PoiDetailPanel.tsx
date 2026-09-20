@@ -3,6 +3,7 @@ import FavoriteButton from '@/features/favorites/FavoriteButton'
 import type { FavoriteCategory, FavoriteRequest } from '@/features/favorites/api'
 import { usePoiDetail } from '@/features/map/hooks/usePoiDetail'
 import { POI_CATEGORY_LABELS, type MapPoi, type PoiCategory } from '@/types/poi'
+import { TOUR_API_CREDIT } from '@/constants/credits'
 
 function formatDistance(m?: number | null) {
   if (m == null) return undefined
@@ -184,6 +185,11 @@ export default function PoiDetailPanel({
             </div>
           )}
         </dl>
+
+        {/* 이 패널은 TourAPI 장소 전용이다 (/external/places/category). */}
+        <p className="text-text-secondary mt-6 text-[11px] leading-[1.8]">
+          장소 정보 · {TOUR_API_CREDIT}
+        </p>
       </section>
     </div>
   )

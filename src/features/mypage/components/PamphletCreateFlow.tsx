@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import PamphletCover from '@/features/mypage/components/PamphletCover'
 import PamphletPreview from '@/features/mypage/components/PamphletPreview'
 import { shareLinkOf, type CreatedPamphlet, type PamphletDetail } from '@/types/pamphlet'
+import { copyLink } from '@/lib/copyLink'
 
 type PamphletCreateFlowProps = {
   /** 엮는 중 문구에 쓸 선택 장소 수. 만들어지기 전에도 보여줘야 해서 따로 받는다. */
@@ -75,25 +76,7 @@ export default function PamphletCreateFlow({
 
   const share = async () => {
     if (!shareUrl) return
-    const title = created?.title ?? '물멍 팜플렛'
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ title, text: `${title} · 물멍 팜플렛`, url: shareUrl })
-        return
-      } catch (cause) {
-        // 사용자가 공유 시트를 닫은 것뿐이면 복사로 넘어가지 않는다.
-        if (cause instanceof DOMException && cause.name === 'AbortError') return
-      }
-    }
-
-    try {
-      await navigator.clipboard.writeText(shareUrl)
-      setCopied(true)
-    } catch {
-      // 클립보드는 https나 사용자 동작이 아니면 막힌다. 링크는 화면에 그대로 있다.
-      setCopied(false)
-    }
+    if (await copyLink(shareUrl)) setCopied(true)
   }
 
   const ready = created && detail && unfolded
@@ -183,14 +166,14 @@ export default function PamphletCreateFlow({
               onClick={() => void share()}
               className="flex-1 bg-[#0E1513] px-4 py-3.5 text-[13.5px] font-bold text-white"
             >
-              링크로 공유
+              {copied ? '복사됨 ✓' : '링크 복사'}
             </button>
             <button
               type="button"
               onClick={() => onManage(created.pamphletId)}
               className="shrink-0 border border-[#D8DCDB] px-6 py-3.5 text-[13.5px] font-normal text-[#0E1513]"
             >
-              팜플렛 관리
+              팜플렛 상세
             </button>
           </div>
           {/* 복사된 링크는 화면에도 남긴다 — 클립보드가 막힌 환경에서 직접 집을 수 있게. */}
