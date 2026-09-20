@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import MagazineAside from '@/features/magazine/components/MagazineAside'
 import MagazineJumpBar from '@/features/magazine/components/MagazineJumpBar'
 import MagazineLikeButton from '@/features/magazine/components/MagazineLikeButton'
+import MagazineShareButton from '@/features/magazine/components/MagazineShareButton'
 import { useMagazine } from '@/features/magazine/hooks/useMagazine'
 import { useReadingProgress } from '@/features/magazine/hooks/useReadingProgress'
 import { cn } from '@/lib/cn'
@@ -80,6 +81,7 @@ export default function MagazineDetailPage() {
             </div>
 
             <MagazineLikeButton magazineId={magazineId} isLiked={isLiked} likeCount={likeCount} />
+            <MagazineShareButton />
           </div>
         </aside>
 
@@ -98,13 +100,14 @@ export default function MagazineDetailPage() {
             <span className="min-w-0">{byline}</span>
             <span className="flex shrink-0 items-center gap-3">
               <span>{readMinutes}분</span>
-              {/* 왼쪽 레일은 lg 이상에서만 보여서, 좁은 화면에는 여기에 하트를 둔다. */}
-              <span className="lg:hidden">
+              {/* 왼쪽 레일은 lg 이상에서만 보여서, 좁은 화면에는 여기에 둔다. */}
+              <span className="flex items-center gap-2 lg:hidden">
                 <MagazineLikeButton
                   magazineId={magazineId}
                   isLiked={isLiked}
                   likeCount={likeCount}
                 />
+                <MagazineShareButton />
               </span>
             </span>
           </div>
