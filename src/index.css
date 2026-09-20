@@ -335,6 +335,23 @@ dialog[open]::backdrop {
   .kakao-map a[href]:active {
     transform: none;
   }
+
+  /*
+    SVG 안쪽도 제외한다. SVG 요소는 transform-origin 기본값이 요소 중심이 아니라
+    SVG 원점(0,0)이라, scale(0.97)을 걸면 제자리에서 작아지는 게 아니라 왼쪽
+    위로 끌려간다 — 원점에서 먼 도형일수록 많이 움직인다.
+
+    내 지도의 시·도가 role="button"이라 여기 걸려서, 누르는 순간 그 도형만
+    위로 튀었다.
+  */
+  /*
+    특이도를 위 규칙과 같게 맞춘다. :not()을 빼면 (0,2,1)이라 (0,3,0)인 원래
+    규칙에 져서, 뒤에 써도 적용되지 않는다.
+  */
+  svg [role='button']:not([aria-disabled='true']):active,
+  svg a[href]:active {
+    transform: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
