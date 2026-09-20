@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useMatch } from 'react-router-dom'
+import { NavLink, Outlet } from 'react-router-dom'
 
 import Badge from '@/components/ui/Badge'
 import type { MyProfile } from '@/types/user'
@@ -28,7 +28,6 @@ export type MyPageOutletContext = {
 }
 
 export default function MyPageLayout() {
-  const isAccountPage = useMatch('/my/account') !== null
   // RequireAuth를 통과했으므로 user는 반드시 있다. 통계는 프로필 API가 채운다.
   const { user } = useAuth()
   const { profile, error: profileError, reload: reloadProfile } = useMyProfile()
@@ -54,50 +53,13 @@ export default function MyPageLayout() {
             aria-hidden="true"
             className="bg-inverse text-text-inverse flex size-14 shrink-0 items-center justify-center rounded-full text-[22px] font-bold"
           >
-            {isAccountPage ? (
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                className="size-7"
-              >
-                <circle cx="12" cy="8" r="3.5" />
-                <path d="M5 20v-2a7 7 0 0 1 14 0v2" />
-              </svg>
-            ) : (
-              nickname.slice(0, 1)
-            )}
+            {nickname.slice(0, 1)}
           </div>
           <div className="flex min-w-0 flex-col gap-1">
-            <div
-              className={cn(
-                'flex',
-                isAccountPage ? 'flex-col items-start gap-1.5' : 'flex-wrap items-center gap-2',
-              )}
-            >
-              <span
-                className={cn(
-                  'max-w-full truncate font-semibold',
-                  isAccountPage ? 'text-[24px] leading-8' : 'text-[20px] font-bold',
-                )}
-              >
-                {nickname}
-              </span>
-              <div className={isAccountPage ? 'flex flex-wrap items-center gap-2' : 'contents'}>
-                {level !== undefined && <Badge type="level">{`LV.${level}`}</Badge>}
-                {title && (
-                  <span
-                    className={cn(
-                      'text-[14px]',
-                      isAccountPage ? 'text-text-primary/65' : 'text-text-secondary',
-                    )}
-                  >
-                    {title}
-                  </span>
-                )}
-              </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="max-w-full truncate text-[20px] font-bold">{nickname}</span>
+              {level !== undefined && <Badge type="level">{`LV.${level}`}</Badge>}
+              {title && <span className="text-text-secondary text-[14px]">{title}</span>}
             </div>
           </div>
         </div>
