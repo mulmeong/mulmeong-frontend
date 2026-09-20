@@ -19,10 +19,18 @@ const TABS = ['한눈에', '리뷰', '주변', '정보'] as const
 type DetailTab = (typeof TABS)[number]
 
 const ACTIONS = [
-  { label: '저장', icon: 'save', disabled: true },
-  { label: '공유', icon: 'share', disabled: true },
-  { label: '길찾기', icon: 'directions', disabled: false },
+  { label: '저장', icon: 'save' },
+  { label: '공유', icon: 'share' },
+  { label: '길찾기', icon: 'directions' },
 ] as const
+
+/**
+ * 온천 공유 링크. 서버가 토큰을 주는 팜플렛과 달리 온천은 공유 API가 없고,
+ * MapPage가 `?onsen={id}`를 읽어 해당 온천을 열어 준다.
+ */
+function shareLinkOf(onsenId: number): string {
+  return `${window.location.origin}/map?onsen=${onsenId}`
+}
 
 function ActionIcon({
   kind,
@@ -136,6 +144,7 @@ function OnsenDetailContent({
 }) {
   const [tab, setTab] = useState<DetailTab>('한눈에')
   const tabsId = useId()
+  const [copied, setCopied] = useState(false)
 
   // 주변 탭이 열린 동안만 지도에 주변 마커를 띄운다. 패널이 닫히거나 다른 온천으로
   // 바뀌면(key로 새로 마운트된다) 해제된다.
@@ -151,6 +160,29 @@ function OnsenDetailContent({
   const address = detail?.address ?? onsen.address
   const rating = detail?.reviewSummary?.avgRating ?? onsen.rating
   const reviewCount = detail?.reviewSummary?.count ?? onsen.reviewCount
+
+  const share = async () => {
+    const url = shareLinkOf(onsen.id)
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: name, text: `${name} · 물멍`, url })
+        return
+      } catch (cause) {
+        // 공유 시트를 닫은 것뿐이면 복사로 넘어가지 않는다.
+        if (cause instanceof DOMException && cause.name === 'AbortError') return
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // 클립보드는 https나 사용자 동작이 아니면 막힌다.
+      setCopied(false)
+    }
+  }
 
   return (
     <div className="bg-surface scrollbar-thin h-full min-w-0 overflow-y-auto px-4 pb-8">
@@ -200,17 +232,20 @@ function OnsenDetailContent({
             <button
               key={action.icon}
               type="button"
-              disabled={action.disabled}
-              onClick={action.icon === 'directions' ? onDirections : undefined}
-              title={action.disabled ? `${action.label} 기능은 준비 중입니다.` : undefined}
+              onClick={action.icon === 'directions' ? onDirections : () => void share()}
               className="text-text-primary hover:not-disabled:bg-surface-dim flex min-h-9 items-center justify-center gap-2 text-[12px] font-medium outline-none focus-visible:ring-1 focus-visible:ring-inverse disabled:cursor-not-allowed disabled:opacity-50"
             >
               <ActionIcon kind={action.icon} />
-              {action.label}
+              {action.icon === 'share' && copied ? '복사됨' : action.label}
             </button>
           ),
         )}
       </div>
+
+      {/* 스크린 리더에도 알린다 — 아이콘 라벨 변화만으로는 전달되지 않는다. */}
+      <p role="status" aria-live="polite" className="sr-only">
+        {copied ? '공유 링크를 복사했습니다.' : ''}
+      </p>
 
       {rating !== undefined && (
         <p
