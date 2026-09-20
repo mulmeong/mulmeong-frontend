@@ -154,6 +154,14 @@ export type MapView =
 export const NATIONAL_VIEW = { lat: 35.8, lng: 127.8, level: 13 } as const
 
 /**
+ * MAP 페이지 최초 진입 시 보이는 구도. 충청권을 중심에 두고 서울·경기부터
+ * 부산·경남까지 담되, 제주는 하단 밖으로 일부 벗어나도 둔다 — "전국을 다
+ * 담는 최대 축소"(getNationalMapView)와는 다른 값으로, 사용자가 직접
+ * 축소했을 때 갈 수 있는 한계에는 영향을 주지 않는다.
+ */
+export const INITIAL_MAP_VIEW = { lat: 36.3, lng: 127.75, level: 12 } as const
+
+/**
  * 지역을 고르면 지도를 옮길 위치.
  * 명세에 없는 값이라 대략치로 잡았다 — 기획·BE에서 확정되면 교체한다.
  */

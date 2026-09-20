@@ -7,15 +7,45 @@ export type MapViewportLimits = {
   height: number
 }
 
-/** 처음 보인 사각형을 지도 투영 좌표 그대로 저장한다. 팬·줌·패널 변경 때 갱신하지 않는다. */
-export function captureMapViewport(map: kakao.maps.Map, container: HTMLElement): MapViewportLimits {
+/**
+ * 처음 보인 사각형을 지도 투영 좌표 그대로 저장한다. 팬·줌·패널 변경 때 갱신하지 않는다.
+ *
+ * `overrideView`를 주면 지도를 실제로 그 중심·레벨로 옮기지 않고도 그 상태에서
+ * 보였을 사각형을 계산한다 — MAP 페이지 최초 진입 구도(충청권 중심)와 팬 허용
+ * 범위(남한 전체+제주)가 다를 때 쓴다. 연속 setLevel/setCenter는 SDK 애니메이션이
+ * 서로 씹혀 두 번째 호출이 무시되는 문제가 있어, 지도를 옮기는 대신 현재 레벨의
+ * projection에 스케일만 보정해 계산한다(getNationalMapView와 같은 방식).
+ */
+export function captureMapViewport(
+  map: kakao.maps.Map,
+  container: HTMLElement,
+  overrideView?: { center: kakao.maps.LatLng; level: number },
+): MapViewportLimits {
   const projection = map.getProjection()
   const { clientWidth: width, clientHeight: height } = container
+  if (!overrideView) {
+    return {
+      center: map.getCenter(),
+      northWest: projection.coordsFromContainerPoint(new window.kakao.maps.Point(0, 0)),
+      southEast: projection.coordsFromContainerPoint(new window.kakao.maps.Point(width, height)),
+      initialLevel: map.getLevel(),
+      width,
+      height,
+    }
+  }
+  const scale = 2 ** (overrideView.level - map.getLevel())
+  const centerPoint = projection.containerPointFromCoords(overrideView.center)
+  const halfWidth = (width / 2) * scale
+  const halfHeight = (height / 2) * scale
   return {
-    center: map.getCenter(),
-    northWest: projection.coordsFromContainerPoint(new window.kakao.maps.Point(0, 0)),
-    southEast: projection.coordsFromContainerPoint(new window.kakao.maps.Point(width, height)),
-    initialLevel: map.getLevel(),
+    center: overrideView.center,
+    northWest: projection.coordsFromContainerPoint(
+      new window.kakao.maps.Point(centerPoint.x - halfWidth, centerPoint.y - halfHeight),
+    ),
+    southEast: projection.coordsFromContainerPoint(
+      new window.kakao.maps.Point(centerPoint.x + halfWidth, centerPoint.y + halfHeight),
+    ),
+    initialLevel: overrideView.level,
     width,
     height,
   }

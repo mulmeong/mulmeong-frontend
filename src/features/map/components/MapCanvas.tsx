@@ -10,7 +10,7 @@ import {
 } from '@/features/map/utils/mapViewportLimits'
 import { getNationalMapView } from '@/features/map/utils/nationalMapView'
 
-import { NATIONAL_VIEW } from '@/types/onsen'
+import { INITIAL_MAP_VIEW, NATIONAL_VIEW } from '@/types/onsen'
 
 import type { MapViewportLimits } from '@/features/map/utils/mapViewportLimits'
 import type { DirectionsResult, RouteOption } from '@/features/map/types/directions'
@@ -156,11 +156,23 @@ export default function MapCanvas({
           level: NATIONAL_VIEW.level,
         })
         const map = mapRef.current
-        const view = getNationalMapView(map, containerRef.current)
-        map.setLevel(view.level)
-        map.setCenter(view.center)
-        map.setMaxLevel(view.level)
-        viewportLimitsRef.current = captureMapViewport(map, containerRef.current)
+        // 팬 허용 범위(viewportLimits)와 축소 한도는 "남한 전체+제주를 다
+        // 담는 최대 축소" 기준이어야 한다 — 최초 진입 구도(충청권 중심,
+        // 아래)를 기준으로 캡처하면 부산·제주 등으로 이동이 막힌다.
+        // getNationalMapView는 내부에서 스케일을 보정해 계산하므로, 지도를
+        // 실제로 그 레벨로 옮기지 않고도(연속 setLevel이 애니메이션과
+        // 겹쳐 씹히는 문제를 피해) 최대 축소 레벨/중심만 뽑아 쓴다.
+        const maxZoomOutView = getNationalMapView(map, containerRef.current)
+        map.setMaxLevel(maxZoomOutView.level)
+
+        // 최초 진입 시 보여줄 구도(충청권 중심)를 실제로 적용한다.
+        map.setLevel(INITIAL_MAP_VIEW.level)
+        map.setCenter(new maps.LatLng(INITIAL_MAP_VIEW.lat, INITIAL_MAP_VIEW.lng))
+
+        // viewportLimits는 최대 축소 상태 기준으로 별도 계산해 저장한다
+        // (captureMapViewport는 "현재 보이는 사각형"을 그대로 찍으므로
+        // 최대 축소 중심/레벨을 넘겨 계산해야 한다).
+        viewportLimitsRef.current = captureMapViewport(map, containerRef.current, maxZoomOutView)
         setReady(true)
       })
       .catch((err: Error) => {
