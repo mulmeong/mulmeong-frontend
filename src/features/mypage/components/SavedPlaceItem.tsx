@@ -5,15 +5,15 @@ import { categoryLabel, type SavedPlace } from '@/types/saved'
 
 type SavedPlaceItemProps = {
   place: SavedPlace
-  checked: boolean
-  onToggle: (place: SavedPlace) => void
+  checked?: boolean
+  onToggle?: (place: SavedPlace) => void
   onShowOnMap: (place: SavedPlace) => void
-  onDelete: (place: SavedPlace) => void
+  onDelete?: (place: SavedPlace) => void
 }
 
 export default function SavedPlaceItem({
   place,
-  checked,
+  checked = false,
   onToggle,
   onShowOnMap,
   onDelete,
@@ -23,12 +23,14 @@ export default function SavedPlaceItem({
   return (
     <article className="flex items-center gap-4 py-4">
       {/* 체크박스에 이름을 붙여 스크린 리더가 '덕구온천 선택'으로 읽게 한다. */}
-      <Checkbox
-        checked={checked}
-        onChange={() => onToggle(place)}
-        aria-label={`${name} 선택`}
-        className="cursor-pointer"
-      />
+      {onToggle && (
+        <Checkbox
+          checked={checked}
+          onChange={() => onToggle(place)}
+          aria-label={`${name} 선택`}
+          className="cursor-pointer"
+        />
+      )}
 
       {imageUrl ? (
         <img src={imageUrl} alt="" className="size-12 shrink-0 rounded-sm object-cover" />
@@ -75,10 +77,18 @@ export default function SavedPlaceItem({
         >
           지도에서 보기
         </button>
-        <span aria-hidden="true">·</span>
-        <button type="button" onClick={() => onDelete(place)} className="hover:text-text-primary">
-          삭제
-        </button>
+        {onDelete && (
+          <>
+            <span aria-hidden="true">·</span>
+            <button
+              type="button"
+              onClick={() => onDelete(place)}
+              className="hover:text-text-primary"
+            >
+              삭제
+            </button>
+          </>
+        )}
       </div>
     </article>
   )
