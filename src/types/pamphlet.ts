@@ -38,14 +38,51 @@ export type PamphletPlace = {
   imageUrl?: string | null
   lat?: number | null
   lng?: number | null
-  kakaoPlaceUrl?: string | null
 }
 
-/** 팜플렛 상세 (GET /pamphlets/{id}). 지도에는 places의 좌표만 쓴다. */
-export type PamphletDetail = Omit<Pamphlet, 'placeCount' | 'regionName'> & {
+/**
+ * 팜플렛 상세 (GET /pamphlets/{id}). 지도에는 places의 좌표만 쓴다.
+ *
+ * 공유 조회(`/share/{token}`)로 남의 팜플렛을 볼 때는 서버가 pamphletId를 null로 내린다.
+ */
+export type PamphletDetail = Omit<Pamphlet, 'pamphletId' | 'placeCount' | 'regionName'> & {
+  pamphletId: number | null
   isMine: boolean
+  author?: PamphletAuthor | null
   places: PamphletPlace[]
   summary?: { onsenCount: number; placeCount: number; regionName?: string | null } | null
+}
+
+/** 팜플렛을 만든 사람. 공유 화면에서 쓴다. */
+export type PamphletAuthor = {
+  nickname: string
+  level: number
+  title: string
+}
+
+/**
+ * 만들기 응답 (POST /pamphlets). 목록 항목과 필드가 달라 따로 둔다 —
+ * regionName이 없고, coverImage 대신 cover 정보만 온다.
+ */
+export type CreatedPamphlet = {
+  pamphletId: number
+  shareToken: string
+  /** 서버가 자기 도메인으로 만든 링크. 배포 도메인과 다를 수 있어 화면에서는 쓰지 않는다. */
+  shareUrl?: string | null
+  title: string
+  partySize?: number | null
+  travelDate?: string | null
+  placeCount: number
+  coverImage?: string | null
+  createdAt: string
+}
+
+/**
+ * 공유 링크. 서버의 shareUrl은 SHARE_BASE가 하드코딩돼 있어 배포 도메인과 어긋난다
+ * (BE에 수정 요청됨). 지금 열려 있는 오리진으로 만들면 로컬·배포 모두 맞는다.
+ */
+export function shareLinkOf(shareToken: string): string {
+  return `${window.location.origin}/pamphlet/${shareToken}`
 }
 
 /* 아래는 만들기(POST /pamphlets)에만 쓰는 값이다. 목록·상세는 위 타입을 쓴다. */

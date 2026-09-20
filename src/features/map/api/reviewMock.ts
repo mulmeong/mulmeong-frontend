@@ -1,6 +1,12 @@
 import { ApiError } from '@/api'
 
-import type { CreateReviewBody, CreateReviewResult } from '@/types/review'
+import type {
+  CreateReviewBody,
+  CreateReviewResult,
+  PublicReview,
+  ReviewPage,
+  ReviewSort,
+} from '@/types/review'
 
 /** 지도 리뷰 탭의 화면 검토용 데이터. 실제 리뷰 API 계약과는 별개다. */
 const REVIEW_PREVIEWS = [
@@ -44,6 +50,69 @@ export function getMockReviews(onsenId: number, reviewCount: number) {
     ...REVIEW_PREVIEWS[(start + index) % REVIEW_PREVIEWS.length],
     id: `${onsenId}-${index}`,
   })).sort((a, b) => b.visitedAt.localeCompare(a.visitedAt))
+}
+
+export function mockFetchReviews(
+  onsenId: number,
+  params: { sort: ReviewSort; page: number; size: number },
+): Promise<ReviewPage> {
+  const totalElements = Math.max(0, ((onsenId * 7) % 24) + 1)
+  const start = (onsenId - 1) % REVIEW_PREVIEWS.length
+  const reviews: PublicReview[] = Array.from({ length: totalElements }, (_, index) => {
+    const seed = REVIEW_PREVIEWS[(start + index) % REVIEW_PREVIEWS.length]
+    return {
+      reviewId: onsenId * 1000 + index,
+      author: {
+        nickname: index % 9 === 8 ? '탈퇴한 사용자' : seed.nickname,
+        level: index % 9 === 8 ? null : 2 + ((onsenId + index) % 5),
+        title: index % 9 === 8 ? null : index % 2 === 0 ? '온천 애호가' : '동네 탐험가',
+        profileShareToken: index % 9 === 8 ? null : `mock-${onsenId}-${index}`,
+      },
+      rating: Math.max(3, Math.min(5, seed.rating - (index % 2 === 0 ? 0 : 1))),
+      visitedAt: seed.visitedAt,
+      isRevisit: index % 3 === 0,
+      spec: {
+        visitTime: index % 2 === 0 ? 'AFTERNOON' : 'EVENING',
+        clean: Math.max(3, seed.rating),
+        crowd: 2 + (index % 3),
+        facility: Math.max(3, seed.rating - 1),
+      },
+      body: seed.content,
+      images: seed.imageUrl && index % 2 === 0 ? [seed.imageUrl] : [],
+      isMine: index === 0 && onsenId % 2 === 0,
+      isEdited: index % 4 === 0,
+      createdAt: `${seed.visitedAt}T20:10:00+09:00`,
+    }
+  })
+
+  const sorted = [...reviews].sort((a, b) => {
+    if (params.sort === 'RATING_DESC')
+      return b.rating - a.rating || b.createdAt.localeCompare(a.createdAt)
+    if (params.sort === 'PHOTO_FIRST')
+      return (
+        Number(b.images.length > 0) - Number(a.images.length > 0) ||
+        b.createdAt.localeCompare(a.createdAt)
+      )
+    return b.createdAt.localeCompare(a.createdAt)
+  })
+  const startIndex = params.page * params.size
+  const content = sorted.slice(startIndex, startIndex + params.size)
+  const totalPages = Math.max(1, Math.ceil(totalElements / params.size))
+
+  return new Promise((resolve) =>
+    setTimeout(
+      () =>
+        resolve({
+          content,
+          page: params.page,
+          size: params.size,
+          totalElements,
+          totalPages,
+          last: params.page >= totalPages - 1,
+        }),
+      250,
+    ),
+  )
 }
 
 /** 같은 온천·같은 방문일 중복을 막는 서버 규칙(REV-06)을 목에서도 재현한다. */

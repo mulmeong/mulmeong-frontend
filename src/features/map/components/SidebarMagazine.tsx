@@ -1,25 +1,36 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { fetchMagazinesByRegion } from '@/features/magazine/api/magazine'
 import MagazineImage from '@/features/magazine/components/MagazineImage'
 import { useMagazines } from '@/features/magazine/hooks/useMagazines'
+import MagazineRefreshButton from '@/features/map/components/MagazineRefreshButton'
+import { cn } from '@/lib/cn'
 
 import type { Magazine } from '@/types/magazine'
+
+const FETCH_COUNT = 12
+const FADE_MS = 120
+const SPIN_MS = 450
 
 /** 좁은 패널에서는 대표 기사 한 편의 제목과 읽기 동작을 충분히 보여준다. */
 export default function SidebarMagazine({ region }: { region?: string }) {
   // 지역을 고르지 않았을 때만 최신 글을 그대로 쓴다.
-  const latest = useMagazines({ size: 5 })
+  const latest = useMagazines({ size: FETCH_COUNT })
   // 매거진은 sidoCode(행안부 2자리)로만 거를 수 있고 지도는 8개 권역이라 1:1이 아니다.
   // 목록 size 상한이 30이라 전부 받아 프론트에서 좁힐 수도 없다 — 코드별로 나눠 받는다.
   const [byRegion, setByRegion] = useState<{ items: Magazine[]; failed: boolean }>()
+  const [pickedStory, setPickedStory] = useState<{ region?: string; index: number }>({ index: 0 })
+  const [spinning, setSpinning] = useState(false)
+  const [fading, setFading] = useState(false)
+  const spinTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const fadeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!region) return
     let cancelled = false
     setByRegion(undefined)
-    fetchMagazinesByRegion(region)
+    fetchMagazinesByRegion(region, FETCH_COUNT)
       .then((items) => {
         if (!cancelled) setByRegion({ items, failed: false })
       })
@@ -31,9 +42,35 @@ export default function SidebarMagazine({ region }: { region?: string }) {
     }
   }, [region])
 
+  useEffect(
+    () => () => {
+      if (spinTimer.current) clearTimeout(spinTimer.current)
+      if (fadeTimer.current) clearTimeout(fadeTimer.current)
+    },
+    [],
+  )
+
   const loading = region ? !byRegion : latest.loading
   const error = region ? byRegion?.failed : latest.error
-  const story = region ? byRegion?.items[0] : latest.magazines[0]
+  const stories = region ? (byRegion?.items ?? []) : latest.magazines
+  const storyIndex = pickedStory.region === region ? pickedStory.index : 0
+  const story = stories[storyIndex % Math.max(stories.length, 1)]
+
+  function refreshMagazine() {
+    if (stories.length <= 1) return
+    if (spinTimer.current) clearTimeout(spinTimer.current)
+    if (fadeTimer.current) clearTimeout(fadeTimer.current)
+    setSpinning(true)
+    setFading(true)
+    spinTimer.current = setTimeout(() => setSpinning(false), SPIN_MS)
+    fadeTimer.current = setTimeout(() => {
+      setPickedStory((current) => ({
+        region,
+        index: ((current.region === region ? current.index : 0) + 1) % stories.length,
+      }))
+      setFading(false)
+    }, FADE_MS)
+  }
 
   // 보조 영역이라 실패하면 조용히 감춘다 — 지도 탐색을 막지 않는다.
   // 고른 지역에 글이 없을 때도 마찬가지다 (전체 글로 대체하지 않는다).
@@ -52,13 +89,20 @@ export default function SidebarMagazine({ region }: { region?: string }) {
             {region ? `${region}의 온천 이야기` : '온천 이야기'}
           </span>
         </div>
-        <Link
-          to="/magazine"
-          aria-label="매거진 전체보기"
-          className="text-text-secondary hover:text-text-primary inline-flex min-h-8 shrink-0 items-center gap-1 text-[11px] outline-none hover:underline focus-visible:underline focus-visible:underline-offset-4"
-        >
-          전체보기 <span aria-hidden="true">›</span>
-        </Link>
+        <div className="flex shrink-0 items-center gap-1">
+          <MagazineRefreshButton
+            spinning={spinning}
+            disabled={loading || stories.length <= 1}
+            onClick={refreshMagazine}
+          />
+          <Link
+            to="/magazine"
+            aria-label="매거진 전체보기"
+            className="text-text-secondary hover:text-text-primary inline-flex min-h-8 shrink-0 items-center gap-1 text-[11px] outline-none hover:underline focus-visible:underline focus-visible:underline-offset-4"
+          >
+            전체보기 <span aria-hidden="true">›</span>
+          </Link>
+        </div>
       </div>
 
       {loading ? (
@@ -78,7 +122,10 @@ export default function SidebarMagazine({ region }: { region?: string }) {
         story && (
           <Link
             to={`/magazine/${story.magazineId}`}
-            className="group mt-2 flex h-24 gap-3 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-border-strong focus-visible:ring-offset-2"
+            className={cn(
+              'group mt-2 flex h-24 gap-3 rounded-sm transition-opacity duration-150 outline-none focus-visible:ring-2 focus-visible:ring-border-strong focus-visible:ring-offset-2 motion-reduce:transition-none',
+              fading && 'opacity-0',
+            )}
           >
             <MagazineImage
               src={story.thumbnailUrl}

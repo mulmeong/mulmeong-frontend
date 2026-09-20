@@ -1,5 +1,8 @@
-import { cn } from '@/lib/cn'
+import { useState } from 'react'
+
+import { DEFAULT_ONSEN_IMAGE } from '@/constants/images'
 import FavoriteButton from '@/features/favorites/FavoriteButton'
+import { cn } from '@/lib/cn'
 
 import type { OnsenListItem } from '@/features/map/api/map'
 
@@ -19,6 +22,7 @@ function formatDistance(km: number) {
  */
 export default function SearchResultItem({ onsen, selected, onClick }: SearchResultItemProps) {
   const { name, address, imageUrl, waterQuality, waterTempC, tags, distanceKm } = onsen
+  const [failedImage, setFailedImage] = useState(false)
 
   // 스펙 한 줄 — 온천이면 수질·수온, 없으면 태그로 대체한다.
   const spec = [waterQuality, waterTempC !== undefined ? `${waterTempC}℃` : undefined]
@@ -38,11 +42,12 @@ export default function SearchResultItem({ onsen, selected, onClick }: SearchRes
           selected ? 'bg-surface-dim' : 'hover:bg-surface-dim',
         )}
       >
-        {imageUrl ? (
-          <img src={imageUrl} alt="" className="size-11 shrink-0 rounded-[2px] object-cover" />
-        ) : (
-          <div className="bg-surface-dim size-11 shrink-0 rounded-[2px]" />
-        )}
+        <img
+          src={imageUrl && !failedImage ? imageUrl : DEFAULT_ONSEN_IMAGE}
+          alt=""
+          onError={() => setFailedImage(true)}
+          className="size-11 shrink-0 rounded-[2px] object-cover"
+        />
 
         <span className="min-w-0 flex-1">
           <span

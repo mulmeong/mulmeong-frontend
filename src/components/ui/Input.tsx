@@ -78,6 +78,7 @@ export default function Input({
         className={cn(
           // 글자를 1px 내리려고 위아래 여백을 비대칭으로 둔다 (전체 높이는 유지).
           'bg-surface border-border-default flex items-center gap-2 rounded-md border px-3.5 pt-[9px] pb-[7px]',
+          'transition-colors duration-150 ease-out focus-within:border-border-strong',
           error && 'border-danger',
           className,
         )}
@@ -115,7 +116,8 @@ export default function Input({
       <div
         className={cn(
           'flex items-center gap-2 border-b pb-2',
-          error ? 'border-danger' : 'border-border-default',
+          'transition-colors duration-150 ease-out',
+          error ? 'border-danger' : 'border-border-default focus-within:border-border-strong',
         )}
       >
         {field}

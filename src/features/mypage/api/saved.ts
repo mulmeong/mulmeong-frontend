@@ -55,7 +55,6 @@ export function selectSavedPlaces(
     category: CATEGORY[item.placeType],
     imageUrl: item.thumbnail ?? undefined,
     subText: item.subText ?? undefined,
-    kakaoPlaceUrl: item.kakaoPlaceUrl ?? undefined,
     lat: item.lat,
     lng: item.lng,
   }))

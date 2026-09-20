@@ -17,7 +17,7 @@ export const RATING_MAX = 5
 /** 본문은 0자를 허용한다 (REV-02) — 최대 길이만 막는다. */
 export const REVIEW_BODY_MAX = 1000
 
-/** 한 번에 올릴 수 있는 사진 수. 602 업로드 명세가 오면 쓴다. */
+/** 한 번에 올릴 수 있는 사진 수. */
 export const REVIEW_IMAGE_MAX = 5
 
 export type ReviewSpec = {
@@ -64,6 +64,10 @@ export type CreateReviewResult = {
 
 /* 아래는 REV-07 온천별 리뷰 목록(GET /onsens/{id}/reviews)에서 쓴다. */
 
+/**
+ * 같은 API를 지도(ReviewSection)와 다트(OnsenReviews)가 각각 붙이면서 이름이 갈렸다.
+ * 정렬 키는 동일하고 표기만 다르다 — 화면을 합칠 때 한쪽으로 정리한다.
+ */
 export const ONSEN_REVIEW_SORTS = {
   RECENT: '최신순',
   RATING_DESC: '별점순',
@@ -71,6 +75,15 @@ export const ONSEN_REVIEW_SORTS = {
 } as const
 
 export type OnsenReviewSort = keyof typeof ONSEN_REVIEW_SORTS
+
+export const REVIEW_SORTS = ['RECENT', 'RATING_DESC', 'PHOTO_FIRST'] as const
+export type ReviewSort = (typeof REVIEW_SORTS)[number]
+
+export const REVIEW_SORT_LABELS: Record<ReviewSort, string> = {
+  RECENT: '최신순',
+  RATING_DESC: '별점순',
+  PHOTO_FIRST: '사진 먼저',
+}
 
 /**
  * 공개 프로필. 사용자 PK·이메일·실명은 오지 않는다.
@@ -101,6 +114,10 @@ export type OnsenReview = {
   createdAt: string
 }
 
+/** 지도 쪽에서 쓰던 이름. 같은 응답이라 별칭으로 둔다. */
+export type PublicReviewAuthor = ReviewAuthor
+export type PublicReview = OnsenReview
+
 export type OnsenReviewPage = {
   content: OnsenReview[]
   page: number
@@ -109,3 +126,5 @@ export type OnsenReviewPage = {
   totalPages: number
   last: boolean
 }
+
+export type ReviewPage = OnsenReviewPage
