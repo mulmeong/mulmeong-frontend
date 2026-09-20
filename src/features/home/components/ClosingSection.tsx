@@ -28,22 +28,29 @@ export default function ClosingSection() {
       </div>
 
       {/* TODO: 배경색이 시안에 명시되지 않아 --color-inverse 토큰을 썼다. 확인 필요. */}
-      <div className="bg-inverse flex flex-1 flex-col items-end justify-center px-8 py-12 lg:px-16">
+      <div className="bg-inverse @container flex flex-1 flex-col items-end justify-center px-8 py-12 lg:px-16">
         {/*
           시안: Gothic A1 / Bold / 70px / letter-spacing 3.5%
-          1440 기준 70px라 4.86vw로 환산해 폭을 따라 줄인다.
+
+          vw가 아니라 cqw(이 칸의 폭)를 기준으로 줄인다 — lg에서 글자가 놓이는
+          칸은 화면의 절반이라, 화면 폭을 따라가면 칸보다 커져서 '기록까 / 지'로
+          잘린다. 10cqw는 가장 긴 줄(9글자)이 칸에 들어가는 최대치다.
+
+          줄바꿈은 아래 span으로만 한다. nowrap을 걸어 그 밖에서는 절대 안 꺾이게
+          두면, 크기 계산이 어긋나도 잘리는 대신 넘쳐서 바로 눈에 띈다.
+
           -mr는 마지막 글자 뒤에 붙는 자간 때문에 오른쪽 끝이 살짝 뜨는 것을 되민 값이다.
         */}
         <h2
           className={cn(
             'text-text-inverse text-right font-bold',
-            'text-[clamp(2rem,4.86vw,4.375rem)] leading-[1.3] tracking-[0.035em]',
+            'text-[clamp(1.75rem,10cqw,4.375rem)] leading-[1.3] tracking-[0.035em]',
             '-mr-[0.035em]',
             fade('[animation-delay:150ms]'),
           )}
         >
-          <span className="block">온천 여행,</span>
-          <span className="block">계획부터 기록까지</span>
+          <span className="block whitespace-nowrap">온천 여행,</span>
+          <span className="block whitespace-nowrap">계획부터 기록까지</span>
         </h2>
 
         {/* 시안: Gothic A1 / SemiBold / 18px */}
