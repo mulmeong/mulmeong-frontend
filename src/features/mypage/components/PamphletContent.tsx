@@ -1,5 +1,8 @@
 import { useState } from 'react'
 
+import { TOUR_API_CREDIT } from '@/constants/credits'
+import { usesTourApi } from '@/features/mypage/data/pamphletView'
+
 import type {
   PamphletPlaceSpec,
   PamphletView,
@@ -33,6 +36,8 @@ export function PamphletIntro({ pamphlet }: { pamphlet: PamphletView }) {
         <span>{pamphlet.places.length} Places</span>
         <span>만든 날 {pamphlet.createdAt}</span>
         <span>엮어둔 곳, 나만의 여행.</span>
+        {/* 한국관광공사 장소가 섞여 있을 때만, 팜플렛 단위로 한 번. */}
+        {usesTourApi(pamphlet.places) && <span>PLACE DATA · {TOUR_API_CREDIT}</span>}
       </footer>
     </div>
   )

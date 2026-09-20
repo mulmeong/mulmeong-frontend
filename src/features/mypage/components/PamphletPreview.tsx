@@ -1,6 +1,8 @@
 import { useState } from 'react'
 
+import { TOUR_API_CREDIT } from '@/constants/credits'
 import { DEFAULT_ONSEN_IMAGE } from '@/constants/images'
+import { usesTourApi } from '@/features/mypage/data/pamphletView'
 
 import type { PamphletDetail, PamphletPlace } from '@/types/pamphlet'
 
@@ -121,6 +123,11 @@ export default function PamphletPreview({ detail }: { detail: PamphletDetail }) 
 
       {detail.places.length === 0 && (
         <p className="pamphlet-preview-empty">아직 엮어둔 장소가 없어요.</p>
+      )}
+
+      {/* 한국관광공사 장소가 섞여 있을 때만, 팜플렛 단위로 한 번. */}
+      {usesTourApi(detail.places.map((place) => ({ source: place.source ?? undefined }))) && (
+        <p className="pamphlet-preview-credit">PLACE DATA · {TOUR_API_CREDIT}</p>
       )}
     </div>
   )

@@ -30,6 +30,12 @@ export type PamphletPage = {
 export type PamphletPlace = {
   seq: number
   placeId: number
+  /**
+   * 장소 데이터 출처(TOUR_API·MOIS·KAKAO). 출처 표기를 붙일지 가른다.
+   * 서버가 아직 안 내려주며, 없으면 표기하지 않는다 — 카카오 장소에
+   * 한국관광공사를 잘못 붙이지 않으려고 추측하지 않는다.
+   */
+  source?: string | null
   placeType: string
   placeTypeLabel?: string | null
   name: string

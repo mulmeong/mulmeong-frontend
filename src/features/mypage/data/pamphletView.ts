@@ -24,6 +24,8 @@ export type PamphletViewPlace = {
   category: SavedCategory
   /** 서버가 준 장소 유형 표기(예: '식당', '관광지'). 카테고리보다 구체적이다. */
   typeLabel?: string
+  /** 데이터 출처. 'TOUR_API'면 팜플렛에 한국관광공사 표기를 붙인다. */
+  source?: string
   imageUrl?: string
   /** 서버가 준 한 줄 설명. 온천은 수온·수질, 그 외는 분류다. */
   description?: string
@@ -79,12 +81,18 @@ export function toPamphletView(detail: PamphletDetail, number: string): Pamphlet
       address: place.address ?? '',
       category: CATEGORY[place.placeType] ?? 'etc',
       typeLabel: place.placeTypeLabel ?? undefined,
+      source: place.source ?? undefined,
       imageUrl: place.imageUrl ?? undefined,
       // 온천이 아니면 서버가 subText에 유형 라벨을 그대로 넣는다. 유형을 이미
       // 따로 보여주므로 같은 값이면 설명으로 치지 않는다 ('식당 · 식당' 방지).
       description: meaningfulSubText(place.subText, place.placeTypeLabel),
     })),
   }
+}
+
+/** 한국관광공사 데이터가 한 곳이라도 있으면 팜플렛 단위로 한 번 표기한다. */
+export function usesTourApi(places: { source?: string }[]): boolean {
+  return places.some((place) => place.source === 'TOUR_API')
 }
 
 /** 목록 안에서의 순번. 페이지를 넘겨도 이어지게 앞 페이지 수를 더한다. */

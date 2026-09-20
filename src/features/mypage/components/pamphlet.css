@@ -699,6 +699,15 @@
   line-height: 1.6;
 }
 
+/* 출처 표기 — 본문보다 눈에 띄지 않게. */
+.pamphlet-preview-credit {
+  padding: 14px 24px 18px;
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  line-height: 1.8;
+}
+
 .pamphlet-preview-empty {
   padding: 48px 24px;
   color: var(--color-text-secondary);
