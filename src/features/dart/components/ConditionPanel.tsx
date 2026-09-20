@@ -1,16 +1,26 @@
-import ChipGroup, { GROUP_LABEL } from '@/features/dart/components/ChipGroup'
+import ChipGroup from '@/features/dart/components/ChipGroup'
+import OriginField from '@/features/dart/components/OriginField'
 import {
   DURATION_OPTIONS,
-  SCHEDULE_OPTIONS,
+  STAY_OPTIONS,
   TRANSPORT_OPTIONS,
   type DartConditions,
 } from '@/features/dart/constants'
 
+import type { DartOrigin } from '@/types/dart'
+
 type ConditionPanelProps = {
   conditions: DartConditions
   onChange: (next: DartConditions) => void
-  /** 조건에 맞는 온천 수 */
-  candidateCount: number
+  /** 추천 출발지(DART-404). 아직 안 왔으면 빈 배열이다. */
+  origins: DartOrigin[]
+  origin: DartOrigin | null
+  onOriginChange: (origin: DartOrigin) => void
+  originsError?: string
+  /** 던지는 중. 버튼을 잠근다. */
+  throwing?: boolean
+  /** 던지기가 실패한 사유. */
+  throwError?: string
   onThrow: () => void
 }
 
@@ -23,7 +33,12 @@ type ConditionPanelProps = {
 export default function ConditionPanel({
   conditions,
   onChange,
-  candidateCount,
+  origins,
+  origin,
+  onOriginChange,
+  originsError,
+  throwing,
+  throwError,
   onThrow,
 }: ConditionPanelProps) {
   const update = <K extends keyof DartConditions>(key: K, value: DartConditions[K]) =>
@@ -42,13 +57,12 @@ export default function ConditionPanel({
       </div>
 
       <div className="scrollbar-thin flex min-h-0 flex-1 flex-col gap-[22px] overflow-y-auto overscroll-contain px-[30px] py-[22px]">
-        {/* TODO: 출발지 선택 기능은 미정. 지금은 시안대로 고정 텍스트. */}
-        <div className="flex flex-col gap-[9px]">
-          <span className={GROUP_LABEL}>출발지</span>
-          <p className="border-b border-[#0E1513] py-[7px] text-[16px] font-semibold text-[#0E1513]">
-            {conditions.origin}
-          </p>
-        </div>
+        <OriginField
+          recommended={origins}
+          recommendedError={originsError}
+          value={origin}
+          onChange={onOriginChange}
+        />
 
         <ChipGroup
           label="이동 수단"
@@ -64,21 +78,34 @@ export default function ConditionPanel({
         />
         <ChipGroup
           label="일정"
-          options={SCHEDULE_OPTIONS}
-          value={conditions.schedule}
-          onChange={(id) => update('schedule', id)}
+          options={STAY_OPTIONS}
+          value={conditions.stayType}
+          onChange={(id) => update('stayType', id)}
         />
       </div>
 
       <div className="flex flex-none flex-col gap-[11px] border-t border-[#E2E5E4] px-[30px] pt-4 pb-[22px]">
-        <p className="text-[12px] text-[#8A9491]">조건에 맞는 온천 {candidateCount}곳</p>
+        {/*
+          던지기 전에는 후보 수를 알 수 없다 — candidateCount는 추첨을 돌려봐야
+          나오는 값이라 결과 카드에서 보여준다.
+        */}
+        {throwError ? (
+          <p role="alert" className="text-[12px] leading-[1.6] text-[#B4443A]">
+            {throwError}
+          </p>
+        ) : (
+          <p className="text-[12px] text-[#8A9491]">
+            {origin ? `${origin.label}에서 출발` : '출발지를 골라주세요'}
+          </p>
+        )}
         <button
           type="button"
           onClick={onThrow}
-          disabled={candidateCount === 0}
+          // 출발지가 없으면 보낼 좌표가 없다 — 목록이 오기 전이거나 못 받아온 상태다.
+          disabled={origin === null || throwing}
           className="w-full bg-[#0E1513] px-5 py-[17px] text-[16px] font-bold tracking-[-0.02em] text-white disabled:cursor-not-allowed disabled:opacity-40"
         >
-          다트 던지기
+          {throwing ? '던지는 중…' : '다트 던지기'}
         </button>
       </div>
     </div>

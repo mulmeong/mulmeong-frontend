@@ -12,10 +12,10 @@ import type { SavedCategory, SavedSort } from '@/types/saved'
  * 조건을 객체 하나로 받지 않고 펼쳐 받는다 — 호출부가 매 렌더 새 객체를
  * 만들면 참조가 매번 달라진다.
  */
-export function useSavedPlaces(sort: SavedSort, category: SavedCategory | 'all', page: number) {
+export function useSavedPlaces(sort: SavedSort, category: SavedCategory | 'all', limit: number) {
   const { items, loading, error, reload } = useFavorites()
   return {
-    data: selectSavedPlaces(items, { sort, category }, page),
+    data: selectSavedPlaces(items, { sort, category }, limit),
     loading,
     error,
     reload,

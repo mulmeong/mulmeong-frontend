@@ -113,23 +113,43 @@ export default function MyPageLayout() {
         </div>
       </div>
 
-      <nav role="tablist" className="border-border-default flex overflow-x-auto border-y">
+      {/*
+        온천 상세 패널(OnsenDetailPanel)의 탭과 같은 모양이다 — 얇은 밑줄 위에
+        고른 탭만 굵은 밑줄이 붙는다. 칸을 채우지 않고 글자 폭만 차지한다.
+
+        role="tab"은 붙이지 않는다. 화면 안에서 내용만 바꾸는 탭이 아니라 주소를
+        바꾸는 링크다 — role="tab"은 aria-selected를 요구하는데 NavLink는
+        aria-current를 붙인다.
+      */}
+      <nav
+        aria-label="마이페이지"
+        className="after:bg-border-default/70 relative flex h-10 shrink-0 gap-6 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:content-['']"
+      >
         {TABS.map((tab) => (
           <NavLink
             key={tab.to}
             to={tab.to}
             end={tab.end}
-            role="tab"
             className={({ isActive }) =>
               cn(
-                'border-border-default flex min-w-0 flex-1 items-center justify-center border-r px-1 py-[14px] text-[12px] whitespace-nowrap sm:flex-none sm:px-5 sm:text-[14px]',
-                isActive
-                  ? 'bg-inverse text-text-inverse font-semibold'
-                  : 'bg-surface text-text-primary font-normal',
+                'relative flex h-10 items-center justify-center text-[13px] leading-5 font-medium whitespace-nowrap',
+                'outline-none focus-visible:underline focus-visible:decoration-dotted focus-visible:underline-offset-4',
+                isActive ? 'text-text-primary' : 'text-text-primary/65',
               )
             }
           >
-            {tab.label}
+            {({ isActive }) => (
+              <>
+                <span className="block leading-5">{tab.label}</span>
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'bg-text-primary pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[2px]',
+                    isActive ? 'opacity-100' : 'opacity-0',
+                  )}
+                />
+              </>
+            )}
           </NavLink>
         ))}
       </nav>

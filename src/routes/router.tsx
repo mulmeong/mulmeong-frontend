@@ -11,6 +11,7 @@ import MagazineDetailPage from '@/pages/MagazineDetailPage'
 import MagazinePage from '@/pages/MagazinePage'
 import MapPage from '@/pages/MapPage'
 import NotFoundPage from '@/pages/NotFoundPage'
+import SharedDartPage from '@/pages/SharedDartPage'
 import SharedPamphletPage from '@/pages/SharedPamphletPage'
 import LoginPage from '@/pages/auth/LoginPage'
 import PasswordResetPage from '@/pages/auth/PasswordResetPage'
@@ -40,6 +41,8 @@ export const router = createBrowserRouter([
       { path: '/map', element: <MapPage /> },
       // 다트도 같은 이유 — 왼쪽 지도 + 오른쪽 400px 패널로 화면을 채운다.
       { path: '/dart', element: <DartPage /> },
+      // 공유 링크 (DART-06). 로그인 없이 열려야 해서 RequireAuth 밖이다.
+      { path: '/dart/:dartId', element: <SharedDartPage /> },
       {
         path: '/',
         element: <RootLayout />,

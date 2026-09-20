@@ -61,3 +61,51 @@ export type CreateReviewResult = {
   createdAt: string
   reward: ReviewReward
 }
+
+/* 아래는 REV-07 온천별 리뷰 목록(GET /onsens/{id}/reviews)에서 쓴다. */
+
+export const ONSEN_REVIEW_SORTS = {
+  RECENT: '최신순',
+  RATING_DESC: '별점순',
+  PHOTO_FIRST: '사진순',
+} as const
+
+export type OnsenReviewSort = keyof typeof ONSEN_REVIEW_SORTS
+
+/**
+ * 공개 프로필. 사용자 PK·이메일·실명은 오지 않는다.
+ * 탈퇴 회원은 nickname이 '탈퇴한 사용자'이고 나머지가 전부 null이다.
+ */
+export type ReviewAuthor = {
+  nickname: string
+  level?: number | null
+  title?: string | null
+  profileShareToken?: string | null
+}
+
+export type OnsenReview = {
+  reviewId: number
+  author: ReviewAuthor
+  rating: number
+  /** YYYY-MM-DD */
+  visitedAt: string
+  isRevisit: boolean
+  spec: ReviewSpec
+  /** 본문은 0자를 허용한다 — 빈 문자열일 수 있다. */
+  body: string
+  /** CloudFront 원본 URL. 썸네일은 아직 없다. */
+  images: string[]
+  isMine: boolean
+  /** 작성 후 고친 적이 있다. */
+  isEdited: boolean
+  createdAt: string
+}
+
+export type OnsenReviewPage = {
+  content: OnsenReview[]
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+  last: boolean
+}

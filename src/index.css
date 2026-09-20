@@ -78,6 +78,33 @@
       transform: none;
     }
   }
+
+  /*
+    잠깐 떴다 사라지는 알림. 들어오고 나가는 걸 한 애니메이션에 담았다 —
+    사라질 때를 따로 잡으려면 요소를 지우기 전에 끝나기를 기다려야 한다.
+
+    길이는 띄워두는 시간과 맞춰야 한다 (ResultCard의 setTimeout 2000ms).
+  */
+  --animate-toast: toast 3000ms ease both;
+
+  @keyframes toast {
+    0% {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    14% {
+      opacity: 1;
+      transform: none;
+    }
+    72% {
+      opacity: 1;
+      transform: none;
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+  }
 }
 
 :root {
