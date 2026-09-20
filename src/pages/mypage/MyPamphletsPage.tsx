@@ -224,16 +224,26 @@ export default function MyPamphletsPage() {
               <>
                 {/* items-stretch + 같은 aspect-ratio 로 새 팜플렛 칸과 표지 높이를 맞춘다. */}
                 <div className="grid grid-cols-1 items-stretch gap-x-5 gap-y-6 min-[480px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                  {/*
+                    표지와 같은 두 칸(그림 1.55 비율 + 제목 영역)으로 쌓아 카드 본체와
+                    높이를 맞춘다. 아래 액션 줄만큼 길어지지 않게 self-start 로 둔다.
+                  */}
                   <Link
                     to="/my/saved"
-                    className="pamphlet-create border-border-default bg-surface-dim/40 text-text-secondary flex w-full flex-col items-center justify-center gap-3 rounded-sm border border-dashed text-[13px]"
-                    style={{ aspectRatio: '1.55' }}
+                    className="pamphlet-create border-border-default bg-surface-dim/40 text-text-secondary block w-full self-start rounded-sm border border-dashed text-[13px]"
                   >
-                    <span aria-hidden="true" className="text-[28px] font-light">
-                      +
+                    <span className="flex aspect-[1.55] w-full items-center justify-center">
+                      <span aria-hidden="true" className="text-[28px] font-light">
+                        +
+                      </span>
                     </span>
-                    새 팜플렛 만들기
-                    <span className="text-[11px]">엮어둔 곳에서 시작하세요</span>
+                    {/* 표지 제목 영역과 같은 두 줄 구성 — 높이가 그대로 맞는다. */}
+                    <span className="block p-4">
+                      <span className="block truncate text-[15px] font-semibold">
+                        새 팜플렛 만들기
+                      </span>
+                      <span className="mt-1 block text-[12px]">엮어둔 곳에서 시작하세요</span>
+                    </span>
                   </Link>
 
                   {loading && items.length === 0
