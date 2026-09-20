@@ -24,15 +24,16 @@ export default function MagazineIssueBanner() {
     // left-1/2·translate 조합은 main 안에서의 상대 위치가 섞여 계산이 어긋난다.
     // margin-left/right: calc(50% - 50vw)는 그 요소의 박스 폭(%) 기준이라
     // 부모 위치와 무관하게 항상 뷰포트 양끝까지 정확히 나간다(표준 full-bleed 트릭).
-    <section className="bg-inverse text-text-inverse -mx-[calc(50vw-50%)] px-6 py-16 sm:py-20">
+    <section className="bg-inverse text-text-inverse -mx-[calc(50vw-50%)] px-6 py-20 sm:py-28">
       <div className="mx-auto max-w-5xl">
-        <p className="text-[11px] font-semibold tracking-[0.2em] text-white/60">
+        <p className="text-[12px] font-semibold tracking-[0.2em] text-white/60">
           ISSUE · {magazine.categoryLabel}
         </p>
-        <h1 className="mt-6 text-[40px] leading-[1.15] font-bold tracking-tight break-keep sm:text-[56px]">
+        {/* 시안처럼 2줄에서 떨어지도록 폭을 제한한다 — 제목 전체를 다 못 쓰는 대신 리듬을 지킨다. */}
+        <h1 className="mt-8 max-w-2xl text-[44px] leading-[1.15] font-bold tracking-tight break-keep sm:text-[64px]">
           {magazine.title}
         </h1>
-        <div className="mt-7 flex flex-wrap items-center gap-4">
+        <div className="mt-9 flex flex-wrap items-center gap-4">
           <Link
             to={`/magazine/${magazine.magazineId}`}
             className="bg-surface text-text-primary inline-flex min-h-11 items-center px-5 text-[13px] font-semibold"

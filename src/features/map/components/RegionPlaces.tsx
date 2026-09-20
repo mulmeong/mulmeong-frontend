@@ -4,7 +4,7 @@ import PlaceListSkeleton from '@/features/map/components/PlaceListSkeleton'
 import RegionPlaceCard, { RegionPlaceCardSkeleton } from '@/features/map/components/RegionPlaceCard'
 import SearchResultItem from '@/features/map/components/SearchResultItem'
 import { REGION_PREVIEW_COUNT } from '@/features/map/constants'
-import { useSidebarCarousel } from '@/features/map/hooks/useSidebarCarousel'
+import { useDragCarousel } from '@/lib/useDragCarousel'
 import { SIDEBAR_CARD_TRACK } from './sidebarCardStyles'
 
 import type { OnsenListItem } from '@/features/map/api/map'
@@ -50,7 +50,7 @@ function PlaceCarousel({
   onSelect,
   loading,
 }: Pick<RegionPlacesProps, 'onsens' | 'region' | 'selectedId' | 'onSelect' | 'loading'>) {
-  const { trackRef, scroll, move } = useSidebarCarousel(onsens.length, loading)
+  const { trackRef, scroll, move } = useDragCarousel(onsens.length, loading)
   const trackId = useId()
   const hasOverflow = scroll.previous || scroll.next
 

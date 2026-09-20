@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 
 import MagazineFeedback from '@/features/magazine/components/MagazineFeedback'
 import MagazineFilmstrip from '@/features/magazine/components/MagazineFilmstrip'
@@ -27,52 +26,38 @@ export default function MagazinePage() {
     <div className="-mt-10 pb-16">
       <MagazineIssueBanner />
 
+      {/* 지역은 카테고리보다 앞에 둔다 — 어느 지역 이야기인지가 먼저 좁혀진다. */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-8">
+        <MagazineRegionFilter
+          value={region}
+          counts={regionCountsOf(data?.regions)}
+          onChange={(next) => setRegion(next || undefined)}
+        />
+        <nav aria-label="매거진 카테고리" className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          {[{ code: 'ALL', label: '전체' }, ...MAGAZINE_CATEGORIES].map((item) => (
+            <button
+              type="button"
+              key={item.code}
+              onClick={() => setCategory(item.code as MagazineCategory | 'ALL')}
+              aria-pressed={category === item.code}
+              className={cn(
+                'py-1 text-[13px] transition-colors',
+                category === item.code
+                  ? 'text-text-primary font-semibold underline underline-offset-[8px]'
+                  : 'text-text-secondary hover:text-text-primary',
+              )}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      <div className="border-border-default mt-3 border-b" />
+
       <div className="mt-10">
-        {/* 지역은 카테고리보다 앞에 둔다 — 어느 지역 이야기인지가 먼저 좁혀진다. */}
-        <div className="border-border-default flex flex-wrap items-center gap-x-5 gap-y-2 border-b pb-3">
-          <MagazineRegionFilter
-            value={region}
-            counts={regionCountsOf(data?.regions)}
-            onChange={(next) => setRegion(next || undefined)}
-          />
-          <nav aria-label="매거진 카테고리" className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            {[{ code: 'ALL', label: '전체' }, ...MAGAZINE_CATEGORIES].map((item) => (
-              <button
-                type="button"
-                key={item.code}
-                onClick={() => setCategory(item.code as MagazineCategory | 'ALL')}
-                aria-pressed={category === item.code}
-                className={cn(
-                  'py-1 text-[13px] transition-colors',
-                  category === item.code
-                    ? 'text-text-primary font-semibold underline underline-offset-[8px]'
-                    : 'text-text-secondary hover:text-text-primary',
-                )}
-              >
-                {item.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        <div className="mt-8">
-          <MagazineFeedback
-            loading={loading}
-            error={error}
-            empty={!magazines.length}
-            retry={retry}
-          />
-          {!loading && !error && magazines.length > 0 && (
-            <MagazineFilmstrip magazines={magazines} />
-          )}
-        </div>
-
-        <Link
-          to="/magazine/archive"
-          className="text-text-secondary hover:text-text-primary mt-6 inline-block text-[13px] underline underline-offset-4"
-        >
-          전체 아카이브 보기
-        </Link>
+        <MagazineFeedback loading={loading} error={error} empty={!magazines.length} retry={retry} />
+        {!loading && !error && magazines.length > 0 && <MagazineFilmstrip magazines={magazines} />}
       </div>
     </div>
   )
