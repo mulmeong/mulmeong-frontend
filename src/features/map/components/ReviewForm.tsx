@@ -91,10 +91,10 @@ function ScoreRow({
             aria-label={`${label} ${score}점`}
             aria-pressed={value === score}
             className={cn(
-              'h-8 flex-1 rounded-sm border text-[12px] transition-colors outline-none',
+              'text-text-primary h-8 flex-1 rounded-sm border text-[12px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inverse/60 focus-visible:ring-offset-2',
               value === score
-                ? 'bg-inverse text-text-inverse border-transparent font-medium'
-                : 'border-border-default text-text-primary hover:bg-surface-dim',
+                ? 'bg-surface-dim border-border-strong/60 font-semibold hover:bg-inverse/5'
+                : 'bg-surface border-border-default hover:bg-surface-dim/50 hover:border-border-strong/40',
             )}
           >
             {score}
@@ -248,10 +248,10 @@ export default function ReviewForm({ onsenId, onCancel, onCreated }: ReviewFormP
                 onClick={() => setVisitTime(time)}
                 aria-pressed={visitTime === time}
                 className={cn(
-                  'h-8 flex-1 rounded-sm border text-[12px] transition-colors outline-none',
+                  'text-text-primary h-8 flex-1 rounded-sm border text-[12px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inverse/60 focus-visible:ring-offset-2',
                   visitTime === time
-                    ? 'bg-inverse text-text-inverse border-transparent font-medium'
-                    : 'border-border-default text-text-primary hover:bg-surface-dim',
+                    ? 'bg-surface-dim border-border-strong/60 font-semibold hover:bg-inverse/5'
+                    : 'bg-surface border-border-default hover:bg-surface-dim/50 hover:border-border-strong/40',
                 )}
               >
                 {VISIT_TIME_LABELS[time]}
