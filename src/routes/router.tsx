@@ -43,12 +43,13 @@ export const router = createBrowserRouter([
       { path: '/dart', element: <DartPage /> },
       // 공유 링크 (DART-06). 로그인 없이 열려야 해서 RequireAuth 밖이다.
       { path: '/dart/:dartId', element: <SharedDartPage /> },
+      // 팜플렛 공유도 같다 (AUTH-02). 받은 팜플렛 한 권이 화면 전체라
+      // 글로벌 헤더를 띄우지 않으려고 RootLayout 밖에 둔다. 서버 SHARE_BASE와 같은 경로다.
+      { path: '/pamphlet/:token', element: <SharedPamphletPage /> },
       {
         path: '/',
         element: <RootLayout />,
         children: [
-          // 공유 링크는 비로그인도 열린다 (AUTH-02). 서버 SHARE_BASE와 같은 경로다.
-          { path: 'pamphlet/:token', element: <SharedPamphletPage /> },
           { path: 'magazine', element: <MagazinePage /> },
           { path: 'magazine/archive', element: <MagazineArchivePage /> },
           { path: 'magazine/:id', element: <MagazineDetailPage /> },
