@@ -86,9 +86,13 @@ export function mockFetchReviews(
   })
 
   const sorted = [...reviews].sort((a, b) => {
-    if (params.sort === 'RATING_DESC') return b.rating - a.rating || b.createdAt.localeCompare(a.createdAt)
+    if (params.sort === 'RATING_DESC')
+      return b.rating - a.rating || b.createdAt.localeCompare(a.createdAt)
     if (params.sort === 'PHOTO_FIRST')
-      return Number(b.images.length > 0) - Number(a.images.length > 0) || b.createdAt.localeCompare(a.createdAt)
+      return (
+        Number(b.images.length > 0) - Number(a.images.length > 0) ||
+        b.createdAt.localeCompare(a.createdAt)
+      )
     return b.createdAt.localeCompare(a.createdAt)
   })
   const startIndex = params.page * params.size

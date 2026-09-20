@@ -128,7 +128,8 @@ function PlaceRow({
       }}
       className={cn(
         'relative flex items-center gap-2 transition-colors duration-150 outline-none',
-        onSelect && 'cursor-pointer hover:bg-surface-dim/35 focus-visible:ring-1 focus-visible:ring-inverse',
+        onSelect &&
+          'cursor-pointer hover:bg-surface-dim/35 focus-visible:ring-1 focus-visible:ring-inverse',
         selected && 'bg-surface-dim/80',
       )}
     >

@@ -21,4 +21,3 @@ const PLACE_PLACEHOLDER_BY_CATEGORY: Record<NearbyCategory, string> = {
 export function placeholderImageOf(category: NearbyCategory | PoiCategory): string {
   return PLACE_PLACEHOLDER_BY_CATEGORY[category]
 }
-

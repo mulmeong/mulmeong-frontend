@@ -327,13 +327,7 @@ function Section({ title, rows }: { title: string; rows: [string, ReactNode][] }
   )
 }
 
-function AccessValue({
-  label,
-  stationName,
-}: {
-  label: string
-  stationName?: string | null
-}) {
+function AccessValue({ label, stationName }: { label: string; stationName?: string | null }) {
   return (
     <span className="inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 align-top">
       <span>{label}</span>
@@ -449,17 +443,11 @@ function Details({ onsen, detail }: { onsen: OnsenListItem; detail?: OnsenDetail
     ['주차', parking],
   ])
 
-  const facilityRows: [string, ReactNode][] = rowsOf([
-    ['편의시설', facilitySummary],
-  ])
+  const facilityRows: [string, ReactNode][] = rowsOf([['편의시설', facilitySummary]])
   if (access?.accessLevelLabel) {
     facilityRows.push([
       '접근성',
-      <AccessValue
-        key="access"
-        label={access.accessLevelLabel}
-        stationName={station?.name}
-      />,
+      <AccessValue key="access" label={access.accessLevelLabel} stationName={station?.name} />,
     ])
   }
 

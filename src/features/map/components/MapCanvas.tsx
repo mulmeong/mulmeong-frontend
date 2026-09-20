@@ -525,7 +525,10 @@ export default function MapCanvas({
       const target = new window.kakao.maps.LatLng(selectedPoi.lat, selectedPoi.lng)
       const destination = limitMapViewport(map, container, limits, target)
       const point = map.getProjection().containerPointFromCoords(destination)
-      const margin = Math.min(120, Math.max(56, Math.min(container.clientWidth, container.clientHeight) * 0.18))
+      const margin = Math.min(
+        120,
+        Math.max(56, Math.min(container.clientWidth, container.clientHeight) * 0.18),
+      )
       const outsideComfortableView =
         point.x < margin ||
         point.y < margin ||
