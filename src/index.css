@@ -19,17 +19,359 @@
   --radius-md: 12px;
   --radius-full: 999px;
 
+  /*
+    기본 CSS 이징은 약해서 의도가 드러나지 않는다. 들어오고 나가는 것은 ease-out,
+    화면 안에서 움직이는 것은 ease-in-out을 쓴다.
+
+    ease-in은 쓰지 않는다 — 시작이 느려서, 사용자가 가장 주의 깊게 보는 첫 순간에
+    반응이 없는 것처럼 느껴진다.
+  */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+
   --font-sans:
     Inter, 'Gothic A1', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo',
     'Malgun Gothic', sans-serif;
+
+  /* 히어로 워드마크 전용 (Bold 700만 로드) */
+  --font-display: 'Cormorant Garamond', 'Times New Roman', serif;
+  /* 영문 캡션·태그라인 (Regular 400만 로드) */
+  --font-serif: Lora, 'Times New Roman', serif;
+  /* 패널 번호 등 숫자 표기 (Regular 400만 로드) */
+  --font-numeral: 'Instrument Serif', 'Times New Roman', serif;
+
+  /*
+    진입 시 아래에서 떠오르며 나타난다.
+    both = 지연 시간 동안에도 시작 상태(투명)를 유지한다.
+    이게 없으면 보였다가 사라진 뒤 다시 나타나 깜빡인다.
+  */
+  --animate-fade-up: fade-up 800ms cubic-bezier(0.4, 0, 0.2, 1) both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /*
+    내 지도에서 시군구 지도가 나타날 때.
+    누른 시·도가 지도 안에서 차지하던 자리·크기에서 출발해 화면 전체로 자란다.
+    출발 지점은 지역마다 달라 --grow-* 변수로 쓰는 쪽에서 넣어 준다.
+
+    전국 지도가 왼쪽 아래로 줄어드는 동작과 길이를 맞춰야 한 덩어리로 보인다
+    (MyMapPage의 duration-500).
+  */
+  --animate-region-grow: region-grow 500ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  @keyframes region-grow {
+    from {
+      opacity: 0;
+      transform: translate(var(--grow-x, 0), var(--grow-y, 0)) scale(var(--grow-scale, 0.3));
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /*
+    잠깐 떴다 사라지는 알림. 들어오고 나가는 걸 한 애니메이션에 담았다 —
+    사라질 때를 따로 잡으려면 요소를 지우기 전에 끝나기를 기다려야 한다.
+
+    길이는 띄워두는 시간과 맞춰야 한다 (ResultCard의 setTimeout 2000ms).
+  */
+  --animate-toast: toast 3000ms ease both;
+
+  @keyframes toast {
+    0% {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    14% {
+      opacity: 1;
+      transform: none;
+    }
+    72% {
+      opacity: 1;
+      transform: none;
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+  }
 }
 
 :root {
   color-scheme: light;
+  /*
+   * 세로 스크롤바 자리를 항상 비워 둔다. 매거진 홈의 전체폭 배너가
+   * margin: calc(50vw - 50%)로 뷰포트 양끝까지 나가는데, 스크롤바가
+   * 있고 없고에 따라 100vw와 실제 보이는 폭 사이에 스크롤바 두께만큼
+   * 오차가 생겨 살짝 가로 스크롤이 열린다. overflow-x: hidden으로
+   * 막으면 그 대상 요소가 sticky의 기준 스크롤 컨테이너가 되어 버려서
+   * (매거진 상세의 '이 글의 온천' 카드 등) sticky가 깨진다 — 그래서
+   * hidden을 쓰지 않고 애초에 오차 자체를 없앤다.
+   */
+  scrollbar-gutter: stable;
+}
+
+.map-detail-panel {
+  --map-detail-width: 100%;
+  box-sizing: border-box;
+  width: var(--map-detail-width);
+  height: 45dvh;
+}
+
+@media (width >= 64rem) {
+  .map-detail-panel {
+    --map-detail-width: 347px;
+    height: auto;
+  }
+}
+
+.map-detail-surface {
+  transform: translateX(-100%);
+  will-change: transform;
+}
+
+@keyframes map-detail-surface-enter {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes map-detail-surface-exit {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+.map-detail-surface-enter {
+  animation: map-detail-surface-enter 340ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.map-detail-surface-exit {
+  animation: map-detail-surface-exit 260ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-detail-surface-enter,
+  .map-detail-surface-exit {
+    animation-duration: 1ms;
+  }
+}
+
+/**
+ * 주변 장소 마커 등장·퇴장. 여러 개가 한꺼번에 튀어나오지 않게 호출부에서
+ * animation-delay를 조금씩 준다. 지도 타일이 아니라 오버레이 노드에만 건다.
+ */
+@keyframes map-marker-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes map-marker-exit {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.map-marker-enter {
+  animation: map-marker-enter 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.map-marker-exit {
+  animation: map-marker-exit 120ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-marker-enter,
+  .map-marker-exit {
+    animation-duration: 1ms;
+    animation-delay: 0ms !important;
+  }
+}
+
+/**
+ * 풀페이지 스냅. 문서 자체를 스크롤 컨테이너로 쓴다.
+ *
+ * 안쪽 div에 overflow를 주는 방법도 있지만, div는 포커스를 받지 못해
+ * 페이지를 열자마자 Page Down·방향키를 눌러도 아무 일이 없다.
+ * 문서가 스크롤하면 키보드 스크롤이 브라우저 기본 동작으로 따라온다.
+ *
+ * 쓰는 쪽에서 document.documentElement에 붙였다 떼며, 홈에서만 적용된다.
+ */
+@media (width >= 64rem) {
+  .snap-page {
+    scroll-snap-type: y mandatory;
+  }
+}
+
+/* 강제 이동은 어지럼증을 유발할 수 있다. */
+@media (prefers-reduced-motion: reduce) {
+  .snap-page {
+    scroll-snap-type: none;
+  }
+}
+
+/**
+ * 얇은 스크롤바. Tailwind v4에 유틸리티가 없어 직접 둔다.
+ * Firefox는 scrollbar-width, Chromium/WebKit은 ::-webkit-scrollbar로 갈린다.
+ */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-default) transparent;
+  /* 스크롤바가 생겼다 없어질 때 콘텐츠 폭이 흔들리지 않게 자리를 미리 비워둔다. */
+  scrollbar-gutter: stable;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: var(--color-border-default);
+  border-radius: var(--radius-full);
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-text-secondary);
 }
 
 body {
   background-color: var(--color-surface);
   color: var(--color-text-primary);
   font-family: var(--font-sans);
+}
+
+/*
+ * 모달 등장. scale(0)이 아니라 0.96에서 출발한다 — 현실에서 무언가가 완전히
+ * 사라졌다 나타나지는 않아서, 0에서 시작하면 허공에서 튀어나온 것처럼 보인다.
+ *
+ * 모달은 특정 버튼에 매달린 게 아니라 화면 가운데 뜨므로 origin은 center다
+ * (팝오버라면 트리거 쪽에서 자라야 한다).
+ */
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes dialog-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+dialog[open] {
+  animation: dialog-in 200ms var(--ease-out-strong) both;
+}
+
+dialog[open]::backdrop {
+  animation: dialog-backdrop-in 200ms var(--ease-out-strong) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog[open] {
+    /* 크기 변화는 빼고 밝기만 — 전정기관을 자극하지 않는 등가물로 바꾼다. */
+    animation: dialog-backdrop-in 160ms ease both;
+  }
+}
+
+/*
+ * 누르는 순간의 반응. click이 아니라 pointer-down 시점에 바로 줄어들어야
+ * 화면이 듣고 있다는 느낌이 난다 — 떼는 순간에 반응하면 죽은 것처럼 느껴진다.
+ *
+ * 화면마다 버튼이 100개 넘게 흩어져 있어 공용 컴포넌트만으로는 다 닿지 않는다.
+ * 그래서 눌리는 요소 전체에 기본값으로 깔고, 필요한 곳에서 덮어쓴다.
+ * 배율은 0.97 — 0.95보다 작아지면 큰 버튼에서 과하게 보인다.
+ */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  a[href],
+  label:has(> input[type='checkbox']),
+  summary {
+    transition: transform 140ms var(--ease-out-strong);
+  }
+
+  button:not(:disabled):active,
+  [role='button']:not([aria-disabled='true']):active,
+  a[href]:active,
+  label:has(> input[type='checkbox']):active,
+  summary:active {
+    transform: scale(0.97);
+  }
+
+  /*
+    지도 위 요소는 제외한다. 카카오맵이 마커·오버레이 위치를 transform으로
+    직접 잡아서, 여기서 scale을 걸면 좌표가 틀어진다.
+  */
+  .kakao-map button:active,
+  .kakao-map a[href]:active {
+    transform: none;
+  }
+
+  /*
+    SVG 안쪽도 제외한다. SVG 요소는 transform-origin 기본값이 요소 중심이 아니라
+    SVG 원점(0,0)이라, scale(0.97)을 걸면 제자리에서 작아지는 게 아니라 왼쪽
+    위로 끌려간다 — 원점에서 먼 도형일수록 많이 움직인다.
+
+    내 지도의 시·도가 role="button"이라 여기 걸려서, 누르는 순간 그 도형만
+    위로 튀었다.
+  */
+  /*
+    특이도를 위 규칙과 같게 맞춘다. :not()을 빼면 (0,2,1)이라 (0,3,0)인 원래
+    규칙에 져서, 뒤에 써도 적용되지 않는다.
+  */
+  svg [role='button']:not([aria-disabled='true']):active,
+  svg a[href]:active {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @layer base {
+    button:active,
+    [role='button']:active,
+    a[href]:active,
+    label:has(> input[type='checkbox']):active,
+    summary:active {
+      transform: none;
+    }
+  }
 }

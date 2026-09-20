@@ -22,7 +22,7 @@ export default function Tab({
       role="tab"
       aria-selected={selected}
       className={cn(
-        'text-[14px] whitespace-nowrap',
+        'text-[14px] whitespace-nowrap transition-colors duration-150 ease-out',
         filled
           ? cn(
               'border-border-default flex items-center justify-center border-r px-5 py-[14px]',
@@ -31,9 +31,10 @@ export default function Tab({
                 : 'bg-surface text-text-primary font-normal',
             )
           : cn(
-              'flex flex-col items-start pb-[6px]',
+              // 밑줄 굵기·간격을 조절하려면 text-decoration 대신 가상요소를 쓴다.
+              'relative flex flex-col items-start pb-[7px]',
               selected
-                ? 'text-text-primary font-semibold underline decoration-solid'
+                ? 'text-text-primary after:bg-text-primary font-semibold after:absolute after:inset-x-0 after:bottom-0 after:h-[3px] after:rounded-full after:content-[""]'
                 : 'text-text-secondary font-normal',
             ),
         className,

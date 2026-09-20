@@ -12,7 +12,7 @@ type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> & {
   /** line=라벨+값+하단선, search=박스형 */
   variant?: 'line' | 'search'
   /** line 전용. */
-  label?: string
+  label?: ReactNode
   /** 문자열이면 텍스트로, 객체면 클릭 가능한 버튼으로 렌더링된다. */
   trailing?: ReactNode | TrailingAction
   /** 에러 메시지. 있으면 밑줄과 메시지가 에러색으로 바뀐다. */
@@ -66,7 +66,7 @@ export default function Input({
       className={cn(
         'placeholder:text-text-secondary text-text-primary min-w-0 flex-1 bg-transparent outline-none',
         'disabled:cursor-not-allowed disabled:opacity-40',
-        variant === 'search' ? 'text-[14px]' : 'text-[15px]',
+        variant === 'search' ? 'text-[13px]' : 'text-[15px]',
       )}
       {...props}
     />
@@ -76,7 +76,9 @@ export default function Input({
     return (
       <div
         className={cn(
-          'bg-surface border-border-default flex items-center gap-2 rounded-md border px-4 py-3',
+          // 글자를 1px 내리려고 위아래 여백을 비대칭으로 둔다 (전체 높이는 유지).
+          'bg-surface border-border-default flex items-center gap-2 rounded-md border px-3.5 pt-[9px] pb-[7px]',
+          'transition-colors duration-150 ease-out focus-within:border-border-strong',
           error && 'border-danger',
           className,
         )}
@@ -84,7 +86,8 @@ export default function Input({
         <svg
           viewBox="0 0 15 15"
           aria-hidden="true"
-          className="text-inverse block size-[15px] shrink-0"
+          // 입력 글자만 1px 내렸으므로 아이콘은 제자리로 되돌린다.
+          className="text-inverse -mt-px block size-[15px] shrink-0"
         >
           <g
             fill="none"
@@ -113,7 +116,8 @@ export default function Input({
       <div
         className={cn(
           'flex items-center gap-2 border-b pb-2',
-          error ? 'border-danger' : 'border-border-default',
+          'transition-colors duration-150 ease-out',
+          error ? 'border-danger' : 'border-border-default focus-within:border-border-strong',
         )}
       >
         {field}
