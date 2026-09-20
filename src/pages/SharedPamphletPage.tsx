@@ -84,7 +84,7 @@ export default function SharedPamphletPage() {
   const base = detail ? toPamphletView(detail, '01') : undefined
   const view = base && {
     ...base,
-    places: base.places.map((place) => ({ ...place, spec: specs[place.id] })),
+    places: base.places.map((place) => ({ ...place, spec: specs[place.id] ?? place.spec })),
   }
 
   if (error) {

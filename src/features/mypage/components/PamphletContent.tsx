@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import { TOUR_API_CREDIT } from '@/constants/credits'
+import { DEFAULT_ONSEN_IMAGE } from '@/constants/images'
 import { usesTourApi } from '@/features/mypage/data/pamphletView'
 
 import type {
@@ -11,7 +12,9 @@ import type {
 import { categoryLabel } from '@/types/saved'
 
 export function PamphletIntro({ pamphlet }: { pamphlet: PamphletView }) {
-  const regions = [...new Set(pamphlet.places.map((place) => place.address))]
+  const summary = pamphlet.summary.length
+    ? pamphlet.summary
+    : [...new Set(pamphlet.places.map((place) => place.address))].filter(Boolean)
 
   return (
     <div className="pamphlet-editorial pamphlet-intro">
@@ -20,9 +23,9 @@ export function PamphletIntro({ pamphlet }: { pamphlet: PamphletView }) {
         <span className="pamphlet-edition">{pamphlet.number}</span>
         <h2>{pamphlet.title}</h2>
         <p className="pamphlet-intro-copy">
-          엮어둔 {pamphlet.places.length}곳을 한 장에 담은 여행 기록.
+          온천의 물성, 접근성, 머물 곳을 한 장에 엮은 여행 기록.
         </p>
-        {regions.length > 0 && <p className="pamphlet-intro-regions">{regions.join(' · ')}</p>}
+        {summary.length > 0 && <p className="pamphlet-intro-regions">{summary.join(' · ')}</p>}
       </div>
       <ol className="pamphlet-itinerary" aria-label="엮어둔 여행 장소">
         {pamphlet.places.map((place, index) => (
@@ -47,8 +50,10 @@ export function PamphletIntro({ pamphlet }: { pamphlet: PamphletView }) {
 function waterLine(spec?: PamphletPlaceSpec): string[] {
   if (!spec) return []
   const values: string[] = []
-  if (spec.tempC !== undefined) values.push(`${spec.tempC.toFixed(1)}°C`)
+  if (spec.tempC !== undefined) values.push(`${spec.tempC.toFixed(1)}℃`)
   if (spec.waterType) values.push(spec.waterType)
+  if (spec.facilityType) values.push(spec.facilityType)
+  if (spec.hasLodging) values.push('숙박 가능')
   if (spec.ph !== undefined) values.push(`pH ${spec.ph}`)
   return values
 }
@@ -58,11 +63,17 @@ function visitRows(spec?: PamphletPlaceSpec): [string, string][] {
   if (!spec) return []
   const rows: [string, string][] = []
   if (spec.hours) rows.push(['HOURS', spec.hours])
-  if (spec.price !== undefined) rows.push(['PRICE', `${spec.price.toLocaleString()}원~`])
+  if (spec.price !== undefined) rows.push(['PRICE', `${spec.price.toLocaleString()}원부터`])
   if (spec.closed) rows.push(['CLOSED', spec.closed])
   if (spec.parking) rows.push(['PARKING', spec.parking])
-  if (spec.accessLabel) rows.push(['ACCESS', spec.accessLabel])
-  if (spec.facilityType) rows.push(['TYPE', spec.facilityType])
+  if (spec.accessLabel)
+    rows.push(['ACCESS', [spec.accessLabel, spec.stationName].filter(Boolean).join(' — ')])
+  if (spec.stationDesc) rows.push(['ROUTE', spec.stationDesc])
+  if (spec.avgRating !== undefined)
+    rows.push([
+      'REVIEW',
+      `${spec.avgRating.toFixed(1)}점${spec.reviewCount ? ` · ${spec.reviewCount}개` : ''}`,
+    ])
   return rows
 }
 
@@ -70,6 +81,8 @@ export function PamphletPlace({ place, index }: { place: PamphletViewPlace; inde
   const [failedImage, setFailedImage] = useState<string>()
   const description = place.description?.trim() ?? ''
   const spec = place.spec
+  const isOnsen = place.category === 'onsen'
+  const imageUrl = place.imageUrl && failedImage !== place.imageUrl ? place.imageUrl : undefined
   // 온천 자체를 설명하는 값과 방문에 필요한 값을 나눠 배치한다.
   const water = waterLine(spec)
   const visit = visitRows(spec)
@@ -83,12 +96,10 @@ export function PamphletPlace({ place, index }: { place: PamphletViewPlace; inde
   return (
     <article className="pamphlet-editorial pamphlet-place">
       <figure className="pamphlet-place-figure">
-        {place.imageUrl && failedImage !== place.imageUrl ? (
-          <img
-            src={place.imageUrl}
-            alt={place.name}
-            onError={() => setFailedImage(place.imageUrl)}
-          />
+        {imageUrl ? (
+          <img src={imageUrl} alt={place.name} onError={() => setFailedImage(place.imageUrl)} />
+        ) : isOnsen ? (
+          <img src={DEFAULT_ONSEN_IMAGE} alt={place.name} />
         ) : (
           <div
             className="pamphlet-photo-placeholder"

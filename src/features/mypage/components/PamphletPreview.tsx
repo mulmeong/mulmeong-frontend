@@ -2,15 +2,22 @@ import { useState } from 'react'
 
 import { TOUR_API_CREDIT } from '@/constants/credits'
 import { DEFAULT_ONSEN_IMAGE } from '@/constants/images'
-import { usesTourApi } from '@/features/mypage/data/pamphletView'
+import { toPlaceSpec, usesTourApi } from '@/features/mypage/data/pamphletView'
 
 import type { PamphletDetail, PamphletPlace } from '@/types/pamphlet'
+import type { PamphletPlaceSpec } from '@/features/mypage/data/pamphletView'
 
 /** 지역 표기는 summary가 이미 대표 시·도를 골라 준다. 없으면 장소 주소에서 추린다. */
 function regionsOf(detail: PamphletDetail): string {
   if (detail.summary?.regionName) return detail.summary.regionName
-  const seen = [...new Set(detail.places.map((place) => place.address?.split(' ')[0]))]
+  const seen = [
+    ...new Set(detail.places.map((place) => normalizeAddress(place.address).split(' ')[0])),
+  ]
   return seen.filter(Boolean).join(' · ')
+}
+
+function normalizeAddress(address?: string | null) {
+  return (address ?? '').replaceAll('중남', '충남').trim()
 }
 
 function formatDate(value: string): string {
@@ -25,15 +32,47 @@ function subTextOf(place: PamphletPlace): string | undefined {
   return value
 }
 
+function isOnsen(place: PamphletPlace) {
+  return place.placeType === 'ONSEN' || place.placeType === 'SPA'
+}
+
+function specOf(place: PamphletPlace): PamphletPlaceSpec | undefined {
+  return isOnsen(place) ? toPlaceSpec(place) : undefined
+}
+
+function specLine(spec?: PamphletPlaceSpec): string | undefined {
+  if (!spec) return undefined
+  const values = [
+    spec.tempC !== undefined ? `${spec.tempC.toFixed(1)}℃` : '',
+    spec.waterType,
+    spec.facilityType,
+    spec.hasLodging ? '숙박 가능' : '',
+  ].filter(Boolean)
+  return values.length ? values.join(' · ') : undefined
+}
+
+function visitLine(spec?: PamphletPlaceSpec): string | undefined {
+  if (!spec) return undefined
+  const values = [
+    spec.accessLabel && [spec.accessLabel, spec.stationName].filter(Boolean).join(' — '),
+    spec.price !== undefined ? `${spec.price.toLocaleString()}원부터` : '',
+    spec.avgRating !== undefined
+      ? `${spec.avgRating.toFixed(1)}점${spec.reviewCount ? ` (${spec.reviewCount})` : ''}`
+      : '',
+  ].filter(Boolean)
+  return values.length ? values.join(' · ') : undefined
+}
+
 function PlacePhoto({ place }: { place: PamphletPlace }) {
   const [failed, setFailed] = useState(false)
   const isOnsen = place.placeType === 'ONSEN' || place.placeType === 'SPA'
+  const imageUrl = place.imageUrl ?? place.thumbnail ?? place.images?.find(Boolean)
 
-  if (isOnsen && (!place.imageUrl || failed)) {
+  if (isOnsen && (!imageUrl || failed)) {
     return <img src={DEFAULT_ONSEN_IMAGE} alt={place.name} />
   }
 
-  if (!place.imageUrl || failed) {
+  if (!imageUrl || failed) {
     return (
       <div className="pamphlet-photo-placeholder" role="img" aria-label={`${place.name} 사진 없음`}>
         <span>{place.placeTypeLabel ?? '장소'}</span>
@@ -42,7 +81,7 @@ function PlacePhoto({ place }: { place: PamphletPlace }) {
     )
   }
 
-  return <img src={place.imageUrl} alt={place.name} onError={() => setFailed(true)} />
+  return <img src={imageUrl} alt={place.name} onError={() => setFailed(true)} />
 }
 
 /**
@@ -51,7 +90,13 @@ function PlacePhoto({ place }: { place: PamphletPlace }) {
  * 장소 설명은 서버가 준 subText만 보여준다 — 온천은 수온·수질, 그 외는 분류다.
  * 없는 정보를 지어내지 않는다.
  */
-export default function PamphletPreview({ detail }: { detail: PamphletDetail }) {
+export default function PamphletPreview({
+  detail,
+  specs = {},
+}: {
+  detail: PamphletDetail
+  specs?: Record<number, PamphletPlaceSpec>
+}) {
   const regions = regionsOf(detail)
   const onsenCount = detail.summary?.onsenCount ?? 0
 
@@ -100,26 +145,35 @@ export default function PamphletPreview({ detail }: { detail: PamphletDetail }) 
 
       {detail.places.length > 0 && <p className="pamphlet-preview-section">PLACES · 여행 순서</p>}
       <ol className="pamphlet-preview-places">
-        {detail.places.map((place) => (
-          <li key={place.placeId} className="pamphlet-preview-place">
-            <figure className="pamphlet-preview-figure">
-              <PlacePhoto place={place} />
-            </figure>
-            <div className="pamphlet-preview-body">
-              <p className="pamphlet-eyebrow">
-                PLACE {String(place.seq).padStart(2, '0')}
-                {place.placeTypeLabel ? ` · ${place.placeTypeLabel}` : ''}
-              </p>
-              <h4>{place.name}</h4>
-              {/*
+        {detail.places.map((place) => {
+          const spec = specs[place.placeId] ?? specOf(place)
+          const line = specLine(spec) ?? subTextOf(place)
+          const visit = visitLine(spec)
+          return (
+            <li key={place.placeId} className="pamphlet-preview-place">
+              <figure className="pamphlet-preview-figure">
+                <PlacePhoto place={place} />
+              </figure>
+              <div className="pamphlet-preview-body">
+                <p className="pamphlet-eyebrow">
+                  PLACE {String(place.seq).padStart(2, '0')}
+                  {place.placeTypeLabel ? ` · ${place.placeTypeLabel}` : ''}
+                </p>
+                <h4>{place.name}</h4>
+                {/*
                 온천이 아니면 서버가 subText에 유형 라벨을 그대로 넣는다.
                 위 줄에 이미 유형이 있어서 같은 값이면 '식당 · 식당'이 된다.
               */}
-              {subTextOf(place) && <p className="pamphlet-preview-sub">{subTextOf(place)}</p>}
-              {place.address && <p className="pamphlet-preview-address">{place.address}</p>}
-            </div>
-          </li>
-        ))}
+                {line && <p className="pamphlet-preview-sub">{line}</p>}
+                {spec?.note && <p className="pamphlet-preview-note">{spec.note}</p>}
+                {visit && <p className="pamphlet-preview-facts">{visit}</p>}
+                {place.address && (
+                  <p className="pamphlet-preview-address">{normalizeAddress(place.address)}</p>
+                )}
+              </div>
+            </li>
+          )
+        })}
       </ol>
 
       {detail.places.length === 0 && (
