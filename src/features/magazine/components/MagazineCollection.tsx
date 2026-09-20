@@ -4,6 +4,7 @@ import { useMagazines } from '@/features/magazine/hooks/useMagazines'
 import { MAGAZINE_CATEGORIES, MAGAZINE_REGIONS, regionNameOfSido } from '@/types/magazine'
 import { cn } from '@/lib/cn'
 import MagazineCard from './MagazineCard'
+import MagazineImage from './MagazineImage'
 import MagazineRegionFilter from './MagazineRegionFilter'
 import MagazineFeedback from './MagazineFeedback'
 import type { MagazineCategory, MagazineSort } from '@/types/magazine'
@@ -135,7 +136,7 @@ export default function MagazineCollection({ archive = false }: { archive?: bool
               <li key={magazine.magazineId}>
                 <Link
                   to={`/magazine/${magazine.magazineId}`}
-                  className="border-border-default hover:bg-surface-dim/50 group flex flex-col gap-2 border-b px-2 py-6 transition-colors sm:flex-row sm:items-baseline sm:gap-6"
+                  className="border-border-default hover:bg-surface-dim/50 group relative flex flex-col gap-2 border-b px-2 py-6 transition-colors sm:flex-row sm:items-baseline sm:gap-6"
                 >
                   {/* 잡지 목차처럼 번호 → 제목 → 정보 → 지역 순으로 읽힌다. */}
                   <span className="text-text-secondary w-8 shrink-0 text-[13px] tabular-nums">
@@ -144,6 +145,17 @@ export default function MagazineCollection({ archive = false }: { archive?: bool
                   <h3 className="flex-1 text-[20px] font-medium group-hover:underline group-hover:underline-offset-[6px]">
                     {magazine.title}
                   </h3>
+                  {/*
+                    행에 마우스를 올리면 세로 사진이 뜬다. 목차만 보고 고르기
+                    어려운 걸 덜어 준다. 포인터가 없는 기기에선 띄우지 않는다.
+                  */}
+                  <span className="pointer-events-none absolute top-1/2 right-44 hidden h-[150px] w-[120px] -translate-y-1/2 rotate-[-2deg] overflow-hidden rounded-sm opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 xl:[@media(hover:hover)]:block">
+                    <MagazineImage
+                      src={magazine.thumbnailUrl}
+                      seed={magazine.magazineId}
+                      className="size-full"
+                    />
+                  </span>
                   <span className="text-text-secondary shrink-0 text-[11px] whitespace-nowrap">
                     {magazine.categoryLabel} · {magazine.readMinutes}분 ·{' '}
                     {magazine.publishedAt.slice(0, 10).replaceAll('-', '.')}

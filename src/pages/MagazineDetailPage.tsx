@@ -1,5 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
 
+import MagazineAside from '@/features/magazine/components/MagazineAside'
+import MagazineJumpBar from '@/features/magazine/components/MagazineJumpBar'
 import MagazineLikeButton from '@/features/magazine/components/MagazineLikeButton'
 import { useMagazine } from '@/features/magazine/hooks/useMagazine'
 import { useReadingProgress } from '@/features/magazine/hooks/useReadingProgress'
@@ -14,7 +16,7 @@ function formatDate(iso: string) {
 /**
  * MAG-03 상세 뷰어. 레이아웃은 매거진 데모를 따른다 —
  * 왼쪽 레일(세로 카테고리·진행 트랙·좋아요·공유) + 본문 컬럼.
- * 데모의 '이 글의 온천' 카드는 OnsenCard가 feat/map에만 있어 머지 후에 붙인다.
+ * 오른쪽 레일(이 글의 온천·다음 글)은 MagazineAside가 맡는다.
  */
 export default function MagazineDetailPage() {
   const { id } = useParams()
@@ -57,83 +59,94 @@ export default function MagazineDetailPage() {
     .join(' · ')
 
   return (
-    <div className="flex gap-12">
-      {/* 왼쪽 레일 — 데모의 tools */}
-      <aside className="hidden w-16 shrink-0 lg:block">
-        <div className="sticky top-24 flex flex-col items-center gap-7 pt-14">
-          <span
-            className="text-text-secondary text-[12px] font-semibold tracking-[0.5em]"
-            style={{ writingMode: 'vertical-rl' }}
-          >
-            {categoryLabel.replaceAll(' ', '')}
-          </span>
+    <>
+      <MagazineJumpBar current={magazine.category} />
+      <div className="flex gap-12">
+        {/* 왼쪽 레일 — 데모의 tools */}
+        <aside className="hidden w-16 shrink-0 lg:block">
+          <div className="sticky top-24 flex flex-col items-center gap-7 pt-14">
+            <span
+              className="text-text-secondary text-[12px] font-semibold tracking-[0.5em]"
+              style={{ writingMode: 'vertical-rl' }}
+            >
+              {categoryLabel.replaceAll(' ', '')}
+            </span>
 
-          <div className="bg-surface-dim relative h-40 w-[2px] rounded-full">
-            <div
-              className="bg-inverse absolute top-0 left-0 w-full rounded-full transition-[height]"
-              style={{ height: `${progress * 100}%` }}
-            />
+            <div className="bg-surface-dim relative h-40 w-[2px] rounded-full">
+              <div
+                className="bg-inverse absolute top-0 left-0 w-full rounded-full transition-[height]"
+                style={{ height: `${progress * 100}%` }}
+              />
+            </div>
+
+            <MagazineLikeButton magazineId={magazineId} isLiked={isLiked} likeCount={likeCount} />
+          </div>
+        </aside>
+
+        <article className="min-w-0 flex-1 pt-14 pb-28">
+          <p className="text-text-secondary text-[12px] font-semibold tracking-[0.4em]">
+            {categoryLabel.split('').join(' ')}
+          </p>
+
+          <h1 className="text-text-primary mt-[18px] text-[44px] leading-[1.2] font-bold">
+            {title}
+          </h1>
+
+          {subtitle && <p className="text-text-primary mt-[18px] text-[19px]">{subtitle}</p>}
+
+          <div className="border-border-default text-text-secondary mt-9 flex items-center justify-between gap-4 border-b pb-7 text-[13px]">
+            <span className="min-w-0">{byline}</span>
+            <span className="flex shrink-0 items-center gap-3">
+              <span>{readMinutes}분</span>
+              {/* 왼쪽 레일은 lg 이상에서만 보여서, 좁은 화면에는 여기에 하트를 둔다. */}
+              <span className="lg:hidden">
+                <MagazineLikeButton
+                  magazineId={magazineId}
+                  isLiked={isLiked}
+                  likeCount={likeCount}
+                />
+              </span>
+            </span>
           </div>
 
-          <MagazineLikeButton magazineId={magazineId} isLiked={isLiked} likeCount={likeCount} />
-        </div>
-      </aside>
+          {/* 사진이 없거나 깨지면 기본 표지로 대체한다 — 빈 회색 칸을 두지 않는다. */}
+          <img
+            src={heroImageUrl || DEFAULT_MAGAZINE_IMAGE}
+            alt=""
+            onError={(event) => {
+              const image = event.currentTarget
+              image.onerror = null
+              // 기본 표지까지 없으면 깨진 아이콘 대신 빈 자리로 둔다.
+              if (image.src.endsWith(DEFAULT_MAGAZINE_IMAGE)) image.style.visibility = 'hidden'
+              else image.src = DEFAULT_MAGAZINE_IMAGE
+            }}
+            className="mt-9 h-[420px] w-full rounded-sm object-cover"
+          />
 
-      <article className="min-w-0 flex-1 pt-14 pb-28">
-        <p className="text-text-secondary text-[12px] font-semibold tracking-[0.4em]">
-          {categoryLabel.split('').join(' ')}
-        </p>
+          {paragraphs.map((paragraph, index) => (
+            <p
+              key={paragraph}
+              className={cn(
+                'text-text-primary mt-6 text-[16px] leading-[1.9]',
+                // 데모처럼 첫 문단의 첫 글자를 크게 시작한다.
+                index === 0 &&
+                  'first-letter:mr-2 first-letter:float-left first-letter:text-[34px] first-letter:leading-[1.1] first-letter:font-bold',
+              )}
+            >
+              {paragraph}
+            </p>
+          ))}
 
-        <h1 className="text-text-primary mt-[18px] text-[44px] leading-[1.2] font-bold">{title}</h1>
-
-        {subtitle && <p className="text-text-primary mt-[18px] text-[19px]">{subtitle}</p>}
-
-        <div className="border-border-default text-text-secondary mt-9 flex items-center justify-between gap-4 border-b pb-7 text-[13px]">
-          <span className="min-w-0">{byline}</span>
-          <span className="flex shrink-0 items-center gap-3">
-            <span>{readMinutes}분</span>
-            {/* 왼쪽 레일은 lg 이상에서만 보여서, 좁은 화면에는 여기에 하트를 둔다. */}
-            <span className="lg:hidden">
-              <MagazineLikeButton magazineId={magazineId} isLiked={isLiked} likeCount={likeCount} />
-            </span>
-          </span>
-        </div>
-
-        {/* 사진이 없거나 깨지면 기본 표지로 대체한다 — 빈 회색 칸을 두지 않는다. */}
-        <img
-          src={heroImageUrl || DEFAULT_MAGAZINE_IMAGE}
-          alt=""
-          onError={(event) => {
-            const image = event.currentTarget
-            image.onerror = null
-            // 기본 표지까지 없으면 깨진 아이콘 대신 빈 자리로 둔다.
-            if (image.src.endsWith(DEFAULT_MAGAZINE_IMAGE)) image.style.visibility = 'hidden'
-            else image.src = DEFAULT_MAGAZINE_IMAGE
-          }}
-          className="mt-9 h-[420px] w-full rounded-sm object-cover"
-        />
-
-        {paragraphs.map((paragraph, index) => (
-          <p
-            key={paragraph}
-            className={cn(
-              'text-text-primary mt-6 text-[16px] leading-[1.9]',
-              // 데모처럼 첫 문단의 첫 글자를 크게 시작한다.
-              index === 0 &&
-                'first-letter:mr-2 first-letter:float-left first-letter:text-[34px] first-letter:leading-[1.1] first-letter:font-bold',
-            )}
+          <Link
+            to="/magazine"
+            className="text-text-secondary hover:text-text-primary mt-12 inline-block text-[13px] underline underline-offset-4"
           >
-            {paragraph}
-          </p>
-        ))}
+            ← 목록으로
+          </Link>
+        </article>
 
-        <Link
-          to="/magazine"
-          className="text-text-secondary hover:text-text-primary mt-12 inline-block text-[13px] underline underline-offset-4"
-        >
-          ← 목록으로
-        </Link>
-      </article>
-    </div>
+        <MagazineAside magazine={magazine} />
+      </div>
+    </>
   )
 }
