@@ -1,7 +1,6 @@
 import { useId } from 'react'
 
 import ReviewDetailPanel from '@/features/mypage/components/ReviewDetailPanel'
-import { cn } from '@/lib/cn'
 
 import type { MyReview } from '@/types/myReview'
 
@@ -66,10 +65,11 @@ export default function ReviewItem({
               <span aria-hidden="true">{'★'.repeat(rating)}</span>
             </p>
 
-            {/* 닫혀 있을 때는 두 줄까지만 — 펼치면 전문이 보인다. */}
-            <p className={cn('text-[13px] leading-[1.7]', !expanded && 'line-clamp-2')}>
-              {content}
-            </p>
+            {/*
+              펼치면 아래 상세의 '리뷰 내용'으로 내려간다. 여기 있는 건 60자로
+              잘린 미리보기라(MY-04 bodyPreview), 전문은 상세 응답에만 있다.
+            */}
+            {!expanded && <p className="line-clamp-2 text-[13px] leading-[1.7]">{content}</p>}
           </div>
         </button>
 
