@@ -17,7 +17,7 @@ export const RATING_MAX = 5
 /** 본문은 0자를 허용한다 (REV-02) — 최대 길이만 막는다. */
 export const REVIEW_BODY_MAX = 1000
 
-/** 한 번에 올릴 수 있는 사진 수. 602 업로드 명세가 오면 쓴다. */
+/** 한 번에 올릴 수 있는 사진 수. */
 export const REVIEW_IMAGE_MAX = 5
 
 export type ReviewSpec = {

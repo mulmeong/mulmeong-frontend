@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { ApiError } from '@/api'
+import ReviewContent from '@/components/ReviewContent'
 import { Button } from '@/components/ui'
 import { useAuth } from '@/features/auth/hooks/authContext'
 import { fetchReviews } from '@/features/map/api/review'
@@ -76,25 +77,7 @@ function ReviewListItem({ review }: { review: PublicReview }) {
         </span>
       </header>
       <SpecSummary review={review} />
-      {review.body && (
-        <p className="text-text-primary mt-4 text-[13px] leading-[1.85] break-keep whitespace-pre-line [overflow-wrap:anywhere]">
-          {review.body}
-        </p>
-      )}
-      {review.images.length > 0 && (
-        <ul className="mt-4 flex gap-2 overflow-x-auto">
-          {review.images.map((image, index) => (
-            <li key={`${review.reviewId}-${image}-${index}`} className="shrink-0">
-              <img
-                src={image}
-                alt="방문 리뷰 사진"
-                loading="lazy"
-                className="bg-surface-dim size-24 rounded-sm object-cover"
-              />
-            </li>
-          ))}
-        </ul>
-      )}
+      <ReviewContent body={review.body} images={review.images} />
     </li>
   )
 }
