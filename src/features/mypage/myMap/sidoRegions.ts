@@ -74,34 +74,14 @@ const FILL_FULL = [0x1c, 0x1b, 0x18]
 export const MAP_STROKE = '#ffffff'
 
 /**
- * 방문 횟수 구간. 위에서부터 훑어 처음 맞는 단계로 칠한다.
+ * density(0.0~1.0) -> 칠할 색.
  *
- * 서버가 주는 density(visitCount / maxVisitCount)를 쓰지 않는다. 그 값은 내가
- * 제일 많이 간 곳을 기준으로 한 상대값이라, 다른 지역을 더 가면 **가만히 둔
- * 지역의 색이 저절로 연해진다**. 한 번 칠해진 색은 그 지역에서 뭘 해야만
- * 바뀌어야 한다.
- *
- * 5회에서 맨 끝에 닿는다. 그 위로는 더 진해지지 않는다 — 한 곳을 30번 가도
- * 지도가 그 지역만 남기고 하얗게 보이면 안 된다.
- */
-const VISIT_STEPS = [
-  { min: 5, ratio: 1 },
-  { min: 3, ratio: 0.72 },
-  { min: 2, ratio: 0.48 },
-  { min: 1, ratio: 0.26 },
-] as const
-
-/** 맨 끝에 닿는 방문 횟수. 범례나 안내 문구에서 같이 쓴다. */
-export const VISIT_FULL = VISIT_STEPS[0].min
-
-/**
- * 방문 횟수 -> 칠할 색.
- *
+ * 서버가 visitCount / maxVisitCount로 계산해 준 값을 그대로 받는다.
  * 명세는 opacity에 꽂으라고 하지만, 그러면 안 간 지역이 투명해져 도형이
  * 사라진다. 같은 농도를 회색 눈금으로 옮겨 칠한다.
  */
-export function visitFill(visitCount: number): string {
-  const ratio = VISIT_STEPS.find((step) => visitCount >= step.min)?.ratio ?? 0
+export function densityFill(density: number): string {
+  const ratio = Math.min(1, Math.max(0, density))
 
   const channels = FILL_EMPTY.map((empty, index) =>
     Math.round(empty + (FILL_FULL[index] - empty) * ratio),

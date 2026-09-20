@@ -1,5 +1,5 @@
 import {
-  visitFill,
+  densityFill,
   MAP_STROKE,
   MAP_VIEW_BOX,
   SIDO_REGIONS,
@@ -72,7 +72,7 @@ export default function SidoMap({ regions, selectedCode = null, onSelect, onHove
           <path
             key={region.code}
             d={sidoPath(region)}
-            fill={visitFill(count)}
+            fill={densityFill(visit?.density ?? 0)}
             stroke={MAP_STROKE}
             // 고른 지역만 테두리를 굵게 해 색과 별개로 구분되게 한다.
             strokeWidth={selected ? 2 : 1}
