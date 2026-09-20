@@ -62,7 +62,12 @@ export default function MagazineDetailPage() {
   return (
     <>
       <MagazineJumpBar current={magazine.category} />
-      <div className="flex gap-12">
+      {/*
+        gap을 16(64px)까지 늘린다 — 이전 12(48px)는 레일 폭(64px)과 비슷해
+        좋아요·공유 버튼이 본문에 바짝 붙어 보였다. 버튼 자체 margin이 아니라
+        레일과 본문을 감싸는 이 flex의 간격을 키워 두 영역이 뚜렷이 나뉘게 한다.
+      */}
+      <div className="flex gap-16">
         {/* 왼쪽 레일 — 데모의 tools */}
         <aside className="hidden w-16 shrink-0 lg:block">
           <div className="sticky top-24 flex flex-col items-center gap-7 pt-14">
