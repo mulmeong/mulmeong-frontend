@@ -1,5 +1,5 @@
 import { tipAtPointer, type MapTip } from '@/features/mypage/components/MapTooltip'
-import { densityFill, MAP_STROKE, type SidoRegion } from '@/features/mypage/myMap/sidoRegions'
+import { MAP_STROKE, visitFill, type SidoRegion } from '@/features/mypage/myMap/sidoRegions'
 import { SIGUNGU_MAPS, type SigunguPath } from '@/features/mypage/myMap/sigunguPaths'
 
 import type { GrapeRegion } from '@/types/myMap'
@@ -79,7 +79,7 @@ export default function SigunguMap({ sido, regions, onHover }: SigunguMapProps) 
           <path
             key={path.name}
             d={path.d}
-            fill={densityFill(visit?.density ?? 0)}
+            fill={visitFill(visit?.visitCount ?? 0)}
             stroke={MAP_STROKE}
             strokeWidth={1.5}
             strokeLinejoin="round"

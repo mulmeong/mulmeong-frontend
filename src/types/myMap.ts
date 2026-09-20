@@ -16,8 +16,10 @@ export type GrapeRegion = {
   name: string
   visitCount: number
   /**
-   * visitCount / maxVisitCount (0.0~1.0). 농도를 서버가 계산해 준다.
-   * 방문 0인 지역도 density 0.0으로 함께 내려오므로 화면에서 채울 필요가 없다.
+   * visitCount / maxVisitCount (0.0~1.0). 서버가 계산해 주지만 **지도는 쓰지
+   * 않는다** — 내가 제일 많이 간 곳을 기준으로 한 상대값이라, 다른 지역을 더
+   * 가면 가만히 둔 지역의 색이 저절로 연해진다. 색은 visitCount로 정한다
+   * (sidoRegions의 visitFill).
    */
   density: number
   /** 그 지역에서 내가 리뷰를 남긴 온천들. */
