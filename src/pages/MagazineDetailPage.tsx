@@ -104,8 +104,11 @@ export default function MagazineDetailPage() {
           src={heroImageUrl || DEFAULT_MAGAZINE_IMAGE}
           alt=""
           onError={(event) => {
-            event.currentTarget.onerror = null
-            event.currentTarget.src = DEFAULT_MAGAZINE_IMAGE
+            const image = event.currentTarget
+            image.onerror = null
+            // 기본 표지까지 없으면 깨진 아이콘 대신 빈 자리로 둔다.
+            if (image.src.endsWith(DEFAULT_MAGAZINE_IMAGE)) image.style.visibility = 'hidden'
+            else image.src = DEFAULT_MAGAZINE_IMAGE
           }}
           className="mt-9 h-[420px] w-full rounded-sm object-cover"
         />
