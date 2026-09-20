@@ -63,103 +63,124 @@ export default function MagazineDetailPage() {
     <>
       <MagazineJumpBar current={magazine.category} />
       {/*
-        gap을 16(64px)까지 늘린다 — 이전 12(48px)는 레일 폭(64px)과 비슷해
-        좋아요·공유 버튼이 본문에 바짝 붙어 보였다. 버튼 자체 margin이 아니라
-        레일과 본문을 감싸는 이 flex의 간격을 키워 두 영역이 뚜렷이 나뉘게 한다.
-      */}
-      <div className="flex gap-16">
-        {/* 왼쪽 레일 — 데모의 tools */}
-        <aside className="hidden w-16 shrink-0 lg:block">
-          <div className="sticky top-24 flex flex-col items-center gap-7 pt-14">
-            <span
-              className="text-text-secondary text-[12px] font-semibold tracking-[0.5em]"
-              style={{ writingMode: 'vertical-rl' }}
-            >
-              {categoryLabel.replaceAll(' ', '')}
-            </span>
+        RootLayout의 main은 max-w-5xl(px-6)라 좌우 보조 영역 둘을 넉넉히 못
+        수용한다. 히어로 사진이 article 밖으로 넘치는(풀블리드) 채로 gap만
+        키우면 넘친 만큼 간격이 상쇄돼 버려서(실측: 좌우 각 4px) 폭 확장 없이는
+        32~48px 여백을 못 만든다.
 
-            <div className="bg-surface-dim relative h-40 w-[2px] rounded-full">
-              <div
-                className="bg-inverse absolute top-0 left-0 w-full rounded-full transition-[height]"
-                style={{ height: `${progress * 100}%` }}
-              />
+        이 페이지에서만 음수 마진(xl:-mx-16)으로 main의 padding 안쪽 콘텐츠
+        슬롯을 좌우로 64px씩 넓힌다. 반대쪽에 같은 크기의 padding을 다시 주면
+        완전히 상쇄되어 원래 폭(976px)으로 되돌아가므로 padding은 주지 않는다
+        — 넓힌 공간은 안쪽 flex가 그대로 다 쓴다. main 자체는 건드리지 않아
+        다른 페이지 폭에는 영향이 없다.
+
+        xl 이상에서만 거는 이유: 두 레일 다 xl 미만에서는 hidden이라(lg:block·
+        xl:block) 그 아래 폭에서 넓힐 이유가 없고, 좁은 화면에 그대로 걸면
+        wrapper가 뷰포트를 넘어가 가로 스크롤이 생긴다(실측 확인).
+      */}
+      <div className="xl:-mx-16">
+        <div className="flex gap-20">
+          {/* 왼쪽 레일 — 데모의 tools */}
+          <aside className="hidden w-16 shrink-0 lg:block">
+            <div className="sticky top-24 flex flex-col items-center gap-7 pt-14">
+              <span
+                className="text-text-secondary text-[12px] font-semibold tracking-[0.5em]"
+                style={{ writingMode: 'vertical-rl' }}
+              >
+                {categoryLabel.replaceAll(' ', '')}
+              </span>
+
+              <div className="bg-surface-dim relative h-40 w-[2px] rounded-full">
+                <div
+                  className="bg-inverse absolute top-0 left-0 w-full rounded-full transition-[height]"
+                  style={{ height: `${progress * 100}%` }}
+                />
+              </div>
+
+              <MagazineLikeButton magazineId={magazineId} isLiked={isLiked} likeCount={likeCount} />
+              <MagazineShareButton />
+            </div>
+          </aside>
+
+          <article className="min-w-0 flex-1 pt-14 pb-28 xl:max-w-[680px]">
+            <p className="text-text-secondary text-[12px] font-semibold tracking-[0.4em]">
+              {categoryLabel.split('').join(' ')}
+            </p>
+
+            <h1 className="text-text-primary mt-[18px] text-[40px] leading-[1.2] font-black sm:text-[52px]">
+              {title}
+            </h1>
+
+            {subtitle && <p className="text-text-primary mt-[18px] text-[19px]">{subtitle}</p>}
+
+            <div className="border-border-default text-text-secondary mt-9 flex items-center justify-between gap-4 border-b pb-7 text-[13px]">
+              <span className="min-w-0">{byline}</span>
+              <span className="flex shrink-0 items-center gap-3">
+                <span>{readMinutes}분</span>
+                {/* 왼쪽 레일은 lg 이상에서만 보여서, 좁은 화면에는 여기에 둔다. */}
+                <span className="flex items-center gap-2 lg:hidden">
+                  <MagazineLikeButton
+                    magazineId={magazineId}
+                    isLiked={isLiked}
+                    likeCount={likeCount}
+                  />
+                  <MagazineShareButton />
+                </span>
+              </span>
             </div>
 
-            <MagazineLikeButton magazineId={magazineId} isLiked={isLiked} likeCount={likeCount} />
-            <MagazineShareButton />
-          </div>
-        </aside>
+            {/*
+              사진은 본문 단을 뚫고 좌우로 나간다 — 데모의 풀블리드. 오버행을
+              60px에서 40px로 줄였다 — 이전 값은 gap(80px)을 거의 다 상쇄해서
+              사진 오른쪽 끝이 온천 카드에 거의 붙어 보였다(실측 4px).
+              좁은 화면은 그대로 본문 폭에 맞춘다.
+            */}
+            <figure className="mt-9 xl:-mx-10 xl:w-[calc(100%+80px)]">
+              {/* 사진이 없거나 깨지면 기본 표지로 대체한다 — 빈 회색 칸을 두지 않는다. */}
+              <img
+                src={heroImageUrl || DEFAULT_MAGAZINE_IMAGE}
+                alt=""
+                onError={(event) => {
+                  const image = event.currentTarget
+                  image.onerror = null
+                  // 기본 표지까지 없으면 깨진 아이콘 대신 빈 자리로 둔다.
+                  if (image.src.endsWith(DEFAULT_MAGAZINE_IMAGE)) {
+                    image.style.visibility = 'hidden'
+                  } else {
+                    image.src = DEFAULT_MAGAZINE_IMAGE
+                  }
+                }}
+                className="h-[420px] w-full rounded-sm object-cover"
+              />
+              <figcaption className="text-text-secondary mt-3 text-[11px]">
+                ⓒ 물멍{photographer ? ` · 사진 ${photographer}` : ''}
+              </figcaption>
+            </figure>
 
-        <article className="min-w-0 flex-1 pt-14 pb-28 xl:max-w-[680px]">
-          <p className="text-text-secondary text-[12px] font-semibold tracking-[0.4em]">
-            {categoryLabel.split('').join(' ')}
-          </p>
+            {paragraphs.map((paragraph, index) => (
+              <p
+                key={paragraph}
+                className={cn(
+                  'text-text-primary mt-6 text-[16px] leading-[1.9]',
+                  // 데모처럼 첫 문단의 첫 글자를 크게 시작한다.
+                  index === 0 &&
+                    'first-letter:mr-2 first-letter:float-left first-letter:text-[34px] first-letter:leading-[1.1] first-letter:font-bold',
+                )}
+              >
+                {paragraph}
+              </p>
+            ))}
 
-          <h1 className="text-text-primary mt-[18px] text-[40px] leading-[1.2] font-black sm:text-[52px]">
-            {title}
-          </h1>
-
-          {subtitle && <p className="text-text-primary mt-[18px] text-[19px]">{subtitle}</p>}
-
-          <div className="border-border-default text-text-secondary mt-9 flex items-center justify-between gap-4 border-b pb-7 text-[13px]">
-            <span className="min-w-0">{byline}</span>
-            <span className="flex shrink-0 items-center gap-3">
-              <span>{readMinutes}분</span>
-              {/* 왼쪽 레일은 lg 이상에서만 보여서, 좁은 화면에는 여기에 둔다. */}
-              <span className="flex items-center gap-2 lg:hidden">
-                <MagazineLikeButton
-                  magazineId={magazineId}
-                  isLiked={isLiked}
-                  likeCount={likeCount}
-                />
-                <MagazineShareButton />
-              </span>
-            </span>
-          </div>
-
-          {/* 사진은 본문 단을 뚫고 좌우로 나간다 — 데모의 풀블리드. 좁은 화면은 그대로. */}
-          <figure className="mt-9 xl:-mx-[60px] xl:w-[calc(100%+120px)]">
-            {/* 사진이 없거나 깨지면 기본 표지로 대체한다 — 빈 회색 칸을 두지 않는다. */}
-            <img
-              src={heroImageUrl || DEFAULT_MAGAZINE_IMAGE}
-              alt=""
-              onError={(event) => {
-                const image = event.currentTarget
-                image.onerror = null
-                // 기본 표지까지 없으면 깨진 아이콘 대신 빈 자리로 둔다.
-                if (image.src.endsWith(DEFAULT_MAGAZINE_IMAGE)) image.style.visibility = 'hidden'
-                else image.src = DEFAULT_MAGAZINE_IMAGE
-              }}
-              className="h-[420px] w-full rounded-sm object-cover"
-            />
-            <figcaption className="text-text-secondary mt-3 text-[11px]">
-              ⓒ 물멍{photographer ? ` · 사진 ${photographer}` : ''}
-            </figcaption>
-          </figure>
-
-          {paragraphs.map((paragraph, index) => (
-            <p
-              key={paragraph}
-              className={cn(
-                'text-text-primary mt-6 text-[16px] leading-[1.9]',
-                // 데모처럼 첫 문단의 첫 글자를 크게 시작한다.
-                index === 0 &&
-                  'first-letter:mr-2 first-letter:float-left first-letter:text-[34px] first-letter:leading-[1.1] first-letter:font-bold',
-              )}
+            <Link
+              to="/magazine"
+              className="text-text-secondary hover:text-text-primary mt-12 inline-block text-[13px] underline underline-offset-4"
             >
-              {paragraph}
-            </p>
-          ))}
+              ← 목록으로
+            </Link>
+          </article>
 
-          <Link
-            to="/magazine"
-            className="text-text-secondary hover:text-text-primary mt-12 inline-block text-[13px] underline underline-offset-4"
-          >
-            ← 목록으로
-          </Link>
-        </article>
-
-        <MagazineAside magazine={magazine} />
+          <MagazineAside magazine={magazine} />
+        </div>
       </div>
     </>
   )
