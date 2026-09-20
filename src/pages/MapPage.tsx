@@ -446,7 +446,17 @@ export default function MapPage() {
     void handleSearch({})
   }
 
-  const [poiFilter, setPoiFilter] = useState<PoiFilterId>()
+  /**
+   * 찜한 장소에서 '지도에서 보기'로 넘어오면 ?poi=RESTAURANT처럼 붙는다.
+   * 그 갈래를 켜둬야 넘어오자마자 해당 마커가 보인다 — 안 켜면 지도만 그 자리로
+   * 옮겨지고 아무것도 표시되지 않는다.
+   *
+   * 처음 값만 주소에서 읽는다. 그 뒤 필터 조작은 state로만 다룬다.
+   */
+  const [poiFilter, setPoiFilter] = useState<PoiFilterId | undefined>(() => {
+    const value = searchParams.get('poi')
+    return value && value in POI_FILTER_CATEGORY_MAP ? (value as PoiFilterId) : undefined
+  })
   const [viewportCenter, setViewportCenter] = useState<{ lat: number; lng: number }>()
   const [poiZoomVisible, setPoiZoomVisible] = useState(false)
   const handleCenterChange = useCallback(

@@ -65,6 +65,39 @@ export default function ReviewDetailPanel({ reviewId, id }: ReviewDetailPanelPro
 
   return (
     <div id={id} className="bg-surface-dim flex flex-col gap-4 px-4 py-5">
+      {/*
+        사진이 있으면 맨 위에 크게 둔다 — 리뷰에서 먼저 보게 되는 건 글이 아니라
+        사진이다. 여러 장이면 옆으로 밀어 본다. 패널 좌우 여백만큼 밖으로 빼서
+        끝까지 닿게 하고, 잘린 사진이 보여야 더 있다는 걸 알 수 있다.
+      */}
+      {detail.imageUrls && detail.imageUrls.length > 0 && (
+        <div className="scrollbar-thin -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+          {detail.imageUrls.map((url) => (
+            <img
+              key={url}
+              src={url}
+              alt=""
+              loading="lazy"
+              className="bg-surface h-52 shrink-0 rounded-sm object-cover"
+            />
+          ))}
+        </div>
+      )}
+
+      {/*
+        본문은 펼쳤을 때만 여기서 보여준다 — 목록 행에는 60자로 잘린 미리보기만
+        오고(MY-04 bodyPreview), 전문은 상세 응답에만 있다.
+        0자를 허용하는 리뷰라(REV-02) 비어 있으면 줄째로 뺀다.
+      */}
+      {detail.body && (
+        <div className="flex flex-col gap-1.5">
+          <span className={FIELD_LABEL}>리뷰 내용</span>
+          <p className="text-[13px] leading-[1.7] whitespace-pre-wrap [overflow-wrap:anywhere]">
+            {detail.body}
+          </p>
+        </div>
+      )}
+
       <div className="flex gap-6">
         <div className="flex flex-col gap-1">
           <span className={FIELD_LABEL}>방문 시간대</span>
@@ -94,22 +127,6 @@ export default function ReviewDetailPanel({ reviewId, id }: ReviewDetailPanelPro
           ))}
         </div>
       </div>
-
-      {detail.imageUrls && detail.imageUrls.length > 0 && (
-        <div className="flex flex-col gap-1.5">
-          <span className={FIELD_LABEL}>사진</span>
-          <div className="flex flex-wrap gap-2">
-            {detail.imageUrls.map((url) => (
-              <img
-                key={url}
-                src={url}
-                alt=""
-                className="bg-surface size-[52px] rounded-sm object-cover"
-              />
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

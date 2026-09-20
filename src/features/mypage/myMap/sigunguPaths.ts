@@ -1,6 +1,15 @@
 /**
  * 시군구 경계 도형. 시·도 코드로 찾는다.
  *
+ * 출처
+ * - southkorea/southkorea-maps (https://github.com/southkorea/southkorea-maps)
+ *   kostat/2013 — 통계청 경계 데이터. 대부분의 시·도가 여기서 왔다.
+ * - vuski/admdongkor (https://github.com/vuski/admdongkor)
+ *   CC BY 4.0. 인천·대구·경북처럼 행정구역이 개편된 곳만 이쪽 최신본을 썼다.
+ *
+ * 두 자료 모두 원 출처가 통계지리정보서비스(SGIS)이고 공공누리 제1유형이라
+ * 출처 표시가 필요하다. 시·도별로 따로 떼어 구웠다.
+ *
  * 시·도 지도(sidoRegions.ts)와 달리 전국 좌표계가 아니다. 시·도마다 자기
  * viewBox 안에서 따로 정규화된 SVG라, 두 레이어의 좌표가 이어지지 않는다.
  * 그래서 확대는 좌표를 잇는 대신 viewBox를 통째로 갈아끼우는 방식으로 한다.
