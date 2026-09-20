@@ -5,16 +5,7 @@ import type {
   PamphletView,
   PamphletViewPlace,
 } from '@/features/mypage/data/pamphletView'
-import { categoryLabel, type SavedCategory } from '@/types/saved'
-
-// 장소의 특성·동선에 관한 사실을 만들지 않고, 저장된 카테고리만 설명한다.
-const PLACE_CONTEXT: Record<SavedCategory, string> = {
-  onsen: '이번 여행의 온천·사우나 시간으로 엮어둔 곳입니다.',
-  restaurant: '이번 여행에서 식사 장소로 엮어둔 곳입니다.',
-  cafe: '여행 중 쉬어갈 카페로 엮어둔 곳입니다.',
-  attraction: '이번 여행에서 둘러볼 장소로 엮어둔 곳입니다.',
-  etc: '이번 여행에 함께 엮어둔 곳입니다.',
-}
+import { categoryLabel } from '@/types/saved'
 
 export function PamphletIntro({ pamphlet }: { pamphlet: PamphletView }) {
   const regions = [...new Set(pamphlet.places.map((place) => place.address))]
@@ -78,6 +69,11 @@ export function PamphletPlace({ place, index }: { place: PamphletViewPlace; inde
   const water = waterLine(spec)
   const visit = visitRows(spec)
   const note = spec?.note?.trim() ?? ''
+  // 유형은 서버가 준 구체적인 표기를 먼저 쓴다 ('기타'보다 '관광지'가 낫다).
+  const typeLabel = place.typeLabel?.trim() || categoryLabel(place.category)
+  // 실제 소개가 있을 때만 문단을 만든다. 없으면 빈 줄을 채우지 않는다.
+  // 온천 subText는 수온·수질이라 위 water 줄과 겹친다 — 겹치면 싣지 않는다.
+  const copy = note || (water.length > 0 ? '' : description)
 
   return (
     <article className="pamphlet-editorial pamphlet-place">
@@ -103,6 +99,8 @@ export function PamphletPlace({ place, index }: { place: PamphletViewPlace; inde
         PLACE {String(index + 1).padStart(2, '0')}
       </p>
       <h3>{place.name}</h3>
+      {/* 장소 유형은 한 번만 — 온천은 그 아래 수온·수질이 이어진다. */}
+      <p className="pamphlet-place-kind">{typeLabel}</p>
       {water.length > 0 && (
         <p className="pamphlet-place-water">
           {water.map((value) => (
@@ -110,7 +108,7 @@ export function PamphletPlace({ place, index }: { place: PamphletViewPlace; inde
           ))}
         </p>
       )}
-      <p className="pamphlet-place-copy">{note || description || PLACE_CONTEXT[place.category]}</p>
+      {copy && <p className="pamphlet-place-copy">{copy}</p>}
       {visit.length > 0 && (
         <dl className="pamphlet-place-spec">
           {visit.map(([label, value]) => (
@@ -121,9 +119,7 @@ export function PamphletPlace({ place, index }: { place: PamphletViewPlace; inde
           ))}
         </dl>
       )}
-      <p className="pamphlet-place-location">
-        {place.address} · {categoryLabel(place.category)}
-      </p>
+      {place.address && <p className="pamphlet-place-location">{place.address}</p>}
     </article>
   )
 }

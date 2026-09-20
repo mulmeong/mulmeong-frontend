@@ -390,6 +390,20 @@
   overflow-wrap: anywhere;
 }
 
+/* 장소 유형 — 온천이든 식당이든 같은 자리에 한 줄. */
+.pamphlet-place-kind {
+  margin-top: 10px;
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  line-height: 1.8;
+}
+
+/* 유형 바로 아래 수온이 오면 간격을 좁혀 한 덩어리로 읽히게 한다. */
+.pamphlet-place-kind + .pamphlet-place-water {
+  margin-top: 4px;
+}
+
 /* 온천의 성질 — 제목 바로 아래, 가운뎃점으로 잇는다. */
 .pamphlet-place-water {
   display: flex;

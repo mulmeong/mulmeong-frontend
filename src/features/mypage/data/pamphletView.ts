@@ -22,6 +22,8 @@ export type PamphletViewPlace = {
   name: string
   address: string
   category: SavedCategory
+  /** 서버가 준 장소 유형 표기(예: '식당', '관광지'). 카테고리보다 구체적이다. */
+  typeLabel?: string
   imageUrl?: string
   /** 서버가 준 한 줄 설명. 온천은 수온·수질, 그 외는 분류다. */
   description?: string
@@ -59,6 +61,12 @@ const CATEGORY: Record<string, SavedCategory> = {
   ETC: 'etc',
 }
 
+function meaningfulSubText(subText?: string | null, typeLabel?: string | null) {
+  const value = subText?.trim()
+  if (!value || value === typeLabel?.trim()) return undefined
+  return value
+}
+
 export function toPamphletView(detail: PamphletDetail, number: string): PamphletView {
   return {
     id: String(detail.pamphletId ?? detail.shareToken),
@@ -70,8 +78,11 @@ export function toPamphletView(detail: PamphletDetail, number: string): Pamphlet
       name: place.name,
       address: place.address ?? '',
       category: CATEGORY[place.placeType] ?? 'etc',
+      typeLabel: place.placeTypeLabel ?? undefined,
       imageUrl: place.imageUrl ?? undefined,
-      description: place.subText ?? undefined,
+      // 온천이 아니면 서버가 subText에 유형 라벨을 그대로 넣는다. 유형을 이미
+      // 따로 보여주므로 같은 값이면 설명으로 치지 않는다 ('식당 · 식당' 방지).
+      description: meaningfulSubText(place.subText, place.placeTypeLabel),
     })),
   }
 }
