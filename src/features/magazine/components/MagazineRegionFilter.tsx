@@ -54,7 +54,7 @@ export default function MagazineRegionFilter({
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
         aria-haspopup="true"
-        className="bg-inverse text-text-inverse inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-[12px] font-medium"
+        className="bg-inverse text-text-inverse inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium"
       >
         {value || '전국'}
         <span aria-hidden="true" className="text-[9px]">
@@ -64,7 +64,7 @@ export default function MagazineRegionFilter({
 
       {open && (
         <div
-          className="border-border-default bg-surface absolute top-[calc(100%+6px)] left-0 z-30 grid w-[264px] grid-cols-3 gap-1.5 rounded-md border p-2.5 shadow-sm"
+          className="border-border-default bg-surface absolute top-[calc(100%+4px)] left-0 z-30 grid w-[260px] grid-cols-3 gap-x-5 gap-y-1 rounded-[2px] border px-3 py-2"
           role="group"
           aria-label="지역"
         >
@@ -78,15 +78,16 @@ export default function MagazineRegionFilter({
                 onClick={() => pick(region === '전국' ? '' : region)}
                 aria-pressed={selected}
                 className={cn(
-                  'rounded-full border py-2 text-[12px] transition-colors',
+                  'relative flex h-7 items-center gap-1.5 px-0.5 text-left text-[12px] leading-none transition-colors',
+                  region === '전국' && 'col-span-3 mb-1 border-b border-border-default/60 pb-1.5',
                   selected
-                    ? 'bg-inverse text-text-inverse border-border-strong font-medium'
-                    : 'border-border-default text-text-secondary hover:text-text-primary hover:border-border-strong',
+                    ? 'text-text-primary font-semibold after:absolute after:bottom-0 after:left-0 after:h-px after:w-4 after:bg-text-primary after:content-[""]'
+                    : 'text-text-secondary hover:bg-surface-dim hover:text-text-primary',
                 )}
               >
                 {region}
                 {count !== undefined && (
-                  <span className="ml-1 text-[10px] tabular-nums opacity-60">{count}</span>
+                  <span className="text-[10px] tabular-nums text-text-secondary/70">{count}</span>
                 )}
               </button>
             )

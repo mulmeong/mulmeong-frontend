@@ -73,23 +73,24 @@ export async function fetchMagazinesByRegionName(
   // 서버가 권역을 직접 받으면 합칠 필요가 없다. 지원되면 .env에서 켠다.
   if (env.magazineRegionParam) return fetchMagazines({ ...params, region })
 
+  const { region: _region, ...baseParams } = params
   const codes = MAGAZINE_REGION_CODES[region]
-  if (!codes?.length) return fetchMagazines(params)
-  if (codes.length === 1) return fetchMagazines({ ...params, sidoCode: codes[0] })
+  if (!codes?.length) return fetchMagazines(baseParams)
+  if (codes.length === 1) return fetchMagazines({ ...baseParams, sidoCode: codes[0] })
 
-  const size = Math.min(30, Math.max(1, params.size ?? 12))
-  const page = Math.max(0, params.page ?? 0)
+  const size = Math.min(30, Math.max(1, baseParams.size ?? 12))
+  const page = Math.max(0, baseParams.page ?? 0)
   // 코드마다 앞쪽을 넉넉히 받아 합친다. 서버가 권역을 지원하면 이 함수는 사라진다.
   const pages = await Promise.all(
     codes.map((sidoCode) =>
-      fetchMagazines({ ...params, sidoCode, page: 0, size: 30 }).catch(() => null),
+      fetchMagazines({ ...baseParams, sidoCode, page: 0, size: 30 }).catch(() => null),
     ),
   )
   const seen = new Set<number>()
   const merged = pages
     .flatMap((item) => item?.content ?? [])
     .filter((magazine) => !seen.has(magazine.magazineId) && seen.add(magazine.magazineId))
-  const sorted = sortMagazines(merged, params.sort ?? 'LATEST')
+  const sorted = sortMagazines(merged, baseParams.sort ?? 'LATEST')
   const start = page * size
   const slice = sorted.slice(start, start + size)
   return {

@@ -40,14 +40,16 @@ export function useMagazines(params: MagazineListParams & { region?: string } = 
           first = await fetchMagazines({ ...parsed, page: 0 })
         }
         if (cancelled) return
-        if (first.categories !== null)
-          metadata.current = { filter, categories: first.categories, regions: first.regions }
+        const categories = first.categories ?? metadata.current?.categories ?? null
+        const regions = first.regions ?? metadata.current?.regions ?? null
+        if (first.categories !== null || first.regions !== null || metadata.current)
+          metadata.current = { filter, categories, regions }
         setState({
           identity,
           data: {
             ...data,
-            categories: data.categories ?? metadata.current?.categories ?? [],
-            regions: data.regions ?? metadata.current?.regions ?? [],
+            categories: data.categories ?? categories ?? [],
+            regions: data.regions ?? regions ?? [],
           },
         })
       })
@@ -62,7 +64,7 @@ export function useMagazines(params: MagazineListParams & { region?: string } = 
   const current = state?.identity === identity ? state : undefined
   return {
     magazines: current?.data?.content ?? [],
-    data: current?.data,
+    data: current?.data ?? state?.data,
     loading: !current,
     error: current?.error,
     retry: () => setAttempt((value) => value + 1),
