@@ -1,3 +1,10 @@
+import type {
+  OnsenAccess,
+  OnsenFacilities,
+  OnsenReviewSummary,
+  OnsenWater,
+} from '@/types/onsenDetail'
+
 /**
  * PAM-08 팜플렛. 백엔드 PamphletListItem·PamphletPlaceItem을 그대로 따른다.
  */
@@ -42,6 +49,15 @@ export type PamphletPlace = {
   subText?: string | null
   address?: string | null
   imageUrl?: string | null
+  thumbnail?: string | null
+  images?: string[] | null
+  priceMin?: number | null
+  water?: OnsenWater | null
+  facilities?: OnsenFacilities | null
+  access?: OnsenAccess | null
+  regionComment?: string | null
+  notes?: string | null
+  reviewSummary?: OnsenReviewSummary | null
   lat?: number | null
   lng?: number | null
 }

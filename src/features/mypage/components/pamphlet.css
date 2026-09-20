@@ -283,12 +283,6 @@
   letter-spacing: 0.04em;
 }
 
-.pamphlet-reader-footer nav {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
 .pamphlet-editorial {
   min-width: 0;
   height: 100%;
@@ -380,6 +374,21 @@
 .pamphlet-place {
   display: flex;
   flex-direction: column;
+}
+
+.pamphlet-place-stack {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+}
+
+.pamphlet-place-stack .pamphlet-place {
+  min-height: min(540px, calc(100dvh - 144px));
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border-default) 45%, transparent);
+}
+
+.pamphlet-place-stack .pamphlet-place:last-child {
+  border-bottom: 0;
 }
 
 .pamphlet-place-figure {
@@ -581,9 +590,8 @@
     gap: 0 12px;
   }
 
-  .pamphlet-reader-footer nav {
-    margin-left: auto;
-    gap: 12px;
+  .pamphlet-place-stack .pamphlet-place {
+    min-height: auto;
   }
 }
 
@@ -743,6 +751,19 @@
   line-height: 1.6;
 }
 
+.pamphlet-preview-note {
+  color: var(--color-text-primary);
+  font-size: 12px;
+  line-height: 1.65;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.pamphlet-preview-facts {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 1.6;
+}
 /* 출처 표기 — 본문보다 눈에 띄지 않게. */
 .pamphlet-preview-credit {
   padding: 14px 24px 18px;

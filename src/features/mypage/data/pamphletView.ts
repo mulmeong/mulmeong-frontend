@@ -14,6 +14,7 @@ export type PamphletView = {
   number: string
   title: string
   createdAt: string
+  summary: string[]
   places: PamphletViewPlace[]
 }
 
@@ -48,7 +49,12 @@ export type PamphletPlaceSpec = {
   closed?: string
   parking?: string
   accessLabel?: string
+  stationName?: string
+  stationDesc?: string
   facilityType?: string
+  hasLodging?: boolean
+  reviewCount?: number
+  avgRating?: number
   /** 한 줄 소개. benefit(효능)이 없으면 지역 코멘트를 쓴다. */
   note?: string
 }
@@ -69,23 +75,65 @@ function meaningfulSubText(subText?: string | null, typeLabel?: string | null) {
   return value
 }
 
+function normalizeAddress(address?: string | null) {
+  return (address ?? '').replaceAll('중남', '충남').trim()
+}
+
+function shortRegion(address: string) {
+  return address.split(/\s+/).filter(Boolean).slice(0, 2).join(' ')
+}
+
+function imageOf(place: PamphletDetail['places'][number]) {
+  return place.imageUrl ?? place.thumbnail ?? place.images?.find(Boolean) ?? undefined
+}
+
+function isOnsenPlace(place: PamphletDetail['places'][number]) {
+  return place.placeType === 'ONSEN' || place.placeType === 'SPA'
+}
+
+function specFromPlace(place: PamphletDetail['places'][number]) {
+  return isOnsenPlace(place) ? toPlaceSpec(place) : undefined
+}
+
+function summaryOf(places: PamphletDetail['places']) {
+  const specs = places.map(specFromPlace).filter(Boolean)
+  const regions = [...new Set(places.map((place) => shortRegion(normalizeAddress(place.address))))]
+    .filter(Boolean)
+    .slice(0, 2)
+  const onsenCount = places.filter(isOnsenPlace).length
+  const temperatures = specs
+    .map((spec) => spec?.tempC)
+    .filter((value): value is number => value !== undefined)
+  const maxTemp = temperatures.length ? Math.max(...temperatures) : undefined
+  const walkableCount = specs.filter((spec) => spec?.accessLabel?.includes('뚜벅이')).length
+
+  return [
+    regions.join(' · '),
+    onsenCount > 0 ? `온천 ${onsenCount}곳` : `${places.length}곳`,
+    maxTemp !== undefined ? `최고 ${maxTemp.toFixed(0)}℃` : '',
+    walkableCount > 0 ? `뚜벅이 가능 ${walkableCount}곳` : '',
+  ].filter(Boolean)
+}
+
 export function toPamphletView(detail: PamphletDetail, number: string): PamphletView {
   return {
     id: String(detail.pamphletId ?? detail.shareToken),
     number,
     title: detail.title,
     createdAt: detail.createdAt.slice(0, 10),
+    summary: summaryOf(detail.places),
     places: detail.places.map((place) => ({
       id: place.placeId,
       name: place.name,
-      address: place.address ?? '',
+      address: normalizeAddress(place.address),
       category: CATEGORY[place.placeType] ?? 'etc',
       typeLabel: place.placeTypeLabel ?? undefined,
       source: place.source ?? undefined,
-      imageUrl: place.imageUrl ?? undefined,
+      imageUrl: imageOf(place),
       // 온천이 아니면 서버가 subText에 유형 라벨을 그대로 넣는다. 유형을 이미
       // 따로 보여주므로 같은 값이면 설명으로 치지 않는다 ('식당 · 식당' 방지).
       description: meaningfulSubText(place.subText, place.placeTypeLabel),
+      spec: specFromPlace(place),
     })),
   }
 }
@@ -107,18 +155,25 @@ export function coverNumber(index: number, page: number, size: number): string {
  * 대부분 수온·수질·효능만 남는다. 값이 없는 항목은 아예 넣지 않아 화면이 빈
  * 라벨을 그리지 않게 한다.
  */
-export function toPlaceSpec(detail: OnsenDetail): PamphletPlaceSpec {
+export function toPlaceSpec(
+  detail: OnsenDetail | PamphletDetail['places'][number],
+): PamphletPlaceSpec {
   const water = detail.water ?? undefined
   const spec: PamphletPlaceSpec = {
     tempC: water?.temp ?? undefined,
     waterType: water?.type ?? water?.component ?? undefined,
     ph: water?.ph ?? undefined,
-    hours: detail.hours ?? undefined,
+    hours: 'hours' in detail ? (detail.hours ?? undefined) : undefined,
     price: detail.priceMin ?? undefined,
-    closed: detail.holiday ?? undefined,
-    parking: detail.parkingInfo ?? undefined,
+    closed: 'holiday' in detail ? (detail.holiday ?? undefined) : undefined,
+    parking: 'parkingInfo' in detail ? (detail.parkingInfo ?? undefined) : undefined,
     accessLabel: detail.access?.accessLevelLabel ?? undefined,
+    stationName: detail.access?.nearestStation?.name ?? undefined,
+    stationDesc: detail.access?.nearestStation?.stationToPlaceDesc ?? undefined,
     facilityType: detail.facilities?.facilityType ?? undefined,
+    hasLodging: detail.facilities?.hasLodging ?? undefined,
+    reviewCount: detail.reviewSummary?.count ?? undefined,
+    avgRating: detail.reviewSummary?.avgRating ?? undefined,
     note: water?.benefit ?? detail.regionComment ?? undefined,
   }
   // undefined 키를 남기면 호출부가 값이 있는지 세기 번거롭다.
