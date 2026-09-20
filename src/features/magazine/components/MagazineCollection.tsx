@@ -22,7 +22,8 @@ export default function MagazineCollection({ archive = false }: { archive?: bool
     : 'LATEST'
   const rawPage = Number(params.get('page') ?? 0)
   const page = archive && Number.isSafeInteger(rawPage) && rawPage >= 0 ? rawPage : 0
-  const [view, setView] = useState<'grid' | 'list'>('grid')
+  // 아카이브는 훑어보는 화면이라 목차(리스트)로 시작한다. 홈은 표지 위주라 그리드.
+  const [view, setView] = useState<'grid' | 'list'>(archive ? 'list' : 'grid')
   const { magazines, data, loading, error, retry } = useMagazines({
     category,
     region,
@@ -50,7 +51,13 @@ export default function MagazineCollection({ archive = false }: { archive?: bool
         </span>
       </div>
       {/* 필터는 목록으로 넘어가는 길잡이라 divider 하나로만 구분하고 톤을 낮춘다. */}
-      <div className="border-border-default flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b pb-3">
+      <div
+        className={cn(
+          'border-border-default flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b pb-3',
+          // 아카이브는 목록이 길어 스크롤해도 필터가 따라온다.
+          archive && 'bg-surface sticky top-0 z-20 -mx-6 px-6 pt-3',
+        )}
+      >
         {/* 지역은 카테고리보다 앞에 둔다 — 어느 지역 이야기인지가 먼저 좁혀진다. */}
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <MagazineRegionFilter value={region} onChange={(next) => change('region', next)} />
@@ -118,14 +125,23 @@ export default function MagazineCollection({ archive = false }: { archive?: bool
       {!loading &&
         !error &&
         (view === 'grid' ? (
-          <ul className="mt-8 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+          <ul
+            className={cn(
+              'mt-8 grid gap-x-7 gap-y-9 sm:grid-cols-2',
+              archive ? 'lg:grid-cols-4' : 'lg:grid-cols-3',
+            )}
+          >
             {magazines.map((magazine, index) => {
               // 첫 화면 첫 글만 두 칸을 써서 리듬을 준다. 아카이브·2페이지부터는
               // 훑어보는 화면이라 크기를 고르게 둔다.
               const featured = !archive && page === 0 && index === 0
               return (
                 <li key={magazine.magazineId} className={cn(featured && 'sm:col-span-2')}>
-                  <MagazineCard magazine={magazine} featured={featured} />
+                  <MagazineCard
+                    magazine={magazine}
+                    featured={featured}
+                    index={archive ? String(index + 1 + page * 12).padStart(2, '0') : undefined}
+                  />
                 </li>
               )
             })}

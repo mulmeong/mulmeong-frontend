@@ -85,12 +85,12 @@ export default function MagazineDetailPage() {
           </div>
         </aside>
 
-        <article className="min-w-0 flex-1 pt-14 pb-28">
+        <article className="min-w-0 flex-1 pt-14 pb-28 xl:max-w-[680px]">
           <p className="text-text-secondary text-[12px] font-semibold tracking-[0.4em]">
             {categoryLabel.split('').join(' ')}
           </p>
 
-          <h1 className="text-text-primary mt-[18px] text-[44px] leading-[1.2] font-bold">
+          <h1 className="text-text-primary mt-[18px] text-[40px] leading-[1.2] font-black sm:text-[52px]">
             {title}
           </h1>
 
@@ -112,19 +112,25 @@ export default function MagazineDetailPage() {
             </span>
           </div>
 
-          {/* 사진이 없거나 깨지면 기본 표지로 대체한다 — 빈 회색 칸을 두지 않는다. */}
-          <img
-            src={heroImageUrl || DEFAULT_MAGAZINE_IMAGE}
-            alt=""
-            onError={(event) => {
-              const image = event.currentTarget
-              image.onerror = null
-              // 기본 표지까지 없으면 깨진 아이콘 대신 빈 자리로 둔다.
-              if (image.src.endsWith(DEFAULT_MAGAZINE_IMAGE)) image.style.visibility = 'hidden'
-              else image.src = DEFAULT_MAGAZINE_IMAGE
-            }}
-            className="mt-9 h-[420px] w-full rounded-sm object-cover"
-          />
+          {/* 사진은 본문 단을 뚫고 좌우로 나간다 — 데모의 풀블리드. 좁은 화면은 그대로. */}
+          <figure className="mt-9 xl:-mx-[60px] xl:w-[calc(100%+120px)]">
+            {/* 사진이 없거나 깨지면 기본 표지로 대체한다 — 빈 회색 칸을 두지 않는다. */}
+            <img
+              src={heroImageUrl || DEFAULT_MAGAZINE_IMAGE}
+              alt=""
+              onError={(event) => {
+                const image = event.currentTarget
+                image.onerror = null
+                // 기본 표지까지 없으면 깨진 아이콘 대신 빈 자리로 둔다.
+                if (image.src.endsWith(DEFAULT_MAGAZINE_IMAGE)) image.style.visibility = 'hidden'
+                else image.src = DEFAULT_MAGAZINE_IMAGE
+              }}
+              className="h-[420px] w-full rounded-sm object-cover"
+            />
+            <figcaption className="text-text-secondary mt-3 text-[11px]">
+              ⓒ 물멍{photographer ? ` · 사진 ${photographer}` : ''}
+            </figcaption>
+          </figure>
 
           {paragraphs.map((paragraph, index) => (
             <p
