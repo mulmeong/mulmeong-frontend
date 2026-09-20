@@ -19,9 +19,12 @@ export default function MagazineIssueBanner() {
     .join(' · ')
 
   return (
-    // RootLayout의 main이 max-w-5xl로 가운데 폭을 제한해서, 화면 전체폭까지
-    // 벗어나려면 뷰포트 기준으로 다시 계산해야 한다(relative left-1/2 트릭).
-    <section className="bg-inverse text-text-inverse relative left-1/2 w-screen -translate-x-1/2 px-6 py-16 sm:py-20">
+    // RootLayout의 main이 max-w-5xl로 가운데 폭을 제한한다. position:relative인
+    // 요소의 left/right는 '뷰포트 기준 좌표'가 아니라 '원래 자리에서의 오프셋'이라
+    // left-1/2·translate 조합은 main 안에서의 상대 위치가 섞여 계산이 어긋난다.
+    // margin-left/right: calc(50% - 50vw)는 그 요소의 박스 폭(%) 기준이라
+    // 부모 위치와 무관하게 항상 뷰포트 양끝까지 정확히 나간다(표준 full-bleed 트릭).
+    <section className="bg-inverse text-text-inverse -mx-[calc(50vw-50%)] px-6 py-16 sm:py-20">
       <div className="mx-auto max-w-5xl">
         <p className="text-[11px] font-semibold tracking-[0.2em] text-white/60">
           ISSUE · {magazine.categoryLabel}
