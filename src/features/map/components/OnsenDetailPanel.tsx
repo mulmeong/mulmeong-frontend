@@ -14,8 +14,7 @@ import type { OnsenListItem } from '@/features/map/api/map'
 import type { OnsenMapPoint } from '@/features/map/types/mapPoint'
 import type { OnsenDetail } from '@/types/onsenDetail'
 
-/** 시안 기준 탭 순서. 일반장소는 '한눈에'가 없지만 ①은 온천만 다룬다. */
-const TABS = ['한눈에', '리뷰', '주변', '정보'] as const
+const TABS = ['한눈에', '정보', '리뷰', '주변'] as const
 
 type DetailTab = (typeof TABS)[number]
 
