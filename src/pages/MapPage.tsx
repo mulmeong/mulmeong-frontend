@@ -15,6 +15,7 @@ import MapSidebarLayout from '@/features/map/components/MapSidebarLayout'
 import MapSavedControls from '@/features/map/components/MapSavedControls'
 import OnsenDetailPanel from '@/features/map/components/OnsenDetailPanel'
 import PoiFilter from '@/features/map/components/PoiFilter'
+import PoiDetailPanel from '@/features/map/components/PoiDetailPanel'
 import { usePoiLoadingIndicator } from '@/features/map/hooks/usePoiLoadingIndicator'
 import { POI_HIDE_LEVEL, POI_VISIBLE_LEVEL, REGION_PREVIEW_COUNT } from '@/features/map/constants'
 import { fetchPamphletDetail, fetchPamphlets } from '@/features/map/api/pamphlets'
@@ -30,8 +31,8 @@ import { REGION_VIEWS } from '@/types/onsen'
 import type { OnsenMapPoint } from '@/features/map/types/mapPoint'
 import type { MapBounds, MapView, Region } from '@/types/onsen'
 import type { Pamphlet, PamphletPlace } from '@/types/pamphlet'
-import type { MapPoi, PoiCategory } from '@/types/poi'
-import { poiKey } from '@/types/poi'
+import type { MapPoi, PoiFilterId } from '@/types/poi'
+import { POI_FILTER_CATEGORY_MAP, poiKey, toPoiCategory } from '@/types/poi'
 
 /** 검색 결과가 하나뿐일 때 지도를 얼마나 당길지. */
 const SINGLE_RESULT_LEVEL = 5
@@ -76,7 +77,7 @@ export default function MapPage() {
   const nearby = useNearby(selectedId, nearbyOpen)
   /**
    * 주변 장소를 POI 마커로 그린다 — 지도 위 표현을 하나로 맞추고 아이콘도 재사용한다.
-   * 관광지는 PoiCategory에 없어 공원 아이콘을 빌려 쓴다.
+   * 관광지/기타처럼 POI 토글 카테고리에 없는 값은 공원 아이콘을 빌려 쓴다.
    */
   const nearbyPois = useMemo<MapPoi[]>(
     () =>
@@ -85,17 +86,17 @@ export default function MapPage() {
             .filter((place) => place.lat != null && place.lng != null)
             .map((place) => ({
               externalId: place.externalId,
+              placeId: place.placeId,
               name: place.name,
               categoryName: place.categoryLabel,
-              roadAddress: place.address ?? undefined,
+              address: place.address ?? undefined,
+              phone: place.phone ?? undefined,
+              description: place.description ?? undefined,
               lat: place.lat,
               lng: place.lng,
               distanceM: place.distanceM ?? 0,
-              kakaoPlaceUrl: place.kakaoPlaceUrl ?? undefined,
-              category:
-                place.category === 'RESTAURANT' || place.category === 'CAFE'
-                  ? place.category
-                  : 'PARK',
+              imageUrl: place.imageUrl ?? undefined,
+              category: toPoiCategory(place.category),
             }))
         : [],
     [nearbyOpen, nearby.result],
@@ -121,6 +122,21 @@ export default function MapPage() {
           address: onsen.address ?? '',
           lat: onsen.lat,
           lng: onsen.lng,
+        },
+      })
+    },
+    [updateField],
+  )
+  const setPoiDestination = useCallback(
+    (poi: MapPoi) => {
+      updateField('destination', {
+        text: poi.name,
+        place: {
+          id: `poi-${poi.category}-${poi.externalId}`,
+          name: poi.name,
+          address: poi.address ?? poi.roadAddress ?? '',
+          lat: poi.lat,
+          lng: poi.lng,
         },
       })
     },
@@ -169,6 +185,16 @@ export default function MapPage() {
     setDetailEntered(false)
     setCollapsed(false)
     if (onsen) setDestination(onsen)
+  }
+
+  function openPoiDirections(poi: MapPoi) {
+    modeRef.current = 'directions'
+    setMode('directions')
+    setSelectedPoi(undefined)
+    setDetailClosing(false)
+    setDetailEntered(false)
+    setCollapsed(false)
+    setPoiDestination(poi)
   }
 
   function openSearch() {
@@ -415,12 +441,12 @@ export default function MapPage() {
 
   function handleNationalView() {
     setCollapsed(false)
-    setCategory(undefined)
+    setPoiFilter(undefined)
     setSidebarVersion((version) => version + 1)
     void handleSearch({})
   }
 
-  const [category, setCategory] = useState<PoiCategory>()
+  const [poiFilter, setPoiFilter] = useState<PoiFilterId>()
   const [viewportCenter, setViewportCenter] = useState<{ lat: number; lng: number }>()
   const [poiZoomVisible, setPoiZoomVisible] = useState(false)
   const handleCenterChange = useCallback(
@@ -445,40 +471,71 @@ export default function MapPage() {
     poiEnabled && poiCenter
       ? `${poiOnsen?.id ?? 'viewport'}:${poiCenter.lat}:${poiCenter.lng}`
       : undefined
+  const nearbyPoiScope = nearbyOpen && selectedId !== undefined ? `nearby:${selectedId}` : undefined
+  const activePoiScope = nearbyOpen ? nearbyPoiScope : poiScope
   const {
     pois,
     loading: poiLoading,
     error: poiError,
     retry: retryPois,
     requestKey: poiRequestKey,
-  } = usePois(poiEnabled && category ? [category] : [], poiCenter)
+  } = usePois(poiEnabled && poiFilter ? POI_FILTER_CATEGORY_MAP[poiFilter] : [], poiCenter)
   const poiLoadingVisible = usePoiLoadingIndicator(
     poiLoading,
     poiRequestKey,
-    poiEnabled && category !== undefined,
+    poiEnabled && poiFilter !== undefined,
   )
   const [selectedPoi, setSelectedPoi] = useState<{ scope: string; key: string }>()
+  const visiblePois = nearbyOpen ? nearbyPois : pois
   const selectedPoiKey =
-    selectedPoi?.scope === poiScope && pois.some((poi) => poiKey(poi) === selectedPoi?.key)
+    selectedPoi?.scope === activePoiScope &&
+    visiblePois.some((poi) => poiKey(poi) === selectedPoi?.key)
       ? selectedPoi?.key
       : undefined
+  const selectedPoiDetail = selectedPoiKey
+    ? visiblePois.find((poi) => poiKey(poi) === selectedPoiKey)
+    : undefined
+  const detailOpen = Boolean(selected || selectedPoiDetail)
 
   useEffect(() => {
     setSelectedPoi(undefined)
-  }, [poiScope])
+  }, [activePoiScope])
 
   const handleSelectPoi = useCallback(
     (key?: string) => {
-      setSelectedPoi(key && poiScope ? { scope: poiScope, key } : undefined)
+      const opening = !selected && !selectedPoiKey && key !== undefined
+      setSelectedPoi(key && activePoiScope ? { scope: activePoiScope, key } : undefined)
+      if (key && opening) {
+        if (detailEnterFrame.current !== undefined) {
+          cancelAnimationFrame(detailEnterFrame.current)
+          detailEnterFrame.current = undefined
+        }
+        setDetailClosing(false)
+        setDetailEntered(false)
+        detailEnterFrame.current = requestAnimationFrame(() => {
+          detailEnterFrame.current = requestAnimationFrame(() => {
+            setDetailEntered(true)
+            detailEnterFrame.current = undefined
+          })
+        })
+      }
     },
-    [poiScope],
+    [activePoiScope, selected, selectedPoiKey],
+  )
+
+  const handleSelectNearbyPoi = useCallback(
+    (key: string) => {
+      if (!nearbyPoiScope) return
+      setSelectedPoi({ scope: nearbyPoiScope, key })
+    },
+    [nearbyPoiScope],
   )
 
   const handleToggleCategory = useCallback(
-    (category: PoiCategory) => {
+    (filter: PoiFilterId) => {
       if (!poiScope) return
       setSelectedPoi(undefined)
-      setCategory((current) => (current === category ? undefined : category))
+      setPoiFilter((current) => (current === filter ? undefined : filter))
     },
     [poiScope],
   )
@@ -495,7 +552,7 @@ export default function MapPage() {
             'border-border-default h-[45dvh] w-full min-w-0 shrink-0 flex-col border-b',
             'lg:h-auto lg:border-r lg:border-b-0',
             collapsed ? 'lg:w-0 lg:overflow-hidden lg:border-r-0' : 'lg:flex lg:w-[380px]',
-            selected ? 'hidden lg:flex' : 'flex',
+            detailOpen ? 'hidden lg:flex' : 'flex',
           )}
         >
           <MapSidebarLayout mode={mode} onSearch={openSearch} onDirections={() => openDirections()}>
@@ -518,7 +575,7 @@ export default function MapPage() {
         <div
           className={cn(
             'pointer-events-none relative z-10 hidden w-0 shrink-0',
-            selected ? 'lg:hidden' : 'lg:block',
+            detailOpen ? 'lg:hidden' : 'lg:block',
           )}
         >
           <button
@@ -538,14 +595,15 @@ export default function MapPage() {
         </div>
 
         {/* 검색 패널을 교체하지 않고 그 오른쪽에 더한다 — 지도는 남은 폭을 쓴다. */}
-        {selected && (
+        {detailOpen && (
           <aside
             className={cn(
               'map-detail-panel border-border-default relative z-[110] flex min-w-0 shrink-0 flex-col border-b lg:border-r lg:border-b-0',
             )}
             onAnimationEnd={() => {
               if (!detailClosing) return
-              setSelectedId(undefined)
+              setSelectedPoi(undefined)
+              if (selected && !selectedPoiDetail) setSelectedId(undefined)
               setDetailClosing(false)
               setDetailEntered(false)
             }}
@@ -560,7 +618,27 @@ export default function MapPage() {
                 )}
               >
                 <div className="h-full min-h-0 w-full">
-                  {externalSelected ? (
+                  {selectedPoiDetail ? (
+                    <>
+                      {selected && (
+                        <div className="hidden h-full min-h-0 w-full">
+                          <OnsenDetailPanel
+                            onsen={selected}
+                            onDirections={() => openDirections(selected)}
+                            onNearbyOpenChange={setNearbyOpen}
+                            selectedNearbyKey={selectedPoiKey}
+                            onSelectNearby={handleSelectNearbyPoi}
+                          />
+                        </div>
+                      )}
+                      <PoiDetailPanel
+                        poi={selectedPoiDetail}
+                        hasOnsenBack={Boolean(selected)}
+                        onBack={() => setSelectedPoi(undefined)}
+                        onDirections={() => openPoiDirections(selectedPoiDetail)}
+                      />
+                    </>
+                  ) : externalSelected ? (
                     <div className="bg-surface h-full overflow-y-auto px-4 py-6">
                       <p className="text-text-secondary text-[12px]">
                         {externalSelected.placeTypeLabel}
@@ -585,24 +663,17 @@ export default function MapPage() {
                       {externalSelected.subText && (
                         <p className="mt-4 text-[13px]">{externalSelected.subText}</p>
                       )}
-                      {externalSelected.kakaoPlaceUrl &&
-                        /^https?:\/\//i.test(externalSelected.kakaoPlaceUrl) && (
-                          <a
-                            href={externalSelected.kakaoPlaceUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mt-5 inline-block text-[13px] underline underline-offset-4"
-                          >
-                            카카오맵에서 보기
-                          </a>
-                        )}
                     </div>
                   ) : (
-                    <OnsenDetailPanel
-                      onsen={selected}
-                      onDirections={() => openDirections(selected)}
-                      onNearbyOpenChange={setNearbyOpen}
-                    />
+                    selected && (
+                      <OnsenDetailPanel
+                        onsen={selected}
+                        onDirections={() => openDirections(selected)}
+                        onNearbyOpenChange={setNearbyOpen}
+                        selectedNearbyKey={selectedPoiKey}
+                        onSelectNearby={handleSelectNearbyPoi}
+                      />
+                    )
                   )}
                 </div>
               </div>
@@ -610,6 +681,15 @@ export default function MapPage() {
             <button
               type="button"
               onClick={() => {
+                if (selectedPoiDetail) {
+                  if (selected) {
+                    setSelectedPoi(undefined)
+                    return
+                  }
+                  setDetailEntered(false)
+                  setDetailClosing(true)
+                  return
+                }
                 setDetailEntered(false)
                 setDetailClosing(true)
               }}
@@ -637,9 +717,10 @@ export default function MapPage() {
             onSelect={handleSelect}
             onBoundsChange={handleBoundsChange}
             onCenterChange={handleCenterChange}
-            pois={nearbyOpen ? nearbyPois : pois}
+            pois={visiblePois}
             selectedPoiKey={selectedPoiKey}
             onSelectPoi={handleSelectPoi}
+            simplePoiLabels={nearbyOpen}
             focus={focus}
             directions={mode === 'directions' ? directions.result : undefined}
             route={mode === 'directions' ? directions.selectedRoute : undefined}
@@ -709,7 +790,7 @@ export default function MapPage() {
                           ? '온천 주변도 둘러보세요'
                           : '주변도 함께 둘러보세요'}
                     </p>
-                    <PoiFilter selected={category} onToggle={handleToggleCategory} />
+                    <PoiFilter selected={poiFilter} onToggle={handleToggleCategory} />
                   </div>
                 </div>
                 {(!nationalView || selectedId !== undefined || hasFilter) && (
@@ -729,7 +810,7 @@ export default function MapPage() {
                 />
               </div>
               {poiEnabled &&
-                category !== undefined &&
+                poiFilter !== undefined &&
                 !poiLoading &&
                 !poiLoadingVisible &&
                 (poiError || pois.length === 0) && (

@@ -7,6 +7,7 @@ import { GROUP_LABEL } from '@/features/dart/components/ChipGroup'
 import OnsenReviews from '@/features/dart/components/OnsenReviews'
 import { formatMinutes } from '@/features/dart/utils/resultOnsen'
 import NearbyList from '@/features/map/components/NearbyList'
+import { DEFAULT_ONSEN_IMAGE } from '@/constants/images'
 import { cn } from '@/lib/cn'
 
 import type { DartTravel } from '@/types/dart'
@@ -93,13 +94,15 @@ export default function ResultCard({
       */}
       <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div className="relative h-[250px] border-b border-[#E2E5E4] bg-[#F0F2F1]">
-          {imageUrl ? (
-            <img src={imageUrl} alt="" className="size-full object-cover" />
-          ) : (
-            <div className="grid size-full place-items-center text-[12px] text-[#A9B1AF]">
-              결과 온천 사진
-            </div>
-          )}
+          <img
+            src={imageUrl || DEFAULT_ONSEN_IMAGE}
+            alt=""
+            onError={(event) => {
+              event.currentTarget.onerror = null
+              event.currentTarget.src = DEFAULT_ONSEN_IMAGE
+            }}
+            className="size-full object-cover"
+          />
 
           {/* 흰 글씨 가독성 확보용. 시안: 180deg, 45%부터 어두워진다. */}
           <div className="pointer-events-none absolute inset-0 flex flex-col justify-end gap-1.5 bg-[linear-gradient(180deg,rgba(14,21,19,0)_45%,rgba(14,21,19,0.78))] p-6">

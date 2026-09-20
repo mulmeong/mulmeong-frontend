@@ -1,28 +1,44 @@
-/** 주변 여행지 (PAM-04). TourAPI 관광지와 카카오 로컬 맛집·카페를 서버가 합쳐서 내려준다. */
+/** 주변 여행지 (PAM-04). TourAPI 실시간 조회 결과를 서버가 내려준다. */
 
-export const NEARBY_SOURCES = ['TOUR_API', 'KAKAO'] as const
+export const NEARBY_SOURCES = ['TOUR_API'] as const
 export type NearbySource = (typeof NEARBY_SOURCES)[number]
 
-/** PHOTO는 사진이 있는 TourAPI 항목, INFO는 사진 없는 카카오 장소. */
+/** PHOTO는 사진이 있는 항목, INFO는 사진이 없는 항목. */
 export const NEARBY_CARD_TYPES = ['PHOTO', 'INFO'] as const
 export type NearbyCardType = (typeof NEARBY_CARD_TYPES)[number]
+
+export type NearbyCategory =
+  | 'ATTRACTION'
+  | 'RESTAURANT'
+  | 'CAFE'
+  | 'PARK'
+  | 'ACCOMMODATION'
+  | 'CULTURE'
+  | 'LEISURE'
+  | 'SHOPPING'
+  | 'FESTIVAL'
+  | 'SPA'
+  | 'ETC'
 
 export type NearbyPlace = {
   externalId: string
   source: NearbySource
   cardType: NearbyCardType
-  category: string
+  category: NearbyCategory
+  type?: string | null
   categoryLabel: string
   name: string
   address?: string | null
   phone?: string | null
   description?: string
+  image?: string | null
   imageUrl?: string | null
+  firstImage?: string | null
+  firstimage?: string | null
+  thumbnail?: string | null
   lat: number
   lng: number
   distanceM?: number | null
-  /** 카카오 장소만 가진다 — 상세는 카카오맵으로 넘긴다. */
-  kakaoPlaceUrl?: string
   /** 이미 places에 저장된 장소면 그 id, 아니면 null. 찜(501) 연동 때 쓴다. */
   placeId?: number | null
   isFavorite?: boolean

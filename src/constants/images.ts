@@ -1,8 +1,23 @@
-/** 사진이 없거나 로딩에 실패한 장소에 쓰는 공용 대체 이미지. */
-export const DEFAULT_PLACE_IMAGE = '/images/place-placeholder.svg'
+import type { NearbyCategory } from '@/types/nearby'
+import type { PoiCategory } from '@/types/poi'
 
-/**
- * 온천은 사진이 비어 있는 경우가 많다(실측 524곳 중 imageUrl이 거의 없음).
- * 빈 칸 대신 분위기 사진을 깔아 카드가 무너지지 않게 한다.
- */
-export const DEFAULT_ONSEN_IMAGE = '/images/panel01.jpg'
+export const DEFAULT_ONSEN_IMAGE = '/images/default_sauna.jpg'
+
+const PLACE_PLACEHOLDER_BY_CATEGORY: Record<NearbyCategory, string> = {
+  CAFE: '/images/placeholders/cafe.svg',
+  RESTAURANT: '/images/placeholders/restaurant.svg',
+  PARK: '/images/placeholders/park.svg',
+  ACCOMMODATION: '/images/placeholders/accommodation.svg',
+  CULTURE: '/images/placeholders/culture.svg',
+  LEISURE: '/images/placeholders/leisure.svg',
+  SHOPPING: '/images/placeholders/shopping.svg',
+  FESTIVAL: '/images/placeholders/festival.svg',
+  SPA: '/images/placeholders/spa.svg',
+  ATTRACTION: '/images/placeholders/attraction.svg',
+  ETC: '/images/placeholders/etc.svg',
+}
+
+/** 장소 카테고리에 맞는 기본 이미지. 사진이 없을 때 카드 폴백으로 쓴다. */
+export function placeholderImageOf(category: NearbyCategory | PoiCategory): string {
+  return PLACE_PLACEHOLDER_BY_CATEGORY[category]
+}

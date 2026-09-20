@@ -4,6 +4,7 @@ import PlaceListSkeleton from '@/features/map/components/PlaceListSkeleton'
 import RegionPlaceCard, { RegionPlaceCardSkeleton } from '@/features/map/components/RegionPlaceCard'
 import SearchResultItem from '@/features/map/components/SearchResultItem'
 import { REGION_PREVIEW_COUNT } from '@/features/map/constants'
+import { useSidebarCarousel } from '@/features/map/hooks/useSidebarCarousel'
 import { SIDEBAR_CARD_TRACK } from './sidebarCardStyles'
 
 import type { OnsenListItem } from '@/features/map/api/map'
@@ -49,44 +50,9 @@ function PlaceCarousel({
   onSelect,
   loading,
 }: Pick<RegionPlacesProps, 'onsens' | 'region' | 'selectedId' | 'onSelect' | 'loading'>) {
-  const trackRef = useRef<HTMLUListElement>(null)
+  const { trackRef, scroll, move } = useSidebarCarousel(onsens.length, loading)
   const trackId = useId()
-  const [scroll, setScroll] = useState({ previous: false, next: false })
   const hasOverflow = scroll.previous || scroll.next
-
-  useEffect(() => {
-    const track = trackRef.current
-    if (!track) return
-
-    const update = () => {
-      const previous = track.scrollLeft > 1
-      const next = track.scrollWidth - track.clientWidth - track.scrollLeft > 1
-      setScroll((current) =>
-        current.previous === previous && current.next === next ? current : { previous, next },
-      )
-    }
-    update()
-    const observer = new ResizeObserver(update)
-    observer.observe(track)
-    track.addEventListener('scroll', update, { passive: true })
-    return () => {
-      observer.disconnect()
-      track.removeEventListener('scroll', update)
-    }
-  }, [onsens.length, loading])
-
-  function move(direction: number) {
-    const track = trackRef.current
-    const card = track?.firstElementChild
-    if (!track || !card) return
-    const gap = Number.parseFloat(getComputedStyle(track).columnGap) || 0
-    track.scrollBy({
-      left: direction * (card.getBoundingClientRect().width + gap),
-      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        ? 'instant'
-        : 'smooth',
-    })
-  }
 
   return (
     <>

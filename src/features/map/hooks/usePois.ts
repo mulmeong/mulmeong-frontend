@@ -7,7 +7,7 @@ type Entry = { places?: MapPoi[]; error?: boolean }
 const CACHE_TTL = 30 * 60 * 1000
 
 export function usePois(
-  categories: PoiCategory[],
+  categories: readonly PoiCategory[],
   center: { lat: number; lng: number } | undefined,
 ) {
   const [entries, setEntries] = useState<Record<string, Entry>>({})

@@ -9,9 +9,11 @@ const NAME_SEEDS: Record<PoiCategory, string[]> = {
   CAFE: ['온천마을 커피', '탕 앞 카페', '느린오후 로스터리', '노천 커피'],
   RESTAURANT: ['온천마을 밥상', '온천식당', '한우마을', '손칼국수'],
   PARK: ['온천공원', '천변 산책로', '약수터 쉼터', '솔밭공원'],
-  CONVENIENCE: ['온천마을 편의점', '하루편의점', '탕앞 스토어', '쉼표마켓'],
-  PARKING: ['온천 공영주차장', '제1주차장', '노상 주차장', '관광안내소 주차장'],
   ACCOMMODATION: ['온천파크호텔', '온천스테이', '한옥스테이', '게스트하우스 온'],
+  CULTURE: ['온천문화관', '마을전시관', '작은공연장', '지역박물관'],
+  LEISURE: ['숲길 트레킹', '자전거길', '수변 산책코스', '패들 체험장'],
+  SHOPPING: ['온천시장', '로컬 편집숍', '기념품 상점', '농산물 직매장'],
+  FESTIVAL: ['온천 축제장', '계절 장터', '야외 공연마당', '마을 행사장'],
 }
 
 export function mockPoi(category: PoiCategory, lat: number, lng: number): Promise<PoiResult> {
@@ -28,11 +30,14 @@ export function mockPoi(category: PoiCategory, lat: number, lng: number): Promis
       externalId: `MOCK_${category}_${i}`,
       name: i < seeds.length ? seeds[i] : `${label} ${i + 1}호점`,
       categoryName: label,
+      address: `온천마을길 ${10 + i * 12}`,
       roadAddress: `온천마을길 ${10 + i * 12}`,
+      phone: `033-000-${String(1000 + i).padStart(4, '0')}`,
+      description: `${label} 목 데이터입니다. 목록 응답에 들어오는 소개글 자리를 확인하기 위한 문장이고, 두 줄이 넘으면 카드에서 잘려 보입니다.`,
+      homepageUrl: i % 3 === 0 ? 'https://example.com' : null,
       lat: lat + Math.cos(angle) * offset,
       lng: lng + (Math.sin(angle) * offset) / Math.cos((lat * Math.PI) / 180),
       distanceM,
-      kakaoPlaceUrl: `https://map.kakao.com/link/search/${encodeURIComponent(label)}`,
     }
   })
 

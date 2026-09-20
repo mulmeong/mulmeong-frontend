@@ -38,7 +38,6 @@ export type PamphletPlace = {
   imageUrl?: string | null
   lat?: number | null
   lng?: number | null
-  kakaoPlaceUrl?: string | null
 }
 
 /**

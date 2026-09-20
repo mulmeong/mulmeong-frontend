@@ -8,11 +8,12 @@ const ICON_PATHS: Record<PoiCategory, string> = {
   CAFE: 'M18 8h1a3 3 0 0 1 0 6h-1M3 8h15v9a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3ZM6 2v3m4-3v3m4-3v3',
   RESTAURANT: 'M4 3v6a3 3 0 0 0 6 0V3M7 3v18M20 21V3c-4 2-5 6-5 10h5',
   PARK: 'm8 3-5 7h3l-4 6h12l-4-6h3ZM8 16v5m6-15 3-4 5 8h-3l4 6h-7m1 0v5M5 21h15',
-  CONVENIENCE: 'M3 10h18l-2-7H5ZM4 10v11h16V10M9 21v-7h6v7M2 21h20M8 3l-1 7m9-7 1 7',
-  PARKING:
-    'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2ZM9 17V7h4a3 3 0 0 1 0 6H9',
   ACCOMMODATION:
     'M3 18v3m18-3v3M3 10V4h18v6M2 18v-5a3 3 0 0 1 3-3h14a3 3 0 0 1 3 3v5ZM7 10V7h4v3m2 0V7h4v3',
+  CULTURE: 'M4 19V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2Zm4-12h6m-6 4h8m-8 4h5',
+  LEISURE: 'M6 18 18 6M8 6h10v10M5 19l4-1 9-9a2.1 2.1 0 0 0-3-3l-9 9-1 4Z',
+  SHOPPING: 'M6 8h12l-1 13H7L6 8Zm3 0a3 3 0 0 1 6 0M4 8h16',
+  FESTIVAL: 'M4 21V5m0 0c4-2 8 2 12 0v10c-4 2-8-2-12 0M18 7l2-2m-2 6 3 1M16 3l1-3',
 }
 
 type Host = {
@@ -29,11 +30,13 @@ export default function PoiMarkers({
   pois,
   selectedKey,
   onSelect,
+  simpleLabels = false,
 }: {
   map: kakao.maps.Map | null
   pois: MapPoi[]
   selectedKey?: string
   onSelect: (key?: string) => void
+  simpleLabels?: boolean
 }) {
   const [hosts, setHosts] = useState<Host[]>([])
   /**
@@ -217,43 +220,19 @@ export default function PoiMarkers({
           </svg>
           <span
             className={cn(
-              'pointer-events-none absolute bottom-full left-1/2 z-20 mb-3 w-max max-w-[220px] -translate-x-1/2 rounded-sm border border-border-default bg-white px-2 py-1 text-center text-[12px] leading-5 text-text-primary whitespace-normal break-keep shadow-[0_2px_6px_#00000012] [overflow-wrap:anywhere]',
-              labelKey === key && !expandedKey && !selected ? 'visible' : 'invisible',
-              selected && 'border-text-primary bg-inverse text-white',
+              'pointer-events-none absolute bottom-full left-1/2 z-20 mb-3 w-max max-w-[220px] -translate-x-1/2 text-center text-[12px] leading-5 whitespace-normal break-keep [overflow-wrap:anywhere]',
+              // 주변 패널이 열리면 말풍선 테두리를 빼고 이름만 둔다 — 패널 뒤 지도가 덜 시끄럽다.
+              simpleLabels
+                ? 'text-text-primary [text-shadow:0_0_3px_#fff,0_0_3px_#fff,0_0_3px_#fff]'
+                : 'rounded-sm border border-border-default bg-white px-2 py-1 text-text-primary shadow-[0_2px_6px_#00000012]',
+              labelKey === key && !expandedKey ? 'visible' : 'invisible',
+              selected && !simpleLabels && 'border-text-primary bg-inverse text-white',
+              selected && simpleLabels && 'font-semibold',
             )}
           >
             {poi.name}
           </span>
         </button>
-        {selected && labelKey === key && !expandedKey && (
-          <div
-            className="absolute bottom-full left-1/2 z-30 mb-3 w-56 -translate-x-1/2 rounded-md border border-border-default bg-white p-3 text-text-primary shadow-[0_4px_12px_#00000014]"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <span
-              aria-hidden="true"
-              className="border-border-default absolute top-full left-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rotate-45 border-t border-r bg-white"
-            />
-            <p className="text-[13px] leading-5 font-semibold">{poi.name}</p>
-            <p className="mt-1 text-[12px] leading-5 text-text-secondary">
-              {poi.categoryName || POI_CATEGORY_LABELS[poi.category]}
-            </p>
-            {poi.roadAddress && (
-              <p className="mt-1 text-[12px] leading-5 whitespace-normal">{poi.roadAddress}</p>
-            )}
-            {poi.phone && <p className="mt-1 text-[12px] leading-5">{poi.phone}</p>}
-            {poi.kakaoPlaceUrl && /^https?:\/\//.test(poi.kakaoPlaceUrl) && (
-              <a
-                className="mt-2 inline-block text-[12px] underline underline-offset-2"
-                href={poi.kakaoPlaceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                장소 정보
-              </a>
-            )}
-          </div>
-        )}
       </div>,
       node,
       key,

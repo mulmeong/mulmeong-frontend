@@ -2,18 +2,16 @@ import { MOCK_ONSENS } from '@/features/map/api/mapMock'
 
 import type { NearbyPlace, NearbyResult } from '@/types/nearby'
 
-/**
- * PHOTO(TourAPI 사진 있음)와 INFO(카카오 사진 없음)가 섞이는 화면 검토용 예시.
- * 사진은 로컬 샘플이고 이름·좌표는 선택한 온천 주변으로 맞춘다.
- */
+/** TourAPI 주변 탭 화면 검토용 예시. */
 const MOCK_ITEMS: NearbyPlace[] = [
   {
-    externalId: 'KAKAO_27384991',
-    source: 'KAKAO',
+    externalId: 'TOUR_27384991',
+    source: 'TOUR_API',
     cardType: 'INFO',
     category: 'RESTAURANT',
     categoryLabel: '맛집',
     name: '온천마을 밥상',
+    address: '온천마을길 12',
     imageUrl: null,
     lat: 36.843,
     lng: 128.0035,
@@ -22,12 +20,13 @@ const MOCK_ITEMS: NearbyPlace[] = [
     isFavorite: false,
   },
   {
-    externalId: 'KAKAO_18827733',
-    source: 'KAKAO',
+    externalId: 'TOUR_18827733',
+    source: 'TOUR_API',
     cardType: 'INFO',
     category: 'CAFE',
     categoryLabel: '카페',
     name: '온천마을 커피',
+    address: '온천마을길 24',
     imageUrl: null,
     lat: 36.8445,
     lng: 128.0051,
@@ -42,6 +41,7 @@ const MOCK_ITEMS: NearbyPlace[] = [
     category: 'ATTRACTION',
     categoryLabel: '관광지',
     name: '숲길 산책로',
+    address: '온천숲길 5',
     description: '온천 후 가볍게 걷기 좋은 녹음 짙은 숲길',
     imageUrl: '/images/panel01.jpg',
     lat: 36.7421,
@@ -57,6 +57,7 @@ const MOCK_ITEMS: NearbyPlace[] = [
     category: 'ATTRACTION',
     categoryLabel: '관광지',
     name: '물빛 전망대',
+    address: '전망대길 8',
     description: '탁 트인 풍경을 바라보며 쉬어가는 곳',
     imageUrl: '/images/panel04.jpg',
     lat: 36.7455,
@@ -72,6 +73,7 @@ const MOCK_ITEMS: NearbyPlace[] = [
     category: 'CULTURE',
     categoryLabel: '문화시설',
     name: '온천문화관',
+    address: '온천문화로 3',
     description: '오래된 목욕 문화와 동네 이야기를 만나는 공간',
     imageUrl: '/images/panel05.jpg',
     lat: 36.8412,

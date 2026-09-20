@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import ReviewContent from '@/components/ReviewContent'
 import { useOnsenReviews } from '@/features/dart/hooks/useOnsenReviews'
 import { cn } from '@/lib/cn'
 
@@ -60,28 +61,7 @@ function ReviewRow({ review }: { review: OnsenReview }) {
 
       <p className="text-[11.5px] text-[#8A9491]">{detail}</p>
 
-      {/* 본문은 0자를 허용한다 — 사진만 올린 리뷰가 있다. */}
-      {review.body && (
-        <p className="text-[13px] leading-[1.7] text-[#2C3331] [overflow-wrap:anywhere]">
-          {review.body}
-        </p>
-      )}
-
-      {review.images.length > 0 && (
-        // 썸네일이 없어 원본을 줄여 쓴다. 옆으로 밀어 보게 해서 카드 폭을 넘기지 않는다.
-        <ul className="scrollbar-thin -mx-[30px] flex gap-1.5 overflow-x-auto px-[30px] pb-1">
-          {review.images.map((url) => (
-            <li key={url}>
-              <img
-                src={url}
-                alt=""
-                loading="lazy"
-                className="size-20 shrink-0 bg-[#F0F2F1] object-cover"
-              />
-            </li>
-          ))}
-        </ul>
-      )}
+      <ReviewContent body={review.body} images={review.images} />
     </li>
   )
 }

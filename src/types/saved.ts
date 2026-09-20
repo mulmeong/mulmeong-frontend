@@ -20,7 +20,6 @@ export type SavedPlace = {
   reviewCount?: number
   placeType?: FavoriteCategory
   subText?: string
-  kakaoPlaceUrl?: string
   lat?: number
   lng?: number
   /** 없을 수 있다 — 사진 없는 항목도 목록에는 뜬다. */
