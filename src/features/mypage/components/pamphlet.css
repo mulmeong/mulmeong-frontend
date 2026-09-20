@@ -68,6 +68,41 @@
   right: 7%;
 }
 
+/* 사진 표지 — 사진 위에서도 번호·브랜드가 읽히게 어둡게 깔고 흰 글자를 쓴다. */
+.pamphlet-cover-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pamphlet-cover-art[data-photo]::before,
+.pamphlet-cover-art[data-photo]::after {
+  background: color-mix(in srgb, #ffffff 55%, transparent);
+  z-index: 1;
+}
+
+.pamphlet-cover-art[data-photo] > span {
+  position: relative;
+  z-index: 1;
+  color: #ffffff;
+  text-shadow: 0 1px 6px rgb(0 0 0 / 45%);
+}
+
+/* 사진이 밝아도 글자가 묻히지 않게 아주 옅은 그늘을 둔다. */
+.pamphlet-cover-art[data-photo] .pamphlet-cover-photo::after {
+  content: '';
+}
+
+.pamphlet-cover-art[data-photo] {
+  background: #1c1b18;
+}
+
+.pamphlet-cover-art[data-photo] .pamphlet-cover-photo {
+  opacity: 0.82;
+}
+
 .pamphlet-cover-brand {
   position: absolute;
   top: 16px;
@@ -390,6 +425,68 @@
   overflow-wrap: anywhere;
 }
 
+/* 장소 유형 — 온천이든 식당이든 같은 자리에 한 줄. */
+.pamphlet-place-kind {
+  margin-top: 10px;
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  line-height: 1.8;
+}
+
+/* 유형 바로 아래 수온이 오면 간격을 좁혀 한 덩어리로 읽히게 한다. */
+.pamphlet-place-kind + .pamphlet-place-water {
+  margin-top: 4px;
+}
+
+/* 온천의 성질 — 제목 바로 아래, 가운뎃점으로 잇는다. */
+.pamphlet-place-water {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 10px;
+  color: var(--color-text-primary);
+  font-size: 12px;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+}
+
+.pamphlet-place-water > span + span::before {
+  content: '·';
+  margin-right: 10px;
+  color: var(--color-text-secondary);
+}
+
+/* 방문 정보 — 얇은 선으로만 구분한다. 카드·배지를 만들지 않는다. */
+.pamphlet-place-spec {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border-default);
+}
+
+.pamphlet-place-spec > div {
+  display: flex;
+  gap: 14px;
+  padding: 3px 0;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.pamphlet-place-spec dt {
+  flex-shrink: 0;
+  width: 64px;
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  line-height: 1.9;
+}
+
+.pamphlet-place-spec dd {
+  min-width: 0;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
 .pamphlet-place-location {
   margin-top: 20px;
   color: var(--color-text-secondary);
@@ -424,283 +521,6 @@
   letter-spacing: -0.04em;
   white-space: pre-line;
   word-break: keep-all;
-}
-
-/* ── 만들기 흐름: 엮는 중 → 표지 → 펼침 ───────────────────────── */
-
-.pamphlet-weaving {
-  display: flex;
-  min-height: 340px;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 34px;
-  padding: 56px 30px;
-  text-align: center;
-}
-
-.pamphlet-weaving-stack {
-  position: relative;
-  width: 104px;
-  height: 132px;
-}
-
-.pamphlet-weaving-sheet {
-  position: absolute;
-  inset: 0;
-  border: 1px solid var(--color-border-default);
-  background: var(--color-surface);
-  transform: rotate(var(--sheet-tilt, 0deg)) translateY(8px);
-  opacity: 0;
-  animation: pamphlet-weave 1.6s ease-in-out infinite;
-}
-
-@keyframes pamphlet-weave {
-  0% {
-    transform: rotate(var(--sheet-tilt, 0deg)) translateY(10px);
-    opacity: 0;
-  }
-  30%,
-  70% {
-    transform: rotate(var(--sheet-tilt, 0deg)) translateY(0);
-    opacity: 1;
-  }
-  100% {
-    transform: rotate(var(--sheet-tilt, 0deg)) translateY(-10px);
-    opacity: 0;
-  }
-}
-
-.pamphlet-weaving-copy {
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-}
-
-.pamphlet-weaving-sub {
-  margin-top: 10px;
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  line-height: 1.7;
-  word-break: keep-all;
-}
-
-/* 표지는 접힌 팜플렛이 놓이듯 떠오른다 — 튕기지 않게 폭을 좁게 잡는다. */
-.pamphlet-reveal {
-  display: flex;
-  min-height: 340px;
-  align-items: center;
-  justify-content: center;
-  padding: 44px 30px;
-  perspective: 1800px;
-}
-
-.pamphlet-reveal-cover {
-  width: min(260px, 70%);
-  transform-origin: center;
-  animation: pamphlet-reveal-in 380ms cubic-bezier(0.22, 0.68, 0, 1) both;
-}
-
-@keyframes pamphlet-reveal-in {
-  from {
-    transform: scale(0.94) rotateX(10deg);
-    opacity: 0;
-  }
-  to {
-    transform: none;
-    opacity: 1;
-  }
-}
-
-/*
- * 펼침. 각 면이 transform-origin: top center를 축으로 차례로 누워서,
- * 단순 확대가 아니라 종이가 한 장씩 젖혀지는 깊이가 생긴다.
- *
- * 펼치는 동안에는 overflow를 열어 둔다 — 스크롤 컨테이너가 되는 순간
- * preserve-3d가 평면으로 눌려 rotateX가 납작하게 보인다 (리더도 같은 처리).
- */
-.pamphlet-unfold {
-  overflow: hidden;
-  perspective: 1800px;
-  transform-style: preserve-3d;
-  animation:
-    pamphlet-unfold-lift 320ms cubic-bezier(0.22, 0.68, 0, 1) both,
-    pamphlet-unfold-scroll 0s linear 900ms forwards;
-}
-
-@keyframes pamphlet-unfold-lift {
-  from {
-    transform: translateY(6px) scale(0.985);
-    opacity: 0;
-  }
-  to {
-    transform: none;
-    opacity: 1;
-  }
-}
-
-/* 마지막 면이 다 눕고 나서야 스크롤 컨테이너로 바뀐다. */
-@keyframes pamphlet-unfold-scroll {
-  to {
-    overflow-y: auto;
-  }
-}
-
-.pamphlet-unfold .pamphlet-preview-head,
-.pamphlet-unfold .pamphlet-preview-place {
-  transform-origin: top center;
-  backface-visibility: hidden;
-  animation: pamphlet-unfold-panel 420ms cubic-bezier(0.22, 0.68, 0, 1) both;
-}
-
-.pamphlet-unfold .pamphlet-preview-head {
-  animation-delay: 60ms;
-}
-
-.pamphlet-unfold .pamphlet-preview-place:nth-child(1) {
-  animation-delay: 200ms;
-}
-.pamphlet-unfold .pamphlet-preview-place:nth-child(2) {
-  animation-delay: 290ms;
-}
-.pamphlet-unfold .pamphlet-preview-place:nth-child(3) {
-  animation-delay: 370ms;
-}
-.pamphlet-unfold .pamphlet-preview-place:nth-child(n + 4) {
-  animation-delay: 440ms;
-}
-
-@keyframes pamphlet-unfold-panel {
-  from {
-    transform: rotateX(-72deg);
-    opacity: 0;
-  }
-  60% {
-    opacity: 1;
-  }
-  to {
-    transform: rotateX(0deg);
-    opacity: 1;
-  }
-}
-
-/* ── 완성된 팜플렛 내용 ─────────────────────────────────────── */
-
-.pamphlet-preview {
-  padding: 0 0 8px;
-}
-
-.pamphlet-preview-head {
-  padding: 46px 30px 26px;
-  border-bottom: 1px solid var(--color-border-default);
-}
-
-.pamphlet-preview-title {
-  margin-top: 10px;
-  font-size: clamp(24px, 3.4vw, 30px);
-  font-weight: 700;
-  line-height: 1.25;
-  letter-spacing: -0.045em;
-  word-break: keep-all;
-  overflow-wrap: anywhere;
-}
-
-.pamphlet-preview-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 22px;
-  margin-top: 22px;
-}
-
-.pamphlet-preview-meta div {
-  display: flex;
-  gap: 8px;
-  font-size: 12px;
-  line-height: 1.6;
-}
-
-.pamphlet-preview-meta dt {
-  color: var(--color-text-secondary);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  line-height: 1.9;
-}
-
-.pamphlet-preview-meta dd {
-  font-variant-numeric: tabular-nums;
-}
-
-.pamphlet-preview-byline {
-  margin-top: 20px;
-  color: var(--color-text-secondary);
-  font-size: 10px;
-  line-height: 1.7;
-  letter-spacing: 0.06em;
-}
-
-.pamphlet-preview-places {
-  display: flex;
-  flex-direction: column;
-}
-
-.pamphlet-preview-place {
-  display: flex;
-  gap: 16px;
-  padding: 20px 30px;
-  border-bottom: 1px solid var(--color-border-default);
-}
-
-.pamphlet-preview-figure {
-  width: 96px;
-  aspect-ratio: 4 / 3;
-  flex-shrink: 0;
-  overflow: hidden;
-  background: #eeeee9;
-}
-
-.pamphlet-preview-figure img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.pamphlet-preview-body {
-  min-width: 0;
-  flex: 1;
-}
-
-.pamphlet-preview-body h4 {
-  margin-top: 6px;
-  font-size: 16px;
-  font-weight: 650;
-  line-height: 1.35;
-  letter-spacing: -0.035em;
-  word-break: keep-all;
-  overflow-wrap: anywhere;
-}
-
-.pamphlet-preview-address {
-  margin-top: 8px;
-  color: var(--color-text-secondary);
-  font-size: 11px;
-  line-height: 1.7;
-  word-break: keep-all;
-}
-
-.pamphlet-preview-sub {
-  margin-top: 6px;
-  color: #62615b;
-  font-size: 11px;
-  line-height: 1.7;
-  word-break: keep-all;
-}
-
-.pamphlet-preview-empty {
-  padding: 40px 30px;
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  line-height: 1.7;
-  text-align: center;
 }
 
 @media (width < 900px) {
@@ -849,6 +669,15 @@
   letter-spacing: 0.04em;
 }
 
+/* 장소 목록 머리말 — 나열이 아니라 여행 순서임을 알린다. */
+.pamphlet-preview-section {
+  padding: 18px 24px 8px;
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  line-height: 1.8;
+}
+
 .pamphlet-preview-places {
   display: flex;
   flex-direction: column;
@@ -856,8 +685,9 @@
 
 .pamphlet-preview-place {
   display: flex;
-  gap: 16px;
-  padding: 18px 24px;
+  gap: 14px;
+  /* 한 화면에 더 많이 보이도록 줄였다. 카드로 감싸지 않고 선으로만 나눈다. */
+  padding: 12px 24px;
   border-bottom: 1px solid color-mix(in srgb, var(--color-border-default) 35%, transparent);
 }
 
@@ -867,7 +697,7 @@
 
 .pamphlet-preview-figure {
   flex-shrink: 0;
-  width: 92px;
+  width: 74px;
   aspect-ratio: 4 / 3;
   overflow: hidden;
   border-radius: var(--radius-sm);
@@ -911,6 +741,15 @@
   color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 1.6;
+}
+
+/* 출처 표기 — 본문보다 눈에 띄지 않게. */
+.pamphlet-preview-credit {
+  padding: 14px 24px 18px;
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  line-height: 1.8;
 }
 
 .pamphlet-preview-empty {

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { defaultMagazineImageOf } from '@/constants/images'
 import { cn } from '@/lib/cn'
 
 /**
@@ -66,6 +67,8 @@ export default function MagazineImage({
   eager?: boolean
 }) {
   const [failed, setFailed] = useState(false)
+  /** 기본 표지 파일이 없을 때. 깨진 아이콘 대신 그래픽 커버로 남긴다. */
+  const [coverFailed, setCoverFailed] = useState(false)
   const showFallback = !src || failed
   const variant = variantOf(seed)
 
@@ -78,6 +81,20 @@ export default function MagazineImage({
           : undefined
       }
     >
+      {/*
+        사진이 없으면 기본 표지를 깔고, 그 위에 워드마크만 남긴다.
+        기본 표지 파일까지 없으면 깨진 아이콘이 보이므로 그때는 그래픽 커버만 둔다.
+      */}
+      {showFallback && !coverFailed && (
+        <img
+          src={defaultMagazineImageOf(seed)}
+          alt=""
+          aria-hidden
+          loading={eager ? 'eager' : 'lazy'}
+          onError={() => setCoverFailed(true)}
+          className="absolute inset-0 size-full object-cover"
+        />
+      )}
       {/* 사이드바의 96px 썸네일에서는 워드마크가 갑갑해 감춘다. */}
       {showFallback && (
         <span

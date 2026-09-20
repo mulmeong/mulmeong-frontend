@@ -1,16 +1,14 @@
 import { useState } from 'react'
 
-import type { PamphletView, PamphletViewPlace } from '@/features/mypage/data/pamphletView'
-import { categoryLabel, type SavedCategory } from '@/types/saved'
+import { TOUR_API_CREDIT } from '@/constants/credits'
+import { usesTourApi } from '@/features/mypage/data/pamphletView'
 
-// 장소의 특성·동선에 관한 사실을 만들지 않고, 저장된 카테고리만 설명한다.
-const PLACE_CONTEXT: Record<SavedCategory, string> = {
-  onsen: '이번 여행의 온천·사우나 시간으로 엮어둔 곳입니다.',
-  restaurant: '이번 여행에서 식사 장소로 엮어둔 곳입니다.',
-  cafe: '여행 중 쉬어갈 카페로 엮어둔 곳입니다.',
-  attraction: '이번 여행에서 둘러볼 장소로 엮어둔 곳입니다.',
-  etc: '이번 여행에 함께 엮어둔 곳입니다.',
-}
+import type {
+  PamphletPlaceSpec,
+  PamphletView,
+  PamphletViewPlace,
+} from '@/features/mypage/data/pamphletView'
+import { categoryLabel } from '@/types/saved'
 
 export function PamphletIntro({ pamphlet }: { pamphlet: PamphletView }) {
   const regions = [...new Set(pamphlet.places.map((place) => place.address))]
@@ -38,14 +36,49 @@ export function PamphletIntro({ pamphlet }: { pamphlet: PamphletView }) {
         <span>{pamphlet.places.length} Places</span>
         <span>만든 날 {pamphlet.createdAt}</span>
         <span>엮어둔 곳, 나만의 여행.</span>
+        {/* 한국관광공사 장소가 섞여 있을 때만, 팜플렛 단위로 한 번. */}
+        {usesTourApi(pamphlet.places) && <span>PLACE DATA · {TOUR_API_CREDIT}</span>}
       </footer>
     </div>
   )
 }
 
+/** 수온·수질·pH — 온천의 성질. 값이 있는 것만 가운뎃점으로 잇는다. */
+function waterLine(spec?: PamphletPlaceSpec): string[] {
+  if (!spec) return []
+  const values: string[] = []
+  if (spec.tempC !== undefined) values.push(`${spec.tempC.toFixed(1)}°C`)
+  if (spec.waterType) values.push(spec.waterType)
+  if (spec.ph !== undefined) values.push(`pH ${spec.ph}`)
+  return values
+}
+
+/** 방문에 참고하는 값. 서버가 아직 안 채우는 항목이 많아 있는 것만 싣는다. */
+function visitRows(spec?: PamphletPlaceSpec): [string, string][] {
+  if (!spec) return []
+  const rows: [string, string][] = []
+  if (spec.hours) rows.push(['HOURS', spec.hours])
+  if (spec.price !== undefined) rows.push(['PRICE', `${spec.price.toLocaleString()}원~`])
+  if (spec.closed) rows.push(['CLOSED', spec.closed])
+  if (spec.parking) rows.push(['PARKING', spec.parking])
+  if (spec.accessLabel) rows.push(['ACCESS', spec.accessLabel])
+  if (spec.facilityType) rows.push(['TYPE', spec.facilityType])
+  return rows
+}
+
 export function PamphletPlace({ place, index }: { place: PamphletViewPlace; index: number }) {
   const [failedImage, setFailedImage] = useState<string>()
   const description = place.description?.trim() ?? ''
+  const spec = place.spec
+  // 온천 자체를 설명하는 값과 방문에 필요한 값을 나눠 배치한다.
+  const water = waterLine(spec)
+  const visit = visitRows(spec)
+  const note = spec?.note?.trim() ?? ''
+  // 유형은 서버가 준 구체적인 표기를 먼저 쓴다 ('기타'보다 '관광지'가 낫다).
+  const typeLabel = place.typeLabel?.trim() || categoryLabel(place.category)
+  // 실제 소개가 있을 때만 문단을 만든다. 없으면 빈 줄을 채우지 않는다.
+  // 온천 subText는 수온·수질이라 위 water 줄과 겹친다 — 겹치면 싣지 않는다.
+  const copy = note || (water.length > 0 ? '' : description)
 
   return (
     <article className="pamphlet-editorial pamphlet-place">
@@ -71,10 +104,27 @@ export function PamphletPlace({ place, index }: { place: PamphletViewPlace; inde
         PLACE {String(index + 1).padStart(2, '0')}
       </p>
       <h3>{place.name}</h3>
-      <p className="pamphlet-place-copy">{description || PLACE_CONTEXT[place.category]}</p>
-      <p className="pamphlet-place-location">
-        {place.address} · {categoryLabel(place.category)}
-      </p>
+      {/* 장소 유형은 한 번만 — 온천은 그 아래 수온·수질이 이어진다. */}
+      <p className="pamphlet-place-kind">{typeLabel}</p>
+      {water.length > 0 && (
+        <p className="pamphlet-place-water">
+          {water.map((value) => (
+            <span key={value}>{value}</span>
+          ))}
+        </p>
+      )}
+      {copy && <p className="pamphlet-place-copy">{copy}</p>}
+      {visit.length > 0 && (
+        <dl className="pamphlet-place-spec">
+          {visit.map(([label, value]) => (
+            <div key={label}>
+              <dt>{label}</dt>
+              <dd>{value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {place.address && <p className="pamphlet-place-location">{place.address}</p>}
     </article>
   )
 }

@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'r
 import { Link, useNavigate, useOutletContext, useSearchParams } from 'react-router-dom'
 
 import { ApiError } from '@/api'
+import { copyLink } from '@/lib/copyLink'
 import { Button } from '@/components/ui'
 import Modal from '@/components/ui/Modal'
 import type { MyPageOutletContext } from '@/features/mypage/components/MyPageLayout'
@@ -35,7 +36,7 @@ export default function MyPamphletsPage() {
   const items = data?.content ?? []
   const selectedItem = items.find((item) => item.pamphletId === selectedNumericId)
 
-  /** 표지를 펼치거나 관리 화면을 열면 그 팜플렛의 상세를 받는다. */
+  /** 표지를 펼치거나 상세 화면을 열면 그 팜플렛의 상세를 받는다. */
   const [openId, setOpenId] = useState<number>()
   const detailId = openId ?? selectedNumericId
   const { detail, loading: detailLoading, error: detailError, remove } = usePamphletDetail(detailId)
@@ -43,8 +44,10 @@ export default function MyPamphletsPage() {
   const [reader, setReader] = useState<{ source: HTMLButtonElement; fromCard: boolean } | null>(
     null,
   )
-  const [copied, setCopied] = useState(false)
-  const [pendingDelete, setPendingDelete] = useState(false)
+  /** 방금 링크를 복사한 팜플렛. 목록에서 카드마다 따로 표시해야 한다. */
+  const [copiedId, setCopiedId] = useState<number>()
+  /** 삭제를 확인 중인 팜플렛. 목록·상세 어느 쪽에서 눌러도 같은 모달을 쓴다. */
+  const [pendingDelete, setPendingDelete] = useState<number>()
   const [deleting, setDeleting] = useState(false)
   const [actionError, setActionError] = useState<string>()
 
@@ -82,45 +85,42 @@ export default function MyPamphletsPage() {
 
   // 다른 팜플렛으로 옮기면 앞선 복사·실패 표시가 남지 않게 지운다.
   useEffect(() => {
-    setCopied(false)
+    setCopiedId(undefined)
     setActionError(undefined)
   }, [selectedNumericId])
 
-  const share = async (shareToken: string, title: string) => {
-    const url = shareLinkOf(shareToken)
-    if (navigator.share) {
-      try {
-        await navigator.share({ title, text: `${title} · 물멍 팜플렛`, url })
-        return
-      } catch (cause) {
-        if (cause instanceof DOMException && cause.name === 'AbortError') return
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url)
-      setCopied(true)
-    } catch {
-      setCopied(false)
+  const share = async (shareToken: string, pamphletId: number) => {
+    if (await copyLink(shareLinkOf(shareToken))) {
+      setCopiedId(pamphletId)
+      setTimeout(() => setCopiedId(undefined), 2000)
     }
   }
 
   const confirmDelete = async () => {
-    if (!selectedNumericId) return
+    const target = pendingDelete
+    if (target === undefined) return
     setDeleting(true)
     setActionError(undefined)
     try {
-      await remove(selectedNumericId)
+      await remove(target)
       reloadProfile()
-      setPendingDelete(false)
+      setPendingDelete(undefined)
       reload()
-      void navigate(listHref)
+      // 보고 있던 팜플렛을 지웠을 때만 목록으로 돌린다. 목록에서 지웠으면 그대로 있는다.
+      if (target === selectedNumericId) void navigate(listHref)
     } catch (cause) {
-      setPendingDelete(false)
+      setPendingDelete(undefined)
       setActionError(cause instanceof ApiError ? cause.message : '팜플렛을 삭제하지 못했습니다.')
     } finally {
       setDeleting(false)
     }
   }
+
+  /** 삭제 모달에 띄울 제목. 목록에서 눌렀으면 상세가 없어 목록 항목에서 찾는다. */
+  const deleteTarget =
+    (pendingDelete === selectedNumericId ? detail?.title : undefined) ??
+    items.find((item) => item.pamphletId === pendingDelete)?.title ??
+    '이 팜플렛'
 
   const openReader = (event: MouseEvent<HTMLButtonElement>, id: number, fromCard: boolean) => {
     setOpenId(id)
@@ -139,38 +139,46 @@ export default function MyPamphletsPage() {
               >
                 <span aria-hidden="true">←</span> 팜플렛 목록
               </Link>
-              <div className="flex flex-wrap items-center gap-2">
+              {/*
+                팜플렛 보기만 채운 버튼으로 두고 나머지는 글자 링크로 낮춘다.
+                넷이 같은 무게로 늘어서면 무엇을 눌러야 할지 읽히지 않는다.
+              */}
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
                 <Button
                   onClick={(event) => openReader(event, selectedNumericId, false)}
                   disabled={!detail}
                   aria-haspopup="dialog"
                 >
-                  팜플렛 보기
+                  팜플렛 펼쳐보기
                 </Button>
-                <Button
-                  hierarchy="secondary"
+                <button
+                  type="button"
                   disabled={!detail}
                   onClick={() => {
-                    if (detail) void share(detail.shareToken, detail.title)
+                    if (detail) void share(detail.shareToken, selectedNumericId)
                   }}
+                  className="pamphlet-text-link text-text-secondary hover:text-text-primary inline-flex min-h-11 items-center text-[13px] disabled:opacity-40"
                 >
-                  {copied ? '복사했습니다' : '링크로 공유'}
-                </Button>
+                  {copiedId === selectedNumericId ? '복사됨 ✓' : '링크 복사'}
+                </button>
                 {/* 좌표가 있는 장소만 지도에 찍힌다 — 없으면 보낼 이유가 없다. */}
-                <Button
-                  hierarchy="secondary"
+                <button
+                  type="button"
                   disabled={!detail?.places.some((place) => place.lat != null && place.lng != null)}
                   onClick={() => void navigate(`/map?pamphlet=${selectedNumericId}`)}
+                  className="pamphlet-text-link text-text-secondary hover:text-text-primary inline-flex min-h-11 items-center text-[13px] disabled:opacity-40"
                 >
                   지도에서 보기
-                </Button>
-                <Button
-                  hierarchy="secondary"
+                </button>
+                {/* 되돌릴 수 없는 동작이라 가장 끝에, 가장 조용하게 둔다. */}
+                <button
+                  type="button"
                   disabled={!detail}
-                  onClick={() => setPendingDelete(true)}
+                  onClick={() => setPendingDelete(selectedNumericId)}
+                  className="pamphlet-text-link text-text-secondary hover:text-danger ml-auto inline-flex min-h-11 items-center text-[12px] disabled:opacity-40"
                 >
                   삭제
-                </Button>
+                </button>
               </div>
             </div>
 
@@ -214,16 +222,28 @@ export default function MyPamphletsPage() {
               </p>
             ) : (
               <>
-                <div className="grid grid-cols-1 gap-x-5 gap-y-6 min-[480px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                {/* items-stretch + 같은 aspect-ratio 로 새 팜플렛 칸과 표지 높이를 맞춘다. */}
+                <div className="grid grid-cols-1 items-stretch gap-x-5 gap-y-6 min-[480px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                  {/*
+                    표지와 같은 두 칸(그림 1.55 비율 + 제목 영역)으로 쌓아 카드 본체와
+                    높이를 맞춘다. 아래 액션 줄만큼 길어지지 않게 self-start 로 둔다.
+                  */}
                   <Link
                     to="/my/saved"
-                    className="pamphlet-create border-border-default bg-surface-dim/40 text-text-secondary flex min-h-44 flex-col items-center justify-center gap-3 rounded-sm border border-dashed text-[13px]"
+                    className="pamphlet-create border-border-default bg-surface-dim/40 text-text-secondary block w-full self-start rounded-sm border border-dashed text-[13px]"
                   >
-                    <span aria-hidden="true" className="text-[28px] font-light">
-                      +
+                    <span className="flex aspect-[1.55] w-full items-center justify-center">
+                      <span aria-hidden="true" className="text-[28px] font-light">
+                        +
+                      </span>
                     </span>
-                    새 팜플렛 만들기
-                    <span className="text-[11px]">엮어둔 곳에서 시작하세요</span>
+                    {/* 표지 제목 영역과 같은 두 줄 구성 — 높이가 그대로 맞는다. */}
+                    <span className="block p-4">
+                      <span className="block truncate text-[15px] font-semibold">
+                        새 팜플렛 만들기
+                      </span>
+                      <span className="mt-1 block text-[12px]">엮어둔 곳에서 시작하세요</span>
+                    </span>
                   </Link>
 
                   {loading && items.length === 0
@@ -231,7 +251,8 @@ export default function MyPamphletsPage() {
                         <div
                           key={index}
                           aria-hidden="true"
-                          className="bg-surface-dim/60 min-h-44 animate-pulse rounded-sm"
+                          className="bg-surface-dim/60 w-full animate-pulse rounded-sm"
+                          style={{ aspectRatio: '1.55' }}
                         />
                       ))
                     : items.map((pamphlet, index) => {
@@ -268,24 +289,45 @@ export default function MyPamphletsPage() {
                                 title={view.title}
                                 placeCount={pamphlet.placeCount}
                                 createdAt={view.createdAt}
+                                imageUrl={pamphlet.coverImage}
+                                caption={pamphlet.regionName ?? pamphlet.travelDate}
                               />
                             </button>
-                            <Link
-                              to={{ pathname: '/my/pamphlets', search: params.toString() }}
-                              onClick={() => {
-                                returnTo.current = {
-                                  id: pamphlet.pamphletId,
-                                  scrollY: window.scrollY,
-                                }
-                              }}
-                              className="pamphlet-text-link text-text-secondary mt-1 inline-flex min-h-11 items-center text-[12px]"
-                              aria-label={`${pamphlet.title} 관리`}
-                            >
-                              팜플렛 관리{' '}
-                              <span aria-hidden="true" className="ml-2">
-                                ↗
-                              </span>
-                            </Link>
+                            {/* 간단한 작업은 목록에서 끝낸다 — 상세로 들어갈 필요가 없다. */}
+                            <div className="mt-1 flex flex-wrap items-center gap-x-4">
+                              <Link
+                                to={{ pathname: '/my/pamphlets', search: params.toString() }}
+                                onClick={() => {
+                                  returnTo.current = {
+                                    id: pamphlet.pamphletId,
+                                    scrollY: window.scrollY,
+                                  }
+                                }}
+                                className="pamphlet-text-link text-text-secondary hover:text-text-primary inline-flex min-h-11 items-center text-[12px]"
+                                aria-label={`${pamphlet.title} 상세 보기`}
+                              >
+                                상세 보기{' '}
+                                <span aria-hidden="true" className="ml-1">
+                                  ↗
+                                </span>
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={() => void share(pamphlet.shareToken, pamphlet.pamphletId)}
+                                className="pamphlet-text-link text-text-secondary hover:text-text-primary inline-flex min-h-11 items-center text-[12px]"
+                                aria-label={`${pamphlet.title} 링크 복사`}
+                              >
+                                {copiedId === pamphlet.pamphletId ? '복사됨 ✓' : '링크 복사'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setPendingDelete(pamphlet.pamphletId)}
+                                className="pamphlet-text-link text-text-secondary hover:text-danger ml-auto inline-flex min-h-11 items-center text-[12px]"
+                                aria-label={`${pamphlet.title} 삭제`}
+                              >
+                                삭제
+                              </button>
+                            </div>
                           </div>
                         )
                       })}
@@ -334,12 +376,12 @@ export default function MyPamphletsPage() {
       )}
 
       <Modal
-        open={pendingDelete}
-        onClose={() => setPendingDelete(false)}
+        open={pendingDelete !== undefined}
+        onClose={() => setPendingDelete(undefined)}
         kicker="팜플렛 삭제"
         title={
           <>
-            <span className="block">{detail?.title}을(를)</span>
+            <span className="block">{deleteTarget}을(를)</span>
             <span className="block">삭제할까요?</span>
           </>
         }
@@ -349,7 +391,7 @@ export default function MyPamphletsPage() {
           onClick: () => void confirmDelete(),
           disabled: deleting,
         }}
-        secondaryAction={{ label: '취소', onClick: () => setPendingDelete(false) }}
+        secondaryAction={{ label: '취소', onClick: () => setPendingDelete(undefined) }}
       />
     </>
   )
