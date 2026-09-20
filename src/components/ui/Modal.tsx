@@ -105,8 +105,13 @@ export default function Modal({
           {title}
         </h2>
 
+        {/*
+          div로 감싼다. description은 ReactNode라 글만 오는 게 아니라 입력칸도
+          들어오는데(팜플렛 만들기), <p> 안에 <p>를 넣으면 브라우저가 앞의 <p>를
+          닫아버려서 DOM이 의도와 다르게 잡힌다.
+        */}
         {description && (
-          <p className="mt-4 text-[12.5px] leading-[1.7] text-[#8A9491]">{description}</p>
+          <div className="mt-4 text-[12.5px] leading-[1.7] text-[#8A9491]">{description}</div>
         )}
         {children && <div className="mt-6">{children}</div>}
       </div>
