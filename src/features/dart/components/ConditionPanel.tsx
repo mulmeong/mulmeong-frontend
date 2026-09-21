@@ -103,7 +103,7 @@ export default function ConditionPanel({
           onClick={onThrow}
           // 출발지가 없으면 보낼 좌표가 없다 — 목록이 오기 전이거나 못 받아온 상태다.
           disabled={origin === null || throwing}
-          className="w-full bg-[#0E1513] px-5 py-[17px] text-[16px] font-bold tracking-[-0.02em] text-white disabled:cursor-not-allowed disabled:opacity-40"
+          className="w-full bg-[#0E1513] px-5 py-[17px] text-[16px] font-bold tracking-[-0.02em] text-white disabled:opacity-40"
         >
           {throwing ? '던지는 중…' : '다트 던지기'}
         </button>

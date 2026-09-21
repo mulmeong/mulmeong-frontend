@@ -29,7 +29,7 @@ export default function PoiFilter({ selected, onToggle, disabled = false }: PoiF
               on
                 ? 'bg-inverse text-text-inverse border-transparent font-medium'
                 : 'bg-surface text-text-primary border-border-default hover:not-disabled:bg-surface-dim',
-              disabled && 'cursor-not-allowed opacity-45',
+              disabled && 'opacity-45',
             )}
           >
             {filter.label}

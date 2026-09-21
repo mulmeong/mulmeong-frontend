@@ -45,7 +45,7 @@ export default function Pagination({ page, totalPages, onChange }: PaginationPro
         type="button"
         onClick={() => onChange(page - 1)}
         disabled={page <= 1}
-        className="text-text-secondary hover:text-text-primary px-2 text-[13px] disabled:cursor-not-allowed disabled:opacity-40"
+        className="text-text-secondary hover:text-text-primary px-2 text-[13px] disabled:opacity-40"
       >
         이전
       </button>
@@ -79,7 +79,7 @@ export default function Pagination({ page, totalPages, onChange }: PaginationPro
         type="button"
         onClick={() => onChange(page + 1)}
         disabled={page >= totalPages}
-        className="text-text-secondary hover:text-text-primary px-2 text-[13px] disabled:cursor-not-allowed disabled:opacity-40"
+        className="text-text-secondary hover:text-text-primary px-2 text-[13px] disabled:opacity-40"
       >
         다음
       </button>

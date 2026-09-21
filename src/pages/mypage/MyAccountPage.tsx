@@ -320,7 +320,7 @@ export default function MyAccountPage() {
                     ? '닉네임은 한 달에 한 번만 변경할 수 있어요.'
                     : undefined
                 }
-                className="text-text-primary/70 hover:text-text-primary min-h-8 shrink-0 px-1 text-[13px] underline underline-offset-4 disabled:cursor-not-allowed disabled:opacity-45"
+                className="text-text-primary/70 hover:text-text-primary min-h-8 shrink-0 px-1 text-[13px] underline underline-offset-4 disabled:opacity-45"
               >
                 수정
               </button>
