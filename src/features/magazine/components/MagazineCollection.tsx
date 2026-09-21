@@ -158,6 +158,7 @@ export default function MagazineCollection({ archive = false }: { archive?: bool
                     magazine={magazine}
                     featured={featured}
                     index={archive ? String(index + 1 + page * 12).padStart(2, '0') : undefined}
+                    coverSeed={index}
                   />
                 </li>
               )
