@@ -133,10 +133,12 @@ export default function MyPageLayout() {
               end={tab.end}
               className={({ isActive }) =>
                 cn(
-                  'group relative inline-flex min-h-8 items-center text-[13px] leading-5 font-medium whitespace-nowrap',
+                  'group relative inline-flex min-h-8 items-center leading-5 whitespace-nowrap transition-colors duration-150',
                   'outline-none focus-visible:underline focus-visible:decoration-dotted focus-visible:underline-offset-4',
                   'md:pl-5',
-                  isActive ? 'text-text-primary' : 'text-text-primary/58 hover:text-text-primary',
+                  isActive
+                    ? 'text-text-primary text-[13px] font-semibold'
+                    : 'text-text-secondary/72 text-[12.5px] font-normal hover:text-text-primary/82',
                 )
               }
             >
