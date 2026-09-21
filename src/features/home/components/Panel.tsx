@@ -44,8 +44,14 @@ export default function Panel({ panel }: { panel: HomePanel }) {
     <article
       className={cn(
         'group relative overflow-hidden',
-        // lg 미만: 세로로 쌓이는 고정 높이 카드. 확장 없음.
-        'h-[240px] shrink-0',
+        /*
+          lg 미만: 세로로 쌓이는 카드. 확장 없음.
+
+          높이를 고정하지 않고 최소값만 준다. 240px로 묶어두면 안쪽 내용
+          (번호·라벨·제목·설명·버튼)이 300px를 넘겨서 overflow-hidden에 잘리고,
+          제목이 길면 '자세히 보기'가 통째로 사라진다.
+        */
+        'min-h-[240px] shrink-0',
         // lg 이상: 균등 분할 후 hover/focus에서만 확장.
         'lg:h-full lg:shrink lg:basis-0 lg:grow',
         GROW_EXPANDED,
