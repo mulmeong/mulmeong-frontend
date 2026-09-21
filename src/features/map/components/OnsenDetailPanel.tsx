@@ -217,7 +217,7 @@ function OnsenDetailContent({
               key={action.icon}
               type="button"
               onClick={action.icon === 'directions' ? onDirections : () => void share()}
-              className="text-text-primary hover:not-disabled:bg-surface-dim flex min-h-9 items-center justify-center gap-2 text-[12px] font-medium outline-none focus-visible:ring-1 focus-visible:ring-inverse disabled:cursor-not-allowed disabled:opacity-50"
+              className="text-text-primary hover:not-disabled:bg-surface-dim flex min-h-9 items-center justify-center gap-2 text-[12px] font-medium outline-none focus-visible:ring-1 focus-visible:ring-inverse disabled:opacity-50"
             >
               <ActionIcon kind={action.icon} />
               {action.icon === 'share' && copied ? '복사됨 ✓' : action.label}

@@ -14,7 +14,7 @@ export default function Checkbox({ label, className, ...props }: CheckboxProps) 
         className={cn(
           'peer border-border-strong bg-surface size-full appearance-none rounded-[4px] border',
           'checked:bg-inverse checked:border-inverse',
-          'disabled:cursor-not-allowed disabled:opacity-40',
+          'disabled:opacity-40',
           className,
         )}
         {...props}

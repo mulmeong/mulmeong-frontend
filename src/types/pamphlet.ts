@@ -37,6 +37,8 @@ export type PamphletPage = {
 export type PamphletPlace = {
   seq: number
   placeId: number
+  externalId?: string | null
+  contentTypeId?: number | string | null
   /**
    * 장소 데이터 출처(TOUR_API·MOIS·KAKAO). 출처 표기를 붙일지 가른다.
    * 서버가 아직 안 내려주며, 없으면 표기하지 않는다 — 카카오 장소에
@@ -49,6 +51,15 @@ export type PamphletPlace = {
   subText?: string | null
   address?: string | null
   imageUrl?: string | null
+  kakaoPlaceUrl?: string | null
+  isRegistered?: boolean | null
+  sido?: string | null
+  sigungu?: string | null
+  phone?: string | null
+  homepageUrl?: string | null
+  hours?: string | null
+  holiday?: string | null
+  parkingInfo?: string | null
   thumbnail?: string | null
   images?: string[] | null
   priceMin?: number | null
@@ -58,6 +69,8 @@ export type PamphletPlace = {
   regionComment?: string | null
   notes?: string | null
   reviewSummary?: OnsenReviewSummary | null
+  annualVisitors?: number | null
+  isFavorite?: boolean | null
   lat?: number | null
   lng?: number | null
 }

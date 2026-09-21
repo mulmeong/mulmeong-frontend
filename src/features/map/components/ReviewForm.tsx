@@ -371,7 +371,7 @@ export default function ReviewForm({ onsenId, onCancel, onCreated }: ReviewFormP
               'h-10 flex-[2] rounded-sm text-[13px] font-medium transition-colors outline-none',
               canSubmit && !submitting
                 ? 'bg-inverse text-text-inverse'
-                : 'bg-surface-dim text-text-secondary cursor-not-allowed',
+                : 'bg-surface-dim text-text-secondary',
             )}
           >
             {submitting ? '올리는 중…' : '리뷰 남기기'}

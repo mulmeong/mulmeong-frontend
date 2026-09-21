@@ -253,7 +253,7 @@ export default function MyAccountPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[600px] pt-3 pb-10 sm:pt-4">
+    <div className="mx-auto max-w-[600px] pb-10">
       <h1 className="text-text-primary text-[26px] leading-tight font-semibold sm:text-[28px]">
         내 정보
       </h1>
@@ -320,7 +320,7 @@ export default function MyAccountPage() {
                     ? '닉네임은 한 달에 한 번만 변경할 수 있어요.'
                     : undefined
                 }
-                className="text-text-primary/70 hover:text-text-primary min-h-8 shrink-0 px-1 text-[13px] underline underline-offset-4 disabled:cursor-not-allowed disabled:opacity-45"
+                className="text-text-primary/70 hover:text-text-primary min-h-8 shrink-0 px-1 text-[13px] underline underline-offset-4 disabled:opacity-45"
               >
                 수정
               </button>

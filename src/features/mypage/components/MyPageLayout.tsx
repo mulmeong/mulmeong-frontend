@@ -10,9 +10,9 @@ import { cn } from '@/lib/cn'
 
 const TABS = [
   { to: '/my', label: '내 지도', end: true },
-  { to: '/my/reviews', label: '내 리뷰' },
   { to: '/my/saved', label: '찜한 장소' },
   { to: '/my/pamphlets', label: '팜플렛' },
+  { to: '/my/reviews', label: '내 리뷰' },
   { to: '/my/account', label: '내정보' },
 ]
 
@@ -121,41 +121,50 @@ export default function MyPageLayout() {
         바꾸는 링크다 — role="tab"은 aria-selected를 요구하는데 NavLink는
         aria-current를 붙인다.
       */}
-      <nav
-        aria-label="마이페이지"
-        className="after:bg-border-default/70 relative flex h-10 shrink-0 gap-6 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:content-['']"
-      >
-        {TABS.map((tab) => (
-          <NavLink
-            key={tab.to}
-            to={tab.to}
-            end={tab.end}
-            className={({ isActive }) =>
-              cn(
-                'relative flex h-10 items-center justify-center text-[13px] leading-5 font-medium whitespace-nowrap',
-                'outline-none focus-visible:underline focus-visible:decoration-dotted focus-visible:underline-offset-4',
-                isActive ? 'text-text-primary' : 'text-text-primary/65',
-              )
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <span className="block leading-5">{tab.label}</span>
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    'bg-text-primary pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[2px]',
-                    isActive ? 'opacity-100' : 'opacity-0',
-                  )}
-                />
-              </>
-            )}
-          </NavLink>
-        ))}
-      </nav>
+      <div className="grid gap-8 py-8 md:grid-cols-[120px_minmax(0,1fr)] md:gap-10">
+        <nav
+          aria-label="마이페이지"
+          className="flex flex-wrap gap-x-5 gap-y-2 self-start border-b border-border-default/60 pb-3 md:sticky md:top-24 md:flex-col md:gap-2 md:border-b-0 md:pb-0"
+        >
+          {TABS.map((tab) => (
+            <NavLink
+              key={tab.to}
+              to={tab.to}
+              end={tab.end}
+              className={({ isActive }) =>
+                cn(
+                  'group relative inline-flex min-h-8 items-center leading-5 whitespace-nowrap transition-colors duration-150',
+                  'outline-none focus-visible:underline focus-visible:decoration-dotted focus-visible:underline-offset-4',
+                  'md:pl-5',
+                  isActive
+                    ? 'text-text-primary text-[13px] font-semibold'
+                    : 'text-text-secondary/72 text-[12.5px] font-normal hover:text-text-primary/82',
+                )
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <span className="block">{tab.label}</span>
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      'bg-text-primary pointer-events-none absolute bottom-0 left-0 h-[1px] w-full transition-opacity md:top-1/2 md:bottom-auto md:h-[2px] md:w-3 md:-translate-y-1/2',
+                      isActive
+                        ? 'opacity-100'
+                        : 'opacity-0 group-hover:opacity-35 md:group-hover:opacity-40',
+                    )}
+                  />
+                </>
+              )}
+            </NavLink>
+          ))}
+        </nav>
 
-      <div className="py-6">
-        <Outlet context={{ reloadProfile, profile, profileError } satisfies MyPageOutletContext} />
+        <div className="min-w-0">
+          <Outlet
+            context={{ reloadProfile, profile, profileError } satisfies MyPageOutletContext}
+          />
+        </div>
       </div>
     </div>
   )

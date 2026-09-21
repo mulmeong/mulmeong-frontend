@@ -241,7 +241,7 @@ export default function MySavedPage() {
             type="button"
             onClick={() => setSelected(new Set())}
             disabled={selected.size === 0}
-            className="text-text-secondary hover:text-text-primary shrink-0 text-[13px] disabled:cursor-not-allowed disabled:opacity-40"
+            className="text-text-secondary hover:text-text-primary shrink-0 text-[13px] disabled:opacity-40"
           >
             선택 해제
           </button>

@@ -31,7 +31,7 @@ export default function Button({
       className={cn(
         'inline-flex items-center justify-center rounded-sm',
         'transition-[opacity,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]',
-        'disabled:cursor-not-allowed disabled:opacity-40 hover:not-disabled:opacity-90',
+        'disabled:opacity-40 hover:not-disabled:opacity-90',
         // 누름은 전역 base 규칙이 주지만, 비활성 버튼은 줄어들면 안 된다.
         'active:disabled:scale-100',
         hierarchyStyles[hierarchy],

@@ -273,7 +273,7 @@ export default function ReviewSection({ onsen }: { onsen: OnsenListItem }) {
                 type="button"
                 onClick={loadMore}
                 disabled={loadingMore}
-                className="border-border-default text-text-primary hover:bg-surface-dim mt-4 h-9 w-full rounded-sm border text-[12px] outline-none focus-visible:ring-1 focus-visible:ring-inverse disabled:cursor-not-allowed disabled:opacity-50"
+                className="border-border-default text-text-primary hover:bg-surface-dim mt-4 h-9 w-full rounded-sm border text-[12px] outline-none focus-visible:ring-1 focus-visible:ring-inverse disabled:opacity-50"
               >
                 {loadingMore ? '불러오는 중…' : '리뷰 더 보기'}
               </button>

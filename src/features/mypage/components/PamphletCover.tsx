@@ -8,7 +8,7 @@ type PamphletCoverProps = {
   placeCount: number
   /** YYYY-MM-DD. 표지에는 연·월까지만 찍는다. */
   createdAt: string
-  /** 대표 사진. 없으면 지금까지처럼 MULMEONG 기본 표지를 그린다. */
+  /** 대표 사진. 없으면 지금까지처럼 물멍 기본 표지를 그린다. */
   imageUrl?: string | null
   /** 지역 또는 여행일 — 어느 여행이었는지 구분하는 단서. */
   caption?: string | null
@@ -39,14 +39,14 @@ export default function PamphletCover({
             onError={() => setFailed(true)}
           />
         )}
-        <span className="pamphlet-cover-brand">MULMEONG</span>
+        <span className="pamphlet-cover-brand">물멍</span>
         <span className="pamphlet-cover-number">{number}</span>
         {!photo && <span className="pamphlet-cover-caption">작은 여행의 기록</span>}
       </div>
       <div className="pamphlet-cover-description">
         <h3 className="truncate text-[15px] font-semibold">{title}</h3>
         <p className="text-text-secondary mt-1 truncate text-[12px]">
-          {placeCount}곳 · {caption?.trim() || createdAt.slice(0, 7)}
+          장소 {placeCount}곳 · {caption?.trim() || createdAt.slice(0, 7)}
         </p>
       </div>
     </div>
