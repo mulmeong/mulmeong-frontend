@@ -4,7 +4,9 @@ import MagazineFeedback from '@/features/magazine/components/MagazineFeedback'
 import MagazineFilmstrip, {
   MagazineFilmstripSkeleton,
 } from '@/features/magazine/components/MagazineFilmstrip'
-import MagazineIssueBanner from '@/features/magazine/components/MagazineIssueBanner'
+import MagazineIssueBanner, {
+  ISSUE_MAGAZINE_ID,
+} from '@/features/magazine/components/MagazineIssueBanner'
 import MagazineRegionFilter from '@/features/magazine/components/MagazineRegionFilter'
 import { useMagazines } from '@/features/magazine/hooks/useMagazines'
 import { MAGAZINE_CATEGORIES, regionCountsOf } from '@/types/magazine'
@@ -16,11 +18,29 @@ export default function MagazinePage() {
   const [category, setCategory] = useState<MagazineCategory | 'ALL'>('ALL')
   const [region, setRegion] = useState<string>()
   // 홈은 한 줄로 훑어보는 자리라 스크롤 없이도 볼 수 있는 만큼만 받는다.
-  const { magazines, data, loading, error, retry } = useMagazines({
+  const {
+    magazines: fetched,
+    data,
+    loading,
+    error,
+    retry,
+  } = useMagazines({
     category,
     region,
     size: 10,
   })
+  /*
+    홈 필름스트립에 올릴 글만 추린다.
+
+    - 위 배너가 이미 보여준 글은 뺀다. 같은 글이 두 번 보이지 않게.
+    - 대표 사진이 없는 글도 뺀다. 그런 글은 기본 표지 두 장을 돌려쓰는데,
+      사진 없는 글이 몰려 있으면 옆칸끼리 같은 그림이 되어 목록이 복제된 것처럼
+      보인다. 홈은 사진으로 훑는 자리라 표지가 있는 글만 올린다
+      (전체 목록은 '전체 아카이브 보기'에서 그대로 볼 수 있다).
+  */
+  const magazines = fetched.filter(
+    (item) => item.magazineId !== ISSUE_MAGAZINE_ID && Boolean(item.thumbnailUrl),
+  )
 
   return (
     // overflow는 여기 두지 않는다 — RootLayout 최상위에 있다. 여기 걸면 그 폭
