@@ -72,7 +72,7 @@ export default function OnsenReviews({ onsenId }: { onsenId: number }) {
   const reviews = useOnsenReviews(onsenId, sort)
 
   return (
-    <div className="flex flex-col px-[30px] pt-5 pb-6">
+    <div className="flex flex-col px-5 lg:px-[30px] pt-5 pb-6">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[12px] text-[#8A9491]">리뷰 {reviews.total}</span>
         <div className="flex gap-1.5">

@@ -42,18 +42,25 @@ export default function DartPage() {
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         {/*
-          왼쪽: 다트판이 되는 지도. 남는 공간을 전부 쓴다. 시안 map-bg #F2F4F3
+          다트판이 되는 지도. 시안 map-bg #F2F4F3
 
-          크기를 따로 잡지 않는다 — SVG의 preserveAspectRatio 기본값이
+          넓은 화면에서는 남는 가로를 전부 쓰고, 좁은 화면에서는 위쪽 32dvh만
+          차지한다 — 아래 패널이 조건을 다 보여주고 버튼까지 닿아야 한다.
+
+          안쪽 크기는 따로 잡지 않는다. SVG의 preserveAspectRatio 기본값이
           비율을 지키면서 들어갈 수 있는 최대 크기로 맞추고 가운데 정렬까지 한다.
-          그래서 화면이 넓든 낮든 잘리거나 찌그러지지 않는다.
         */}
-        <div className="min-h-0 min-w-0 flex-1 bg-[#F2F4F3]">
+        <div className="min-h-0 min-w-0 shrink-0 basis-[32dvh] bg-[#F2F4F3] lg:basis-0 lg:shrink lg:grow">
           {/* 마커는 결과에서 나온다 — 좌표를 따로 들지 않아 둘이 어긋날 일이 없다. */}
           <KoreaMap marker={place} markerLabel={place?.name} />
         </div>
 
-        <aside className="flex w-full shrink-0 flex-col border-t border-[#E2E5E4] bg-white lg:w-[400px] lg:border-t-0 lg:border-l">
+        {/*
+          좁은 화면에서는 남는 높이를 전부 받아 안에서 스크롤한다. grow와
+          min-h-0이 같이 있어야 한다 — min-h-0이 없으면 내용 높이만큼 부풀어
+          화면 밖으로 밀려나고, 부모가 overflow-hidden이라 스크롤도 못 한다.
+        */}
+        <aside className="flex min-h-0 w-full grow flex-col border-t border-[#E2E5E4] bg-white lg:w-[400px] lg:grow-0 lg:border-t-0 lg:border-l">
           {onsen && place && dart.thrown ? (
             <ResultCard
               onsen={onsen}
