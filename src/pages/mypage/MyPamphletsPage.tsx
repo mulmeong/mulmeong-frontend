@@ -5,12 +5,19 @@ import { ApiError } from '@/api'
 import { copyLink } from '@/lib/copyLink'
 import { Button } from '@/components/ui'
 import Modal from '@/components/ui/Modal'
+import { fetchOnsenDetail } from '@/features/map/api/onsenDetail'
 import type { MyPageOutletContext } from '@/features/mypage/components/MyPageLayout'
 import Pagination from '@/features/mypage/components/Pagination'
 import PamphletCover from '@/features/mypage/components/PamphletCover'
 import PamphletPreview from '@/features/mypage/components/PamphletPreview'
 import PamphletReader from '@/features/mypage/components/PamphletReader'
-import { coverNumber, toPamphletView, type PamphletView } from '@/features/mypage/data/pamphletView'
+import {
+  coverNumber,
+  toPamphletView,
+  toPlaceSpec,
+  type PamphletPlaceSpec,
+  type PamphletView,
+} from '@/features/mypage/data/pamphletView'
 import {
   PAMPHLET_PAGE_SIZE,
   useMyPamphlets,
@@ -50,6 +57,7 @@ export default function MyPamphletsPage() {
   const [pendingDelete, setPendingDelete] = useState<number>()
   const [deleting, setDeleting] = useState(false)
   const [actionError, setActionError] = useState<string>()
+  const [specs, setSpecs] = useState<Record<number, PamphletPlaceSpec>>({})
 
   const areaRef = useRef<HTMLDivElement>(null)
   const headingRef = useRef<HTMLHeadingElement>(null)
@@ -63,10 +71,19 @@ export default function MyPamphletsPage() {
   const totalPages = data?.totalPages ?? 1
 
   // 상세가 도착해야 리더를 열 수 있다 — 장소 없이 펼치면 빈 책이 된다.
-  const readerView: PamphletView | undefined =
+  const baseReaderView =
     reader && detail && detail.pamphletId === detailId
       ? toPamphletView(detail, coverNumber(0, 1, PAMPHLET_PAGE_SIZE))
       : undefined
+  const readerView: PamphletView | undefined = baseReaderView
+    ? {
+        ...baseReaderView,
+        places: baseReaderView.places.map((place) => ({
+          ...place,
+          spec: specs[place.id] ?? place.spec,
+        })),
+      }
+    : undefined
 
   useLayoutEffect(() => {
     if (selectedItem) {
@@ -88,6 +105,27 @@ export default function MyPamphletsPage() {
     setCopiedId(undefined)
     setActionError(undefined)
   }, [selectedNumericId])
+
+  useEffect(() => {
+    if (!detail) {
+      setSpecs({})
+      return
+    }
+    let alive = true
+    setSpecs({})
+    detail.places
+      .filter((place) => place.placeType === 'ONSEN' || place.placeType === 'SPA')
+      .forEach((place) => {
+        fetchOnsenDetail(place.placeId)
+          .then((onsen) => {
+            if (alive) setSpecs((current) => ({ ...current, [place.placeId]: toPlaceSpec(onsen) }))
+          })
+          .catch(() => {})
+      })
+    return () => {
+      alive = false
+    }
+  }, [detail])
 
   const share = async (shareToken: string, pamphletId: number) => {
     if (await copyLink(shareLinkOf(shareToken))) {
@@ -200,7 +238,7 @@ export default function MyPamphletsPage() {
                   {detail.title}
                 </h2>
                 <div className="border-border-default mt-6 border-t pt-6">
-                  <PamphletPreview detail={detail} />
+                  <PamphletPreview detail={detail} specs={specs} />
                 </div>
               </>
             )}
@@ -263,6 +301,7 @@ export default function MyPamphletsPage() {
                           number: coverNumber(index, page, PAMPHLET_PAGE_SIZE),
                           title: pamphlet.title,
                           createdAt: pamphlet.createdAt.slice(0, 10),
+                          summary: [],
                           // 목록에는 장소가 없다. 표지에 쓰는 건 개수뿐이라 빈 배열로 채운다.
                           places: [],
                         }

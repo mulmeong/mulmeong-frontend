@@ -8,6 +8,25 @@ import { cn } from '@/lib/cn'
 
 type ScrollDirection = 'up' | 'down'
 
+/**
+ * 히어로(첫 섹션, h-dvh) 밖으로 스크롤했는지. 헤더를 transparent→dark로
+ * 전환하는 기준이다 — 임계값을 뷰포트 높이보다 살짝 낮게 잡아, 전환이
+ * 섹션 스냅이 끝나기 전에 자연스럽게 시작하게 한다.
+ */
+function useScrolledPastHero() {
+  const [past, setPast] = useState(false)
+
+  useEffect(() => {
+    const threshold = () => window.innerHeight * 0.6
+    const onScroll = () => setPast(window.scrollY > threshold())
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  return past
+}
+
 /** 문서 스크롤 방향. rAF로 묶어 이벤트가 쏟아져도 프레임당 한 번만 계산한다. */
 function useScrollDirection(threshold = 0): ScrollDirection {
   const [direction, setDirection] = useState<ScrollDirection>('up')
@@ -60,6 +79,7 @@ const SECTION = 'relative h-dvh w-full shrink-0 snap-start snap-always overflow-
 
 export default function HomePage() {
   const scrollDir = useScrollDirection()
+  const scrolledPastHero = useScrolledPastHero()
   useDocumentSnap()
 
   return (
@@ -67,8 +87,9 @@ export default function HomePage() {
     // 스크롤 주체가 이 div로 바뀌면서 키보드 스크롤이 막힌다.
     <div className="bg-surface text-text-primary">
       <AuthHeader
+        variant={scrolledPastHero ? 'dark' : 'transparent'}
         className={cn(
-          'fixed inset-x-0 top-0 z-50 bg-transparent transition-transform duration-300',
+          'fixed inset-x-0 top-0 z-50 transition-transform duration-300',
           scrollDir === 'down' && '-translate-y-full',
         )}
       />

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import MagazineImage from '@/features/magazine/components/MagazineImage'
 import { useMagazines } from '@/features/magazine/hooks/useMagazines'
 import MagazineRefreshButton from '@/features/map/components/MagazineRefreshButton'
-import { useSidebarCarousel } from '@/features/map/hooks/useSidebarCarousel'
+import { useDragCarousel } from '@/lib/useDragCarousel'
 import { cn } from '@/lib/cn'
 import { SIDEBAR_CARD_IMAGE, SIDEBAR_CARD_TRACK } from './sidebarCardStyles'
 
@@ -38,7 +38,7 @@ export default function SidebarPicks() {
     () => takeCircular(magazines, offset, VISIBLE_COUNT),
     [magazines, offset],
   )
-  const { trackRef, scroll, move } = useSidebarCarousel(visibleMagazines.length, loading || !!error)
+  const { trackRef, scroll, move } = useDragCarousel(visibleMagazines.length, loading || !!error)
 
   useEffect(
     () => () => {

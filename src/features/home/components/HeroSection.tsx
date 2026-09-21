@@ -36,6 +36,16 @@ export default function HeroSection() {
         )}
       />
 
+      {/*
+        헤더 가독성용 그라디언트 — 화면 전체를 어둡게 하면 히어로 사진의
+        인상이 죽는다. 최상단만 어둡게 하고 그 아래로는 빠르게 투명해져,
+        헤더가 얹히는 영역 밖에서는 원본 사진 그대로 보이게 한다.
+      */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/35 to-transparent"
+      />
+
       <div className="absolute inset-0 flex flex-col items-center justify-center px-6">
         <span aria-hidden="true" className={cn(DIVIDER, fade())} />
 

@@ -15,9 +15,12 @@ function regionLabel(regionName: string) {
 export default function MagazineCard({
   magazine,
   featured = false,
+  index,
 }: {
   magazine: Magazine
   featured?: boolean
+  /** 목차형 화면의 순번. 있으면 제목 앞에 붙고 사진이 세로로 바뀐다. */
+  index?: string
 }) {
   return (
     <Link to={`/magazine/${magazine.magazineId}`} className="group block min-w-0">
@@ -25,7 +28,10 @@ export default function MagazineCard({
         src={magazine.thumbnailUrl}
         seed={magazine.magazineId}
         eager={featured}
-        className={cn('rounded-sm', featured ? 'aspect-[16/9]' : 'aspect-[4/3]')}
+        className={cn(
+          'rounded-sm transition-transform duration-150 group-hover:-translate-y-1 motion-reduce:transform-none',
+          featured ? 'aspect-[16/9]' : index ? 'aspect-[3/4]' : 'aspect-[4/3]',
+        )}
       />
       <h3
         className={cn(
@@ -33,6 +39,11 @@ export default function MagazineCard({
           featured ? 'text-[24px] sm:text-[27px]' : 'text-[18px]',
         )}
       >
+        {index && (
+          <span className="text-text-secondary mr-1.5 text-[13px] font-normal tabular-nums">
+            {index}
+          </span>
+        )}
         {magazine.title}
       </h3>
       {magazine.subtitle && (

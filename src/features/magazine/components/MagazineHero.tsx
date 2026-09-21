@@ -25,7 +25,10 @@ export default function MagazineHero() {
     return () => clearInterval(timer)
   }, [paused, hovered, focused, magazines.length])
   const magazine = magazines[currentIndex]
-  if (!magazine) return <MagazineFeedback loading={loading} error={error} retry={retry} />
+  if (!magazine) {
+    if (loading) return <MagazineHeroSkeleton />
+    return <MagazineFeedback loading={false} error={error} retry={retry} />
+  }
   return (
     <section
       aria-label="추천 커버"
@@ -100,6 +103,40 @@ export default function MagazineHero() {
           className="aspect-[4/3] md:h-full md:min-h-[400px]"
         />
       </Link>
+    </section>
+  )
+}
+
+function MagazineHeroSkeleton() {
+  return (
+    <section
+      role="status"
+      aria-label="추천 매거진을 불러오는 중"
+      className="border-border-default grid overflow-hidden border-y motion-safe:animate-pulse md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
+    >
+      <div className="flex flex-col items-start py-7 md:py-9 md:pr-10">
+        <div aria-hidden="true" className="bg-border-default/30 h-3 w-32 rounded-[2px]" />
+        <div aria-hidden="true" className="mt-5 w-full max-w-md space-y-3">
+          <div className="bg-border-default/40 h-8 w-full rounded-[2px]" />
+          <div className="bg-border-default/35 h-8 w-4/5 rounded-[2px]" />
+        </div>
+        <div aria-hidden="true" className="mt-5 w-full max-w-sm space-y-2">
+          <div className="bg-border-default/30 h-3 w-full rounded-[2px]" />
+          <div className="bg-border-default/30 h-3 w-5/6 rounded-[2px]" />
+          <div className="bg-border-default/30 h-3 w-2/3 rounded-[2px]" />
+        </div>
+        <div aria-hidden="true" className="bg-border-default/35 mt-6 h-4 w-24 rounded-[2px]" />
+        <div aria-hidden="true" className="mt-7 flex w-full items-center gap-4 md:mt-auto md:pt-6">
+          <div className="bg-border-default/30 mr-auto h-3 w-14 rounded-[2px]" />
+          <div className="bg-border-default/30 size-9 rounded-full" />
+          <div className="bg-border-default/30 h-9 w-10 rounded-[2px]" />
+          <div className="bg-border-default/30 size-9 rounded-full" />
+        </div>
+      </div>
+      <div
+        aria-hidden="true"
+        className="bg-border-default/35 aspect-[4/3] md:h-full md:min-h-[400px]"
+      />
     </section>
   )
 }

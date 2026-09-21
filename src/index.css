@@ -109,6 +109,16 @@
 
 :root {
   color-scheme: light;
+  /*
+   * 세로 스크롤바 자리를 항상 비워 둔다. 매거진 홈의 전체폭 배너가
+   * margin: calc(50vw - 50%)로 뷰포트 양끝까지 나가는데, 스크롤바가
+   * 있고 없고에 따라 100vw와 실제 보이는 폭 사이에 스크롤바 두께만큼
+   * 오차가 생겨 살짝 가로 스크롤이 열린다. overflow-x: hidden으로
+   * 막으면 그 대상 요소가 sticky의 기준 스크롤 컨테이너가 되어 버려서
+   * (매거진 상세의 '이 글의 온천' 카드 등) sticky가 깨진다 — 그래서
+   * hidden을 쓰지 않고 애초에 오차 자체를 없앤다.
+   */
+  scrollbar-gutter: stable;
 }
 
 .map-detail-panel {

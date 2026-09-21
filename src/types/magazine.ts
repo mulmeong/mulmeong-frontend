@@ -6,6 +6,44 @@
   { code: 'FOOD', label: '먹거리' },
 ] as const
 export type MagazineCategory = (typeof MAGAZINE_CATEGORIES)[number]['code']
+
+/**
+ * 지역 필터의 권역. 서버가 목록 응답의 regions를 늘 null로 주어 화면에서 정의한다.
+ * 한 권역이 여러 시도코드를 쓰므로(강원=51·42) 이름 → 코드 목록으로 둔다.
+ */
+export const MAGAZINE_REGION_CODES: Record<string, string[]> = {
+  수도권: ['11', '41', '28'],
+  강원: ['51', '42'],
+  충청: ['30', '36', '43', '44'],
+  경북: ['27', '47'],
+  경남: ['26', '31', '48'],
+  전라: ['29', '45', '46', '52'],
+  제주: ['50'],
+}
+
+export const MAGAZINE_REGIONS = Object.keys(MAGAZINE_REGION_CODES)
+
+/**
+ * 서버가 주는 시도코드별 편수를 권역 단위로 합친다.
+ * regions가 null이면(지금) undefined를 돌려줘 화면이 편수를 감춘다.
+ */
+export function regionCountsOf(
+  regions: { sidoCode: string; count: number }[] | null | undefined,
+): Record<string, number> | undefined {
+  if (!regions?.length) return undefined
+  const totals: Record<string, number> = {}
+  for (const { sidoCode, count } of regions) {
+    const region = regionNameOfSido(sidoCode)
+    if (region) totals[region] = (totals[region] ?? 0) + count
+  }
+  return Object.keys(totals).length ? totals : undefined
+}
+
+/** 시도코드가 어느 권역인지. 목록 카드의 지역 표기에 쓴다. */
+export function regionNameOfSido(sidoCode?: string | null): string | undefined {
+  if (!sidoCode) return undefined
+  return MAGAZINE_REGIONS.find((region) => MAGAZINE_REGION_CODES[region].includes(sidoCode))
+}
 export type MagazineSort = 'LATEST' | 'POPULAR' | 'READ_TIME'
 export type Magazine = {
   magazineId: number
@@ -25,6 +63,8 @@ export type Magazine = {
 export type MagazineListParams = {
   category?: MagazineCategory | 'ALL'
   sidoCode?: string
+  /** 권역 이름. 서버가 받아 주면 시도코드 대신 이걸 보낸다. */
+  region?: string
   sort?: MagazineSort
   featured?: boolean
   page?: number
@@ -50,6 +90,13 @@ export type MagazinePlace = {
   lng: number
   subText: string | null
   accessSummary: string | null
+  /**
+   * 온천 스펙. Place 엔티티에는 있는데 매거진 DTO에 아직 실리지 않는다
+   * (BE 요청 중). 오면 '이 글의 온천' 카드에 칩으로 뜨고, 없으면 그 줄이 빠진다.
+   */
+  waterTemp?: number | string | null
+  waterType?: string | null
+  hasOutdoor?: boolean | null
 }
 export type MagazineDetail = Magazine & {
   author: string
