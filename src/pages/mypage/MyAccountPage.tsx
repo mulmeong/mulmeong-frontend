@@ -253,7 +253,10 @@ export default function MyAccountPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[600px] pt-3 pb-10 sm:pt-4">
+    // 탭 네비게이션과 본문이 붙어 보인다는 피드백으로 상단 여백만 늘린다
+    // (MyPageLayout의 py-6은 모든 MY 탭 공통이라 건드리지 않는다 — 이 페이지의
+    // pt만 12px/16px → 48px/52px로 올려 탭과 "내 정보" 사이 간격만 약 36px 넓힌다).
+    <div className="mx-auto max-w-[600px] pt-[48px] pb-10 sm:pt-[52px]">
       <h1 className="text-text-primary text-[26px] leading-tight font-semibold sm:text-[28px]">
         내 정보
       </h1>

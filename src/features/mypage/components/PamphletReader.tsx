@@ -37,6 +37,7 @@ export default function PamphletReader({
   const places = pamphlet.places.map((place, index) => ({ place, index }))
   const middlePlaces = places.filter((entry) => entry.index % 2 === 0)
   const rightPlaces = places.filter((entry) => entry.index % 2 === 1)
+  const isOnsenTrip = pamphlet.onsenCount > 0
 
   useLayoutEffect(() => {
     onCloseRef.current = onClose
@@ -312,7 +313,12 @@ export default function PamphletReader({
               <div className="pamphlet-reader-face pamphlet-place-stack">
                 {middlePlaces.length > 0 ? (
                   middlePlaces.map(({ place, index }) => (
-                    <PamphletPlace key={place.id} place={place} index={index} />
+                    <PamphletPlace
+                      key={place.id}
+                      place={place}
+                      index={index}
+                      isOnsenTrip={isOnsenTrip}
+                    />
                   ))
                 ) : (
                   <PamphletEnd count={0} />
@@ -323,10 +329,15 @@ export default function PamphletReader({
               <div className="pamphlet-reader-face pamphlet-place-stack">
                 {rightPlaces.length > 0 ? (
                   rightPlaces.map(({ place, index }) => (
-                    <PamphletPlace key={place.id} place={place} index={index} />
+                    <PamphletPlace
+                      key={place.id}
+                      place={place}
+                      index={index}
+                      isOnsenTrip={isOnsenTrip}
+                    />
                   ))
                 ) : (
-                  <PamphletEnd count={pamphlet.places.length} />
+                  <PamphletEnd count={pamphlet.places.length} isOnsenTrip={isOnsenTrip} />
                 )}
               </div>
               <div className="pamphlet-reader-back" aria-hidden="true">

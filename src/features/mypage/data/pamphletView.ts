@@ -14,6 +14,13 @@ export type PamphletView = {
   number: string
   title: string
   createdAt: string
+  travelDate?: string
+  partySize?: number
+  authorName?: string
+  coverImage?: string
+  regionName?: string
+  placeCount: number
+  onsenCount: number
   summary: string[]
   places: PamphletViewPlace[]
 }
@@ -30,6 +37,7 @@ export type PamphletViewPlace = {
   imageUrl?: string
   /** 서버가 준 한 줄 설명. 온천은 수온·수질, 그 외는 분류다. */
   description?: string
+  curation?: string
   /**
    * 온천 상세(GET /onsens/{id})로 채우는 보강 정보. 팜플렛 응답에는 없어서
    * 화면에서 따로 받아 붙인다 — 없으면 해당 줄을 숨긴다.
@@ -87,6 +95,16 @@ function imageOf(place: PamphletDetail['places'][number]) {
   return place.imageUrl ?? place.thumbnail ?? place.images?.find(Boolean) ?? undefined
 }
 
+function sourceOf(place: PamphletDetail['places'][number]) {
+  if (place.source) return place.source
+  if (place.externalId?.startsWith('TOUR_')) return 'TOUR_API'
+  return undefined
+}
+
+function curationOf(place: PamphletDetail['places'][number]) {
+  return place.notes?.trim() || place.regionComment?.trim() || undefined
+}
+
 function isOnsenPlace(place: PamphletDetail['places'][number]) {
   return place.placeType === 'ONSEN' || place.placeType === 'SPA'
 }
@@ -121,6 +139,13 @@ export function toPamphletView(detail: PamphletDetail, number: string): Pamphlet
     number,
     title: detail.title,
     createdAt: detail.createdAt.slice(0, 10),
+    travelDate: detail.travelDate ?? undefined,
+    partySize: detail.partySize ?? undefined,
+    authorName: detail.author?.nickname ?? undefined,
+    coverImage: detail.coverImage ?? undefined,
+    regionName: detail.summary?.regionName ?? undefined,
+    placeCount: detail.summary?.placeCount ?? detail.places.length,
+    onsenCount: detail.summary?.onsenCount ?? detail.places.filter(isOnsenPlace).length,
     summary: summaryOf(detail.places),
     places: detail.places.map((place) => ({
       id: place.placeId,
@@ -128,11 +153,12 @@ export function toPamphletView(detail: PamphletDetail, number: string): Pamphlet
       address: normalizeAddress(place.address),
       category: CATEGORY[place.placeType] ?? 'etc',
       typeLabel: place.placeTypeLabel ?? undefined,
-      source: place.source ?? undefined,
+      source: sourceOf(place),
       imageUrl: imageOf(place),
       // 온천이 아니면 서버가 subText에 유형 라벨을 그대로 넣는다. 유형을 이미
       // 따로 보여주므로 같은 값이면 설명으로 치지 않는다 ('식당 · 식당' 방지).
       description: meaningfulSubText(place.subText, place.placeTypeLabel),
+      curation: curationOf(place),
       spec: specFromPlace(place),
     })),
   }
@@ -174,7 +200,7 @@ export function toPlaceSpec(
     hasLodging: detail.facilities?.hasLodging ?? undefined,
     reviewCount: detail.reviewSummary?.count ?? undefined,
     avgRating: detail.reviewSummary?.avgRating ?? undefined,
-    note: water?.benefit ?? detail.regionComment ?? undefined,
+    note: water?.benefit ?? detail.regionComment ?? detail.notes ?? undefined,
   }
   // undefined 키를 남기면 호출부가 값이 있는지 세기 번거롭다.
   ;(Object.keys(spec) as (keyof PamphletPlaceSpec)[]).forEach((key) => {
