@@ -298,6 +298,7 @@ export default function MyPamphletsPage() {
                         params.set('pamphlet', String(pamphlet.pamphletId))
                         const view: PamphletView = {
                           id: String(pamphlet.pamphletId),
+                          shareToken: pamphlet.shareToken,
                           number: coverNumber(index, page, PAMPHLET_PAGE_SIZE),
                           title: pamphlet.title,
                           createdAt: pamphlet.createdAt.slice(0, 10),

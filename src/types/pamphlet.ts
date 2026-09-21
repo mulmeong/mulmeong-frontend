@@ -52,6 +52,14 @@ export type PamphletPlace = {
   address?: string | null
   imageUrl?: string | null
   kakaoPlaceUrl?: string | null
+  isRegistered?: boolean | null
+  sido?: string | null
+  sigungu?: string | null
+  phone?: string | null
+  homepageUrl?: string | null
+  hours?: string | null
+  holiday?: string | null
+  parkingInfo?: string | null
   thumbnail?: string | null
   images?: string[] | null
   priceMin?: number | null
@@ -61,6 +69,8 @@ export type PamphletPlace = {
   regionComment?: string | null
   notes?: string | null
   reviewSummary?: OnsenReviewSummary | null
+  annualVisitors?: number | null
+  isFavorite?: boolean | null
   lat?: number | null
   lng?: number | null
 }

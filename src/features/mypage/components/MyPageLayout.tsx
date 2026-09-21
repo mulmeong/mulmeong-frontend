@@ -10,9 +10,9 @@ import { cn } from '@/lib/cn'
 
 const TABS = [
   { to: '/my', label: '내 지도', end: true },
-  { to: '/my/reviews', label: '내 리뷰' },
   { to: '/my/saved', label: '찜한 장소' },
   { to: '/my/pamphlets', label: '팜플렛' },
+  { to: '/my/reviews', label: '내 리뷰' },
   { to: '/my/account', label: '내정보' },
 ]
 
