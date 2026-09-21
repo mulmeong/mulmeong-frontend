@@ -16,17 +16,24 @@ export default function MagazineCard({
   magazine,
   featured = false,
   index,
+  coverSeed,
 }: {
   magazine: Magazine
   featured?: boolean
   /** 목차형 화면의 순번. 있으면 제목 앞에 붙고 사진이 세로로 바뀐다. */
   index?: string
+  /**
+   * 사진 없는 기사의 기본 표지를 고르는 값. 목록에서는 순서를 넘겨 이웃끼리
+   * 같은 표지가 겹치지 않게 한다 — magazineId로 고르면 짝·홀이 몰린 구간에서
+   * 옆자리 두 칸이 같은 그림이 된다. 생략하면 기사마다 고정된 표지를 쓴다.
+   */
+  coverSeed?: number
 }) {
   return (
     <Link to={`/magazine/${magazine.magazineId}`} className="group block min-w-0">
       <MagazineImage
         src={magazine.thumbnailUrl}
-        seed={magazine.magazineId}
+        seed={coverSeed ?? magazine.magazineId}
         eager={featured}
         className={cn(
           'rounded-sm transition-transform duration-150 group-hover:-translate-y-1 motion-reduce:transform-none',

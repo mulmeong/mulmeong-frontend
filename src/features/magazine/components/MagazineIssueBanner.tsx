@@ -1,16 +1,18 @@
 import { Link } from 'react-router-dom'
 
-import { useMagazines } from '@/features/magazine/hooks/useMagazines'
+import { useMagazine } from '@/features/magazine/hooks/useMagazine'
 
 /**
  * 매거진 홈 맨 위, 이번 호를 알리는 전체폭 배너.
  *
- * featured로 받은 첫 편을 그대로 쓴다 — 별도의 '이슈' 개념이 서버에 없어서,
- * 지금 가장 추천하는 한 편을 이번 호처럼 보여준다.
+ * 서버에 별도 '이슈' 개념이 없어 featured=true(=목록 1등)를 그대로 쓰던 것을,
+ * 특정 글을 계속 지정해 걸 수 있게 고정 ID 조회로 바꿨다. 이번 호를 바꾸려면
+ * 아래 ISSUE_MAGAZINE_ID만 바꾸면 된다 — 목록 정렬이 바뀌어도 흔들리지 않는다.
  */
+export const ISSUE_MAGAZINE_ID = 233
+
 export default function MagazineIssueBanner() {
-  const { magazines, loading } = useMagazines({ featured: true, size: 1 })
-  const magazine = magazines[0]
+  const { magazine, loading } = useMagazine(ISSUE_MAGAZINE_ID)
 
   if (loading) return <MagazineIssueBannerSkeleton />
   if (!magazine) return null
@@ -18,6 +20,7 @@ export default function MagazineIssueBanner() {
   const meta = [magazine.categoryLabel, `${magazine.readMinutes}분`, magazine.regionName]
     .filter(Boolean)
     .join(' · ')
+  const cover = magazine.heroImageUrl ?? magazine.thumbnailUrl
 
   return (
     // RootLayout의 main이 max-w-5xl로 가운데 폭을 제한한다. position:relative인
@@ -25,8 +28,22 @@ export default function MagazineIssueBanner() {
     // left-1/2·translate 조합은 main 안에서의 상대 위치가 섞여 계산이 어긋난다.
     // margin-left/right: calc(50% - 50vw)는 그 요소의 박스 폭(%) 기준이라
     // 부모 위치와 무관하게 항상 뷰포트 양끝까지 정확히 나간다(표준 full-bleed 트릭).
-    <section className="bg-inverse text-text-inverse -mx-[calc(50vw-50%)] px-6 py-20 sm:py-28">
-      <div className="mx-auto max-w-5xl">
+    <section className="bg-inverse text-text-inverse relative -mx-[calc(50vw-50%)] overflow-hidden px-6 py-20 sm:py-28">
+      {/*
+        대표 사진이 있으면 배경으로 깐다. 사진 자체를 어둡게(opacity) 두고 그
+        위에 왼쪽→오른쪽 그라디언트를 덮어, 글자가 놓이는 왼쪽은 확실히 어둡고
+        오른쪽은 사진이 살아 있게 한다. 사진이 없으면 지금처럼 단색 배경이다.
+      */}
+      {cover && (
+        <>
+          <img src={cover} alt="" aria-hidden className="absolute inset-0 size-full object-cover" />
+          <div
+            aria-hidden
+            className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/10"
+          />
+        </>
+      )}
+      <div className="relative mx-auto max-w-5xl">
         <p className="text-[12px] font-semibold tracking-[0.2em] text-white/60">
           ISSUE · {magazine.categoryLabel}
         </p>
