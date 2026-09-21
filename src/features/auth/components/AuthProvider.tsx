@@ -86,7 +86,7 @@ export default function AuthProvider() {
         <div
           role="status"
           aria-live="polite"
-          className="animate-toast fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full bg-[#1c1b18] px-4 py-2 text-[12px] font-medium whitespace-nowrap text-white shadow-[0_8px_24px_rgb(0_0_0/0.18)] motion-reduce:animate-none"
+          className="animate-toast fixed top-6 left-1/2 z-50 -translate-x-1/2 rounded-full bg-[#1c1b18] px-4 py-2 text-[12px] font-medium whitespace-nowrap text-white shadow-[0_8px_24px_rgb(0_0_0/0.18)] motion-reduce:animate-none"
         >
           {feedback}
         </div>
