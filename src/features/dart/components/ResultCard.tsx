@@ -159,7 +159,7 @@ export default function ResultCard({
           </div>
         </div>
 
-        <div className="flex flex-col gap-1.5 px-[30px] pt-[22px]">
+        <div className="flex flex-col gap-1.5 px-5 lg:px-[30px] pt-[22px]">
           <span className="text-[12px] text-[#8A9491]">{meta}</span>
           {description && (
             <p className="text-[13.5px] leading-[1.8] text-[#2C3331]">{description}</p>
@@ -222,7 +222,7 @@ export default function ResultCard({
             색이 프로젝트 토큰이라 이 카드의 시안 색과 미묘하게 다르다
             (#1C1B18 대 #0E1513). 눈으로는 구분되지 않아 그대로 뒀다.
           */
-          <div className="px-[30px] py-5">
+          <div className="px-5 lg:px-[30px] py-5">
             <NearbyList onsenId={onsen.id} active />
           </div>
         )}
@@ -231,7 +231,7 @@ export default function ResultCard({
       {throwError && (
         <p
           role="alert"
-          className="flex-none border-t border-[#E2E5E4] px-[30px] pt-4 text-[12px] leading-[1.6] text-[#B4443A]"
+          className="flex-none border-t border-[#E2E5E4] px-5 lg:px-[30px] pt-4 text-[12px] leading-[1.6] text-[#B4443A]"
         >
           {throwError}
         </p>
@@ -239,7 +239,7 @@ export default function ResultCard({
 
       <div
         className={cn(
-          'flex flex-none gap-2 px-[30px] pt-4 pb-[22px]',
+          'flex flex-none gap-2 px-5 lg:px-[30px] pt-4 pb-[22px]',
           // 사유를 띄운 경우에는 그 문단이 이미 구분선을 갖고 있다.
           !throwError && 'border-t border-[#E2E5E4]',
         )}
@@ -331,14 +331,14 @@ function Info({ onsen }: { onsen: Onsen }) {
 
   if (rows.length === 0) {
     return (
-      <p className="px-[30px] py-5 text-[13px] leading-[1.6] text-[#8A9491]">
+      <p className="px-5 lg:px-[30px] py-5 text-[13px] leading-[1.6] text-[#8A9491]">
         이용 정보가 준비되지 않았어요.
       </p>
     )
   }
 
   return (
-    <div className="flex flex-col px-[30px] pt-5 pb-6">
+    <div className="flex flex-col px-5 lg:px-[30px] pt-5 pb-6">
       {rows.map((row, index) => (
         <SpecRow
           key={row.label}
@@ -371,7 +371,7 @@ function Summary({
   const { waterTempC, waterQuality, ph, phLabel } = onsen
 
   return (
-    <div className="flex flex-col gap-5 px-[30px] pt-5 pb-6">
+    <div className="flex flex-col gap-5 px-5 lg:px-[30px] pt-5 pb-6">
       {/* 출발지에서 여기까지. 조건에 따라 달라지는 값이라 온천 스펙과 나눠 놓는다. */}
       <div className="flex flex-col gap-[9px]">
         <span className={GROUP_LABEL}>가는 길</span>

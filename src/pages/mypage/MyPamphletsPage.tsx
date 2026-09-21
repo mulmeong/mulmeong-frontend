@@ -298,9 +298,14 @@ export default function MyPamphletsPage() {
                         params.set('pamphlet', String(pamphlet.pamphletId))
                         const view: PamphletView = {
                           id: String(pamphlet.pamphletId),
+                          shareToken: pamphlet.shareToken,
                           number: coverNumber(index, page, PAMPHLET_PAGE_SIZE),
                           title: pamphlet.title,
                           createdAt: pamphlet.createdAt.slice(0, 10),
+                          coverImage: pamphlet.coverImage ?? undefined,
+                          regionName: pamphlet.regionName ?? undefined,
+                          placeCount: pamphlet.placeCount,
+                          onsenCount: 0,
                           summary: [],
                           // 목록에는 장소가 없다. 표지에 쓰는 건 개수뿐이라 빈 배열로 채운다.
                           places: [],

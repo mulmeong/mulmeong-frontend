@@ -33,7 +33,7 @@ function Trailing({ trailing }: { trailing: NonNullable<InputProps['trailing']> 
         type="button"
         onClick={trailing.onClick}
         disabled={trailing.disabled}
-        className="text-text-secondary hover:text-text-primary shrink-0 text-[12px] underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:opacity-40"
+        className="text-text-secondary hover:text-text-primary shrink-0 text-[12px] underline-offset-2 hover:underline disabled:opacity-40"
       >
         {trailing.label}
       </button>
@@ -65,7 +65,7 @@ export default function Input({
       aria-describedby={describedById}
       className={cn(
         'placeholder:text-text-secondary text-text-primary min-w-0 flex-1 bg-transparent outline-none',
-        'disabled:cursor-not-allowed disabled:opacity-40',
+        'disabled:opacity-40',
         variant === 'search' ? 'text-[13px]' : 'text-[15px]',
       )}
       {...props}

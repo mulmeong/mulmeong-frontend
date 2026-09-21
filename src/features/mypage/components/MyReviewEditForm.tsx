@@ -417,7 +417,7 @@ export default function MyReviewEditForm({ detail, onCancel, onUpdated }: MyRevi
             'h-10 flex-[2] rounded-sm text-[13px] font-medium transition-colors outline-none',
             canSubmit && !submitting
               ? 'bg-inverse text-text-inverse'
-              : 'bg-surface-dim text-text-secondary cursor-not-allowed',
+              : 'bg-surface-dim text-text-secondary',
           )}
         >
           {submitting ? '저장하는 중…' : '수정 완료'}

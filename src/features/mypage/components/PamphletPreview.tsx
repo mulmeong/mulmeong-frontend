@@ -46,6 +46,7 @@ function specLine(spec?: PamphletPlaceSpec): string | undefined {
     spec.tempC !== undefined ? `${spec.tempC.toFixed(1)}℃` : '',
     spec.waterType,
     spec.facilityType,
+    spec.hasOutdoor ? '노천 있음' : '',
     spec.hasLodging ? '숙박 가능' : '',
   ].filter(Boolean)
   return values.length ? values.join(' · ') : undefined
@@ -54,6 +55,8 @@ function specLine(spec?: PamphletPlaceSpec): string | undefined {
 function visitLine(spec?: PamphletPlaceSpec): string | undefined {
   if (!spec) return undefined
   const values = [
+    spec.hours,
+    spec.closed ? `휴무 ${spec.closed}` : '',
     spec.accessLabel && [spec.accessLabel, spec.stationName].filter(Boolean).join(' — '),
     spec.price !== undefined ? `${spec.price.toLocaleString()}원부터` : '',
     spec.avgRating !== undefined
@@ -103,7 +106,7 @@ export default function PamphletPreview({
   return (
     <div className="pamphlet-preview">
       <header className="pamphlet-preview-head">
-        <p className="pamphlet-eyebrow">MULMEONG · TRAVEL NOTES</p>
+        <p className="pamphlet-eyebrow">물멍 여행 팜플렛</p>
         <h3 className="pamphlet-preview-title">{detail.title}</h3>
 
         <dl className="pamphlet-preview-meta">
@@ -143,7 +146,7 @@ export default function PamphletPreview({
         </p>
       </header>
 
-      {detail.places.length > 0 && <p className="pamphlet-preview-section">PLACES · 여행 순서</p>}
+      {detail.places.length > 0 && <p className="pamphlet-preview-section">함께 갈 곳</p>}
       <ol className="pamphlet-preview-places">
         {detail.places.map((place) => {
           const spec = specs[place.placeId] ?? specOf(place)
@@ -156,7 +159,7 @@ export default function PamphletPreview({
               </figure>
               <div className="pamphlet-preview-body">
                 <p className="pamphlet-eyebrow">
-                  PLACE {String(place.seq).padStart(2, '0')}
+                  {String(place.seq).padStart(2, '0')}
                   {place.placeTypeLabel ? ` · ${place.placeTypeLabel}` : ''}
                 </p>
                 <h4>{place.name}</h4>
@@ -182,7 +185,7 @@ export default function PamphletPreview({
 
       {/* 한국관광공사 장소가 섞여 있을 때만, 팜플렛 단위로 한 번. */}
       {usesTourApi(detail.places.map((place) => ({ source: place.source ?? undefined }))) && (
-        <p className="pamphlet-preview-credit">PLACE DATA · {TOUR_API_CREDIT}</p>
+        <p className="pamphlet-preview-credit">장소 정보 · {TOUR_API_CREDIT}</p>
       )}
     </div>
   )

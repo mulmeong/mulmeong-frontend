@@ -81,11 +81,12 @@ export default function SharedDartPage() {
       <AuthHeader />
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <div className="min-h-0 min-w-0 flex-1 bg-[#F2F4F3]">
+        {/* 좁은 화면에서는 위쪽 32dvh만 쓴다 — 다트 화면과 같은 배치다. */}
+        <div className="min-h-0 min-w-0 shrink-0 basis-[32dvh] bg-[#F2F4F3] lg:basis-0 lg:shrink lg:grow">
           <KoreaMap marker={dart?.result} markerLabel={dart?.result.name} />
         </div>
 
-        <aside className="flex w-full shrink-0 flex-col border-t border-[#E2E5E4] bg-white lg:w-[400px] lg:border-t-0 lg:border-l">
+        <aside className="flex min-h-0 w-full grow flex-col border-t border-[#E2E5E4] bg-white lg:w-[400px] lg:grow-0 lg:border-t-0 lg:border-l">
           {loading ? (
             <p role="status" className="px-[30px] py-8 text-[13px] text-[#8A9491]">
               불러오는 중…

@@ -275,7 +275,7 @@ export default function NearbyList({
         <button
           type="button"
           disabled
-          className="text-text-secondary mt-3 min-h-11 w-full cursor-not-allowed text-[12px] outline-none"
+          className="text-text-secondary mt-3 min-h-11 w-full text-[12px] outline-none"
         >
           전체 보기
         </button>

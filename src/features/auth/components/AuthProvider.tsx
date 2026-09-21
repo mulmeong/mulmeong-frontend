@@ -22,6 +22,7 @@ import type { AuthUser } from '@/types/user'
 export default function AuthProvider() {
   const [user, setUser] = useState<AuthUser>()
   const [loading, setLoading] = useState(true)
+  const [feedback, setFeedback] = useState<string>()
 
   useEffect(() => {
     let alive = true
@@ -48,13 +49,21 @@ export default function AuthProvider() {
 
   const login = useCallback(async (body: LoginRequest) => {
     const { user: next } = await loginRequest(body)
+    setFeedback(undefined)
     setUser(next)
   }, [])
 
   const logout = useCallback(async () => {
     await logoutRequest()
     setUser(undefined)
+    setFeedback('로그아웃되었습니다.')
   }, [])
+
+  useEffect(() => {
+    if (!feedback) return undefined
+    const timer = window.setTimeout(() => setFeedback(undefined), 3000)
+    return () => window.clearTimeout(timer)
+  }, [feedback])
 
   const value = useMemo(() => ({ user, loading, login, logout }), [user, loading, login, logout])
 
@@ -73,6 +82,15 @@ export default function AuthProvider() {
       <FavoritesProvider>
         <Outlet />
       </FavoritesProvider>
+      {feedback && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="animate-toast fixed top-6 left-1/2 z-50 -translate-x-1/2 rounded-full bg-[#1c1b18] px-4 py-2 text-[12px] font-medium whitespace-nowrap text-white shadow-[0_8px_24px_rgb(0_0_0/0.18)] motion-reduce:animate-none"
+        >
+          {feedback}
+        </div>
+      )}
     </AuthContext>
   )
 }

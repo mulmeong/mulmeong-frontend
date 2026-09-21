@@ -105,9 +105,7 @@ export default function SharedPamphletPage() {
 
   return (
     <main className="flex min-h-dvh flex-col px-6 py-8">
-      <p className="text-text-secondary text-[10px] tracking-[0.14em]">
-        MULMEONG · DIGITAL PAMPHLET
-      </p>
+      <p className="text-text-secondary text-[10px] tracking-[0.14em]">물멍 · 디지털 팜플렛</p>
 
       <div className="flex flex-1 flex-col items-center justify-center py-10 text-center">
         {!view ? (

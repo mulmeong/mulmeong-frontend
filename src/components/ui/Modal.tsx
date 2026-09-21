@@ -123,7 +123,7 @@ export default function Modal({
               type="button"
               onClick={primaryAction.onClick}
               disabled={primaryAction.disabled}
-              className="flex-1 bg-[#0E1513] px-4 py-3.5 text-[13.5px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex-1 bg-[#0E1513] px-4 py-3.5 text-[13.5px] font-bold text-white disabled:opacity-40"
             >
               {primaryAction.label}
             </button>
@@ -133,7 +133,7 @@ export default function Modal({
               type="button"
               onClick={secondaryAction.onClick}
               disabled={secondaryAction.disabled}
-              className="shrink-0 border border-[#D8DCDB] px-6 py-3.5 text-[13.5px] font-normal text-[#0E1513] disabled:cursor-not-allowed disabled:opacity-40"
+              className="shrink-0 border border-[#D8DCDB] px-6 py-3.5 text-[13.5px] font-normal text-[#0E1513] disabled:opacity-40"
             >
               {secondaryAction.label}
             </button>

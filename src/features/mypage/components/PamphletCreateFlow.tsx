@@ -90,9 +90,14 @@ export default function PamphletCreateFlow({
       }}
       aria-labelledby={titleId}
       aria-busy={!created || !detail}
-      className="m-auto w-[520px] max-w-[calc(100vw-2rem)] bg-white text-[#0E1513] backdrop:bg-black/40"
+      // 뷰포트가 낮으면(짧은 창, 저해상도 노트북) 안쪽 미리보기가 다이얼로그
+      // 높이를 뷰포트 밖으로 밀어내 하단 버튼(링크 복사·팜플렛 상세)이 잘렸다.
+      // dialog를 뷰포트에 맞는 max-height의 flex 세로 컨테이너로 만들고,
+      // 스크롤은 안쪽 콘텐츠 영역(overflow-y-auto)에만 주어 하단 버튼은
+      // 항상 dialog 안, 화면 안에 고정되게 한다.
+      className="m-auto flex max-h-[calc(100dvh-2rem)] w-[520px] max-w-[calc(100vw-2rem)] flex-col bg-white text-[#0E1513] backdrop:bg-black/40"
     >
-      <div className="relative">
+      <div className="relative min-h-0 flex-1 overflow-y-auto">
         <button
           type="button"
           aria-label="닫기"
@@ -149,7 +154,9 @@ export default function PamphletCreateFlow({
             </div>
           </div>
         ) : (
-          <div className="pamphlet-unfold max-h-[min(70vh,640px)]">
+          <div className="pamphlet-unfold">
+            {/* 높이 제한은 바깥 스크롤 컨테이너(위 overflow-y-auto)가 맡는다 —
+                여기서 또 max-height를 걸면 스크롤 영역이 이중으로 생긴다. */}
             <h2 id={titleId} className="sr-only">
               {created.title} 팜플렛이 완성되었습니다
             </h2>
@@ -159,7 +166,7 @@ export default function PamphletCreateFlow({
       </div>
 
       {ready && (
-        <div className="flex flex-col gap-2 border-t border-[#E2E5E4] px-[30px] pt-4 pb-[22px]">
+        <div className="flex shrink-0 flex-col gap-2 border-t border-[#E2E5E4] px-[30px] pt-4 pb-[22px]">
           <div className="flex gap-2">
             <button
               type="button"
