@@ -232,23 +232,29 @@ export default function MySavedPage() {
           ))}
         </div>
 
-        <button
-          type="button"
-          onClick={() => setSelected(new Set())}
-          disabled={selected.size === 0}
-          className="text-text-secondary hover:text-text-primary ml-auto text-[13px] disabled:opacity-40"
-        >
-          선택 해제
-        </button>
+        {/*
+          좁은 화면에서는 이 두 개가 통째로 아랫줄로 내려간다(w-full). 정렬 칩과
+          한 줄에 욱여넣으면 버튼이 눌려서 글자가 잘린다.
+        */}
+        <div className="flex w-full items-center justify-end gap-3 sm:ml-auto sm:w-auto">
+          <button
+            type="button"
+            onClick={() => setSelected(new Set())}
+            disabled={selected.size === 0}
+            className="text-text-secondary hover:text-text-primary shrink-0 text-[13px] disabled:opacity-40"
+          >
+            선택 해제
+          </button>
 
-        {/* 같은 줄의 칩(py-2 / 13px)과 높이를 맞춘다 — Button 기본값은 한 단계 커서 혼자 튄다. */}
-        <Button
-          onClick={openForm}
-          disabled={selected.size === 0 || tooMany || flow !== null}
-          className="px-4 py-2 text-[13px]"
-        >
-          선택 {selected.size}곳으로 팜플렛 만들기
-        </Button>
+          {/* 같은 줄의 칩(py-2 / 13px)과 높이를 맞춘다 — Button 기본값은 한 단계 커서 혼자 튄다. */}
+          <Button
+            onClick={openForm}
+            disabled={selected.size === 0 || tooMany || flow !== null}
+            className="px-4 py-2 text-[13px]"
+          >
+            선택 {selected.size}곳으로 팜플렛 만들기
+          </Button>
+        </div>
 
         {/* 서버가 20곳까지만 받는다. 누르고 나서 400을 보는 것보다 미리 알리는 게 낫다. */}
         {tooMany && (
