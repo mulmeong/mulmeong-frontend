@@ -53,9 +53,13 @@ export default function ReviewItem({
           )}
 
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <div className="flex items-baseline gap-2">
+            {/*
+              좁은 화면에서는 두 줄로 나눈다. 한 줄에 두면 주소·날짜가 자리를
+              먼저 차지해서(shrink-0) 온천 이름이 통째로 잘려 안 보인다.
+            */}
+            <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-2">
               <h3 className="truncate text-[15px] font-bold">{onsenName}</h3>
-              <span className="text-text-secondary shrink-0 text-[12px]">
+              <span className="text-text-secondary truncate text-[12px] sm:shrink-0">
                 {onsenAddress} · {formatDate(createdAt)}
               </span>
             </div>

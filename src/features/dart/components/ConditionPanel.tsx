@@ -46,8 +46,12 @@ export default function ConditionPanel({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex-none border-b border-[#E2E5E4] px-[30px] pt-7 pb-[22px]">
-        <h1 className="text-[34px] leading-[1.06] font-bold tracking-[-0.05em] text-[#0E1513]">
+      {/*
+        좁은 화면에서는 제목과 여백을 줄인다. 시안 값(34px · 30px 여백)은 400px
+        칸을 기준으로 잡힌 거라, 그대로 두면 조건을 볼 자리가 남지 않는다.
+      */}
+      <div className="flex-none border-b border-[#E2E5E4] px-5 pt-5 pb-4 lg:px-[30px] lg:pt-7 lg:pb-[22px]">
+        <h1 className="text-[26px] leading-[1.06] font-bold tracking-[-0.05em] text-[#0E1513] lg:text-[34px]">
           <span className="block">어디로</span>
           <span className="block">갈지 모를 때</span>
         </h1>
@@ -56,7 +60,7 @@ export default function ConditionPanel({
         </p>
       </div>
 
-      <div className="scrollbar-thin flex min-h-0 flex-1 flex-col gap-[22px] overflow-y-auto overscroll-contain px-[30px] py-[22px]">
+      <div className="scrollbar-thin flex min-h-0 flex-1 flex-col gap-[18px] overflow-y-auto overscroll-contain px-5 py-4 lg:gap-[22px] lg:px-[30px] lg:py-[22px]">
         <OriginField
           recommended={origins}
           recommendedError={originsError}
@@ -84,7 +88,7 @@ export default function ConditionPanel({
         />
       </div>
 
-      <div className="flex flex-none flex-col gap-[11px] border-t border-[#E2E5E4] px-[30px] pt-4 pb-[22px]">
+      <div className="flex flex-none flex-col gap-[11px] border-t border-[#E2E5E4] px-5 lg:px-[30px] pt-4 pb-[22px]">
         {/*
           던지기 전에는 후보 수를 알 수 없다 — candidateCount는 추첨을 돌려봐야
           나오는 값이라 결과 카드에서 보여준다.
